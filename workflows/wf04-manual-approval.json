@@ -1,0 +1,278 @@
+{
+  "name": "04 - Manual Approval",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b7665a89-737e-4c60-887f-272ad9f6fac0",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1024,
+        -112
+      ],
+      "id": "a3a35f6f-9317-435a-bded-9e0e6aac910a",
+      "name": "Webhook",
+      "webhookId": "b7665a89-737e-4c60-887f-272ad9f6fac0"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\nconst errors = [];\n\nif (!body.request_id) errors.push({ field: 'request_id', reason: 'MISSING_REQUIRED_FIELD' });\nif (body.confirm_same_product_family !== true) errors.push({ field: 'confirm_same_product_family', reason: 'MUST_BE_TRUE' });\nif (body.confirm_no_review_manipulation !== true) errors.push({ field: 'confirm_no_review_manipulation', reason: 'MUST_BE_TRUE' });\nif (body.confirm_understands_risk !== true) errors.push({ field: 'confirm_understands_risk', reason: 'MUST_BE_TRUE' });\n\nif (errors.length > 0) {\n  return [{ json: {\n    request_id: body.request_id || null,\n    decision: 'APPROVAL_REJECTED',\n    reason: 'MISSING_CONFIRMATIONS',\n    errors: errors,\n    message: 'All required confirmations must be true before approval.'\n  }}];\n}\n\nreturn [{ json: {\n  request_id: body.request_id,\n  decision: 'VALID_APPROVAL_INPUT',\n  confirm_same_product_family: body.confirm_same_product_family,\n  confirm_no_review_manipulation: body.confirm_no_review_manipulation,\n  confirm_matrix_correct: body.confirm_matrix_correct || false,\n  confirm_understands_risk: body.confirm_understands_risk,\n  approved_by: body.approved_by || 'seller'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        -112
+      ],
+      "id": "f46f1340-91e8-4cbe-be69-bf1d65053572",
+      "name": "Approval Input Validator"
+    },
+    {
+      "parameters": {
+        "url": "=https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/validation_results?request_id=eq.{{ $json.request_id }}&select=decision,hard_blocks_json&order=id.desc&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -608,
+        -112
+      ],
+      "id": "3a64ba26-dc1a-436e-8d93-ee5176285b4c",
+      "name": "Fetch Validation Result",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const restored = $input.first().json;\nconst validationRaw = restored.validation_raw || {};\nconst approvalData = restored.approval_data || {};\n\nif (!approvalData.request_id || approvalData.decision === 'APPROVAL_REJECTED') {\n  return [{ json: approvalData || { decision: 'APPROVAL_REJECTED', reason: 'INVALID_INPUT' } }];\n}\n\nconst validationRow = Array.isArray(validationRaw)\n  ? (validationRaw[0] || {})\n  : (validationRaw.decision ? validationRaw : {});\n\nconst decision = validationRow.decision || '';\nconst hardBlocks = validationRow.hard_blocks_json || [];\n\nconst isBlocked = decision === 'BLOCKED' ||\n  (Array.isArray(hardBlocks) && hardBlocks.length > 0);\n\nif (isBlocked) {\n  return [{ json: {\n    request_id: approvalData.request_id,\n    decision: 'APPROVAL_REJECTED',\n    reason: 'HARD_BLOCKS_EXIST',\n    message: 'This request has hard blocks and cannot be approved.',\n    validation_decision: decision\n  }}];\n}\n\nif (decision !== 'CAN_CONTINUE_TO_DRY_RUN' && decision !== 'MATRIX_VALID') {\n  return [{ json: {\n    request_id: approvalData.request_id,\n    decision: 'APPROVAL_REJECTED',\n    reason: 'VALIDATION_NOT_PASSED',\n    message: 'Validation not passed. Current status: ' + (decision || 'unknown'),\n    validation_decision: decision\n  }}];\n}\n\nreturn [{ json: {\n  request_id: approvalData.request_id,\n  decision: 'APPROVED_FOR_PAYLOAD_PREVIEW',\n  message: 'All confirmations received and validation passed. Ready for payload preview.',\n  confirm_same_product_family: approvalData.confirm_same_product_family,\n  confirm_no_review_manipulation: approvalData.confirm_no_review_manipulation,\n  confirm_matrix_correct: approvalData.confirm_matrix_correct,\n  confirm_understands_risk: approvalData.confirm_understands_risk,\n  approved_by: approvalData.approved_by,\n  validation_decision: decision\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -112
+      ],
+      "id": "992c8273-3c0b-4e19-9ea1-499db67d0e7c",
+      "name": "Approval Gate"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nreturn [{ json: {\n  _original_payload: prev,\n  request_id: prev.request_id,\n  approval_status: prev.decision,\n  approved_by: prev.approved_by || 'seller',\n  confirm_same_product_family: prev.confirm_same_product_family || false,\n  confirm_no_review_manipulation: prev.confirm_no_review_manipulation || false,\n  confirm_matrix_correct: prev.confirm_matrix_correct || false,\n  confirm_understands_risk: prev.confirm_understands_risk || false,\n  notes: prev.message || null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -112
+      ],
+      "id": "23332fd5-291d-49f3-b085-b1e93136110e",
+      "name": "Approval Logger Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/approval_logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"approval_status\": \"{{ $json.approval_status }}\",   \"approved_by\": \"{{ $json.approved_by }}\",   \"confirm_same_product_family\": {{ $json.confirm_same_product_family }},   \"confirm_no_review_manipulation\": {{ $json.confirm_no_review_manipulation }},   \"confirm_matrix_correct\": {{ $json.confirm_matrix_correct }},   \"confirm_understands_risk\": {{ $json.confirm_understands_risk }},   \"notes\": \"{{ $json.notes }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        176,
+        -112
+      ],
+      "id": "735f5c13-dd20-455b-bb11-ad399a412867",
+      "name": "Log Approval",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Approval Logger Prep').first().json;\nreturn [{ json: original._original_payload }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -112
+      ],
+      "id": "d355140a-48f9-4d20-969e-250420621794",
+      "name": "Restore After Approval Log"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        576,
+        -112
+      ],
+      "id": "b23c0cb3-91b9-4ca7-845f-153860c54e98",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const validationRaw = $input.first().json;\nconst approvalData = $('Approval Input Validator').first().json;\n\nreturn [{ json: {\n  validation_raw: validationRaw,\n  approval_data: approvalData\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        -112
+      ],
+      "id": "b89ae2fc-bc76-4aaf-9e2e-bcdb4243a2ee",
+      "name": "Restore After Fetch Validation"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Approval Input Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Input Validator": {
+      "main": [
+        [
+          {
+            "node": "Fetch Validation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Validation Result": {
+      "main": [
+        [
+          {
+            "node": "Restore After Fetch Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Gate": {
+      "main": [
+        [
+          {
+            "node": "Approval Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "Log Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Approval": {
+      "main": [
+        [
+          {
+            "node": "Restore After Approval Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Approval Log": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Fetch Validation": {
+      "main": [
+        [
+          {
+            "node": "Approval Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "73447538-8b1f-477f-b5df-4c6d173fe858",
+  "meta": {
+    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+  },
+  "nodeGroups": [],
+  "id": "iaZfa8jfx1n9R6vq",
+  "tags": []
+}

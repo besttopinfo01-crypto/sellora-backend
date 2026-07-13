@@ -1,0 +1,307 @@
+{
+  "name": "08 - Post-Submission Verification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "abf7f4fc-dc47-4b68-830e-434c0294d14d",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -384,
+        -64
+      ],
+      "id": "59cd3cc3-2f77-4421-9daa-530094fad0a1",
+      "name": "Webhook",
+      "webhookId": "abf7f4fc-dc47-4b68-830e-434c0294d14d"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst requestId = body.request_id;\nconst feedId = body.feed_id;\n\nif (!requestId || !feedId) {\n  return [{ json: {\n    status: 'BLOCKED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'request_id and feed_id are required to run post-submission verification.'\n  }}];\n}\n\nreturn [{ json: {\n  request_id: requestId,\n  feed_id: feedId,\n  verification_started_at: $now.toISO()\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -64
+      ],
+      "id": "3130f886-52cb-461f-ab43-13c275e1e7b8",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        -64
+      ],
+      "id": "f82449da-c348-4713-b7eb-1d62ef702537",
+      "name": "Wait",
+      "webhookId": "31c01fbc-d45c-4b99-98bf-12ef3c347575"
+    },
+    {
+      "parameters": {
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/merge_request_items",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "request_id",
+              "value": "=eq.{{ $('Validate Input').first().json.request_id }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        240,
+        -64
+      ],
+      "id": "a8534325-ad7a-4e9c-b973-a48956d295e8",
+      "name": "Fetch Submission Items",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://amazon-variation-spapi-proxy-production.up.railway.app/amazon/catalog-item",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"asin\": \"{{ $('Fetch Submission Items').item.json.asin }}\",\n  \"marketplace_id\": \"ATVPDKIKX0DER\",\n  \"brand\": \"{{ $('Fetch Submission Items').item.json.normalized_brand }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -320,
+        160
+      ],
+      "id": "f4aa46c3-0e25-4373-86a2-1fc8371a6e75",
+      "name": "Fetch Catalog Data for Verification",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const validateInput = $('Validate Input').first().json;\nconst catalogItems = $input.all().map(function(i) { return i.json; });\nconst submissionItems = $('Fetch Submission Items').all().map(function(i) { return i.json; });\n\nconst itemResults = catalogItems.map(function(catalogData) {\n  const matchingSubmissionItem = submissionItems.find(function(s) {\n    return s.asin === catalogData.asin;\n  }) || {};\n\n  const expectedParentSku = matchingSubmissionItem.parent_sku || null;\n  const relationships = catalogData.relationships || [];\n\n  const isVerified = relationships.some(function(rel) {\n    return rel.type === 'variation_child' && rel.parentAsins && rel.parentAsins.length > 0;\n  });\n\n  return {\n    asin: catalogData.asin,\n    sku: matchingSubmissionItem.sku || null,\n    expected_parent_sku: expectedParentSku,\n    relationships_found: relationships,\n    relationship_count: relationships.length,\n    is_verified: isVerified\n  };\n});\n\nconst allVerified = itemResults.length > 0 && itemResults.every(function(r) { return r.is_verified; });\nconst verificationStatus = allVerified ? 'verified_success' : 'unverified_manual_review';\nconst failedItems = itemResults.filter(function(r) { return !r.is_verified; });\n\nconst errors = failedItems.map(function(item) {\n  return {\n    asin: item.asin,\n    sku: item.sku,\n    message: 'Variation relationship not confirmed in Amazon catalog after feed processing for this ASIN.',\n    action: 'Wait 15 more minutes and check Seller Central manually. If still not showing, open a Seller Support case.',\n    needs_seller_support: true\n  };\n});\n\nreturn [{ json: {\n  request_id: validateInput.request_id,\n  feed_id: validateInput.feed_id,\n  verification_status: verificationStatus,\n  expected_result: {\n    request_id: validateInput.request_id,\n    expected_relationship_type: 'variation_child',\n    total_items_expected: submissionItems.length\n  },\n  actual_result: {\n    items_checked: itemResults.length,\n    items_verified: itemResults.length - failedItems.length,\n    item_results: itemResults\n  },\n  errors: errors,\n  verified_at: $now.toISO()\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        160
+      ],
+      "id": "41025774-c7cc-4c3e-b51d-d9201e9e6249",
+      "name": "Verify Relationships"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/post_submission_verification",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"request_id\": {{ JSON.stringify($json.request_id) }},\n  \"verification_status\": {{ JSON.stringify($json.verification_status) }},\n  \"expected_result_json\": {{ JSON.stringify($json.expected_result) }},\n  \"actual_result_json\": {{ JSON.stringify($json.actual_result) }},\n  \"errors_json\": {{ JSON.stringify($json.errors) }},\n  \"verified_at\": {{ JSON.stringify($json.verified_at) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        96,
+        160
+      ],
+      "id": "47fe51a2-65ab-46c3-a8ac-e3a83fe714ca",
+      "name": "Log Verification Result",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        528,
+        160
+      ],
+      "id": "b18def21-3819-4790-9e0d-570cd8fc0716",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Verify Relationships').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        160
+      ],
+      "id": "2558acf7-b919-4473-96ad-d46a081acdef",
+      "name": "Restore After Verification Log"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Fetch Submission Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Submission Items": {
+      "main": [
+        [
+          {
+            "node": "Fetch Catalog Data for Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Catalog Data for Verification": {
+      "main": [
+        [
+          {
+            "node": "Verify Relationships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Relationships": {
+      "main": [
+        [
+          {
+            "node": "Log Verification Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Verification Result": {
+      "main": [
+        [
+          {
+            "node": "Restore After Verification Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Verification Log": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "92e34a50-ef51-478b-bc5e-b99c040fcc0b",
+  "meta": {
+    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+  },
+  "nodeGroups": [],
+  "id": "lavRyjc0FvuenPP7",
+  "tags": []
+}

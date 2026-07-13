@@ -1,0 +1,386 @@
+{
+  "name": "02 - Correction Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "4c6533f9-6e9c-4d36-b369-59df63d1744f",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2080,
+        -768
+      ],
+      "id": "55821ac6-b516-46a2-b822-db632e13eff7",
+      "name": "Webhook",
+      "webhookId": "4c6533f9-6e9c-4d36-b369-59df63d1744f"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nconst requestId = body.request_id;\nconst corrections = body.corrections;\nconst originalRequest = body.original_request;\nconst incomingRound = body.correction_round || 1;\nconst newRound = incomingRound + 1;\n\nif (!requestId) {\n  return [{ json: {\n    request_id: null,\n    decision: 'BLOCKED',\n    reason: 'MISSING_REQUEST_ID',\n    message: 'request_id is required to process a correction.'\n  }}];\n}\n\nif (!corrections || typeof corrections !== 'object') {\n  return [{ json: {\n    request_id: requestId,\n    decision: 'BLOCKED',\n    reason: 'MISSING_CORRECTIONS',\n    message: 'corrections object is required.'\n  }}];\n}\n\nif (!originalRequest || !Array.isArray(originalRequest.items)) {\n  return [{ json: {\n    request_id: requestId,\n    decision: 'BLOCKED',\n    reason: 'MISSING_ORIGINAL_REQUEST',\n    message: 'original_request is required. In Week 4 this will be fetched from Supabase automatically.'\n  }}];\n}\n\n// Merge corrections into original request\nconst mergedRequest = Object.assign({}, originalRequest);\n\nif (corrections.sizes) mergedRequest.sizes = corrections.sizes;\nif (corrections.colors) mergedRequest.colors = corrections.colors;\nif (corrections.variation_structure) mergedRequest.variation_structure = corrections.variation_structure;\nif (corrections.variation_theme) mergedRequest.variation_theme = corrections.variation_theme;\nif (corrections.matrix_assignments) mergedRequest.matrix_assignments = corrections.matrix_assignments;\nif (corrections.acknowledged_manual_reviews) mergedRequest.acknowledged_manual_reviews = corrections.acknowledged_manual_reviews;\n\n\nif (Array.isArray(corrections.items)) {\n  for (let i = 0; i < corrections.items.length; i++) {\n    const corrItem = corrections.items[i];\n    const target = mergedRequest.items.find(function(it) {\n      return it.sku === corrItem.sku;\n    });\n    if (target) {\n      Object.assign(target, corrItem);\n    }\n  }\n}\n\nreturn [{ json: {\n  request_id: requestId,\n  correction_round: newRound,\n  decision: 'CORRECTION_MERGED',\n  merged_request: mergedRequest\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1872,
+        -768
+      ],
+      "id": "87058e1f-07b6-4537-98cd-d5ad00d57ee2",
+      "name": "Correction Merger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $input.first().json;\n\nif (previous.decision === 'BLOCKED') {\n  return [{ json: previous }];\n}\n\nif (previous.correction_round > 5) {\n  const msg = 'This request has gone through 5 correction rounds without resolving all issues. Please review your data and submit a new request.';\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'BLOCKED',\n    reason: 'MAX_CORRECTION_ROUNDS_EXCEEDED',\n    message: msg,\n    issues: [{\n      issue_code: 'MAX_CORRECTION_ROUNDS_EXCEEDED',\n      severity: 'hard_block',\n      message: msg,\n      can_user_fix: false,\n      can_user_override: false\n    }],\n    correction_round: previous.correction_round\n  }}];\n}\n\nconst merged = previous.merged_request;\nconst items = merged.items;\nconst issues = [];\nconst manualReviews = [];\n\n// Abuse scan\nconst forbiddenPhrases = [\n  'combine reviews', 'merge reviews', 'transfer reviews',\n  'boost ranking', 'force merge', 'bypass amazon', 'manipulate reviews'\n];\nfunction scanForAbuse(value) {\n  if (typeof value !== 'string') return null;\n  const lower = value.toLowerCase();\n  for (let i = 0; i < forbiddenPhrases.length; i++) {\n    if (lower.includes(forbiddenPhrases[i])) return forbiddenPhrases[i];\n  }\n  return null;\n}\nfor (let i = 0; i < items.length; i++) {\n  const found = scanForAbuse(items[i].brand) || scanForAbuse(items[i].sku);\n  if (found) {\n    const msg = 'Correction contains language associated with policy violation.';\n    return [{ json: {\n      request_id: previous.request_id,\n      decision: 'BLOCKED',\n      reason: 'REVIEW_MANIPULATION_INTENT',\n      message: msg,\n      issues: [{\n        issue_code: 'REVIEW_MANIPULATION_INTENT',\n        severity: 'hard_block',\n        message: msg,\n        can_user_fix: false,\n        can_user_override: false\n      }],\n      correction_round: previous.correction_round\n    }}];\n  }\n}\n\n// Brand mismatch\nconst normalizedBrands = items.map(function(it) { return it.brand.toLowerCase().trim(); });\nconst firstBrand = normalizedBrands[0];\nif (normalizedBrands.some(function(b) { return b !== firstBrand; })) {\n  const brandsFound = [...new Set(items.map(function(it) { return it.brand; }))].join(', ');\n  const msg = 'All items must belong to the same brand after correction. Found: ' + brandsFound;\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'BLOCKED',\n    reason: 'BRAND_MISMATCH',\n    message: msg,\n    issues: [{\n      issue_code: 'BRAND_MISMATCH',\n      severity: 'hard_block',\n      message: msg,\n      can_user_fix: false,\n      can_user_override: false\n    }],\n    correction_round: previous.correction_round\n  }}];\n}\n\n// Product type mismatch\nconst productTypes = items\n  .map(function(it) { return it.product_type ? it.product_type.toUpperCase().trim() : null; })\n  .filter(function(pt) { return pt !== null; });\nif (productTypes.length > 0) {\n  const firstType = productTypes[0];\n  if (productTypes.some(function(pt) { return pt !== firstType; })) {\n    const typesFound = [...new Set(productTypes)].join(', ');\n    const msg = 'All items must have the same product type. Found: ' + typesFound + '. Amazon cannot create a variation relationship between items of different product types.';\n    return [{ json: {\n      request_id: previous.request_id,\n      decision: 'BLOCKED',\n      reason: 'PRODUCT_TYPE_MISMATCH',\n      message: msg,\n      product_types_found: typesFound,\n      issues: [{\n        issue_code: 'PRODUCT_TYPE_MISMATCH',\n        severity: 'hard_block',\n        message: msg,\n        can_user_fix: false,\n        can_user_override: false\n      }],\n      correction_round: previous.correction_round\n    }}];\n  }\n}\n\n// Unsupported variation theme\nconst supportedThemes = {\n  'CLOTHING': ['Color', 'Size', 'ColorSize', 'SizeColor'],\n  'SHOES':    ['Size', 'Color', 'SizeColor'],\n  'JEWELRY':  ['Color', 'MetalType']\n};\nconst requestedTheme = merged.variation_theme;\nconst productType = items[0].product_type ? items[0].product_type.toUpperCase().trim() : null;\nif (requestedTheme && productType && supportedThemes[productType]) {\n  const allowed = supportedThemes[productType];\n  if (!allowed.includes(requestedTheme)) {\n    const msg = '\"' + requestedTheme + '\" is not a supported variation theme for ' + productType + '. Supported themes are: ' + allowed.join(', ') + '. Use real Product Type Definitions API in Week 6 for authoritative schema.';\n    return [{ json: {\n      request_id: previous.request_id,\n      decision: 'BLOCKED',\n      reason: 'UNSUPPORTED_VARIATION_THEME',\n      message: msg,\n      requested_theme: requestedTheme,\n      supported_themes: allowed,\n      issues: [{\n        issue_code: 'UNSUPPORTED_VARIATION_THEME',\n        severity: 'hard_block',\n        message: msg,\n        can_user_fix: false,\n        can_user_override: false\n      }],\n      correction_round: previous.correction_round\n    }}];\n  }\n}\n\n// Manual review — category mismatch\nconst categories = items\n  .map(function(it) { return it.category ? it.category.trim() : null; })\n  .filter(function(c) { return c !== null; });\nif (categories.length > 0) {\n  const firstCat = categories[0];\n  const catMismatch = categories.some(function(c) { return c !== firstCat; });\n  if (catMismatch) {\n    const catsFound = [...new Set(categories)].join(', ');\n    manualReviews.push({\n      issue_code: 'CATEGORY_MISMATCH',\n      severity: 'manual_review',\n      message: 'These items are in different Amazon categories: ' + catsFound + '. Review whether merging them is appropriate before continuing.',\n      categories_found: catsFound,\n      question_to_user: 'Items span multiple categories (' + catsFound + '). Are you sure these belong in the same variation family?',\n      can_user_fix: false,\n      can_user_override: true\n    });\n  }\n}\n\n// Manual review — existing parent conflict\nconst intendedParent = merged.intended_parent_sku || null;\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  if (item.parent_sku && intendedParent && item.parent_sku !== intendedParent) {\n    manualReviews.push({\n      issue_code: 'EXISTING_PARENT_CONFLICT',\n      severity: 'manual_review',\n      sku: item.sku,\n      existing_parent: item.parent_sku,\n      intended_parent: intendedParent,\n      message: item.sku + ' already belongs to parent ' + item.parent_sku + '. You must remove it from that family before adding it here.',\n      question_to_user: 'SKU ' + item.sku + ' is currently in parent family ' + item.parent_sku + '. Do you want to move it to the new parent?',\n      can_user_fix: false,\n      can_user_override: true\n    });\n  }\n}\n\n// Return manual reviews if any exist and not yet acknowledged\nif (manualReviews.length > 0 && !merged.acknowledged_manual_reviews) {\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'MANUAL_REVIEW',\n    issue_summary: manualReviews.length + ' item(s) require your review before continuing.',\n    manual_reviews: manualReviews,\n    issues: manualReviews,\n    next_action: 'Re-submit with acknowledged_manual_reviews: true in your corrections to proceed.',\n    correction_round: previous.correction_round,\n    merged_request: merged\n  }}];\n}\n\n// Formatting issues\nconst formattingMap = {\n  'extra large':  { canonical: 'XL',         field: 'size'  },\n  'extra-large':  { canonical: 'XL',         field: 'size'  },\n  'large':        { canonical: 'L',          field: 'size'  },\n  'medium':       { canonical: 'M',          field: 'size'  },\n  'small':        { canonical: 'S',          field: 'size'  },\n  'dark red':     { canonical: 'Dark Red',   field: 'color' },\n  'dark_red':     { canonical: 'Dark Red',   field: 'color' },\n  'light blue':   { canonical: 'Light Blue', field: 'color' },\n  'light_blue':   { canonical: 'Light Blue', field: 'color' }\n};\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const val = item.variation_value;\n  if (typeof val === 'string') {\n    const match = formattingMap[val.toLowerCase().trim()];\n    if (match && val !== match.canonical) {\n      issues.push({\n        issue_code: 'FORMATTING_ISSUE',\n        severity: 'fixable',\n        sku: item.sku,\n        current_value: val,\n        suggested_value: match.canonical,\n        field: match.field,\n        message: item.sku + ' has variation_value \"' + val + '\" which is not Amazon standard format.',\n        question_to_user: 'We noticed ' + item.sku + ' has value \"' + val + '\". Did you mean \"' + match.canonical + '\"? (Amazon standard format). Please confirm or provide the correct value.',\n        can_user_fix: true,\n        can_user_override: false\n      });\n    }\n  }\n}\n\n// Missing variation values\nif (merged.variation_structure === 'single_theme') {\n  for (let i = 0; i < items.length; i++) {\n    if (!items[i].variation_value) {\n      issues.push({\n        issue_code: 'MISSING_VARIATION_VALUE',\n        severity: 'fixable',\n        sku: items[i].sku,\n        message: items[i].sku + ' is still missing its variation value after correction.',\n        question_to_user: 'Please enter the variation value for ' + items[i].sku + '.',\n        can_user_fix: true,\n        can_user_override: false\n      });\n    }\n  }\n}\n\nif (issues.length > 0) {\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'NEEDS_INPUT',\n    issue_summary: issues.length + ' issue(s) still need your input after correction.',\n    issue_diagnosis: issues,\n    correction_round: previous.correction_round,\n    merged_request: merged\n  }}];\n}\n\nreturn [{ json: {\n  request_id: previous.request_id,\n  decision: 'CAN_CONTINUE_TO_DRY_RUN',\n  message: 'All corrections applied. Validation passed. Ready to continue.',\n  correction_round: previous.correction_round,\n  merged_request: merged\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1664,
+        -768
+      ],
+      "id": "851782f0-e409-4387-8e4e-e8ae1e1c0492",
+      "name": "Re-Validator"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -832,
+        -448
+      ],
+      "id": "f4cf70a3-77a5-4021-bf1a-1697930929ff",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst issueList = prev.issue_diagnosis || prev.issues || [];\nreturn [{ json: {\n  _original_payload: prev,\n  request_id: prev.request_id,\n  decision: prev.decision,\n  reason_code: prev.reason_code || issueList[0]?.issue_code || null,\n  issue_summary: prev.issue_summary || null,\n  hard_blocks_json: JSON.stringify(\n    issueList.filter(i => i.severity === 'hard_block')\n  ),\n  raw_result_json: JSON.stringify(prev),\n  issues_json: JSON.stringify(issueList),\n  next_action: prev.next_action || null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1872,
+        -448
+      ],
+      "id": "896eb833-4e43-4e06-9c5a-cfccf90c1f93",
+      "name": "WF02 Logger Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/validation_results",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"decision\": \"{{ $json.decision }}\",   \"reason_code\": \"{{ $json.reason_code }}\",   \"issue_summary\": \"{{ $json.issue_summary }}\",   \"hard_blocks_json\": {{ $json.hard_blocks_json }},   \"raw_result_json\": {{ $json.raw_result_json }} }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1664,
+        -448
+      ],
+      "id": "4060995e-2f7c-484f-91f4-6be92d66f740",
+      "name": "WF02 Log Validation Result",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('WF02 Logger Prep').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1456,
+        -448
+      ],
+      "id": "92257b5f-93d6-485d-b072-335d560a5bd5",
+      "name": "WF02 Restore After Validation Log"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/issue_diagnosis",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"issues_json\": {{ $json.issues_json }},   \"next_action\": \"{{ $json.next_action }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1248,
+        -448
+      ],
+      "id": "7684f101-fb7e-4c0f-a15a-fe32d17a3f6e",
+      "name": "WF02 Log Issue Diagnosis",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nconst body = $('Correction Merger').first().json;\n\nconst corrections = body.merged_request \n  ? body : \n  { corrections: {} };\n\nreturn [{ json: {\n  _original_payload: prev,\n  request_id: prev.request_id,\n  round_number: body.correction_round || 1,\n  corrections_json: JSON.stringify(\n    corrections.merged_request || {}\n  ),\n  revalidation_result: prev.decision\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1456,
+        -768
+      ],
+      "id": "dee4c22a-f5e3-4fb8-abce-be2ca0aca09e",
+      "name": "WF02 Correction Log Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/correction_logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"round_number\": {{ $json.round_number }},   \"corrections_json\": {{ $json.corrections_json }},   \"revalidation_result\": \"{{ $json.revalidation_result }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1248,
+        -768
+      ],
+      "id": "f51f95f3-fc5c-4c1c-8416-495041b11b1a",
+      "name": "WF02 Log Correction",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('WF02 Correction Log Prep').first().json;\nreturn [{ json: original._original_payload }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        -448
+      ],
+      "id": "559c36c5-a7b0-43e1-84ea-21d44204ba3d",
+      "name": "WF02 Restore After Correction Log"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('WF02 Restore After Validation Log').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        -448
+      ],
+      "id": "cc4476da-3392-4232-aa49-47283826affb",
+      "name": "WF02 Restore After Issue Diagnosis Log"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Correction Merger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Correction Merger": {
+      "main": [
+        [
+          {
+            "node": "Re-Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-Validator": {
+      "main": [
+        [
+          {
+            "node": "WF02 Correction Log Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "WF02 Log Validation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 Log Validation Result": {
+      "main": [
+        [
+          {
+            "node": "WF02 Restore After Validation Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 Restore After Validation Log": {
+      "main": [
+        [
+          {
+            "node": "WF02 Log Issue Diagnosis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 Log Issue Diagnosis": {
+      "main": [
+        [
+          {
+            "node": "WF02 Restore After Issue Diagnosis Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 Correction Log Prep": {
+      "main": [
+        [
+          {
+            "node": "WF02 Log Correction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 Log Correction": {
+      "main": [
+        [
+          {
+            "node": "WF02 Restore After Correction Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 Restore After Correction Log": {
+      "main": [
+        [
+          {
+            "node": "WF02 Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 Restore After Issue Diagnosis Log": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f64c62fe-7623-4b40-bed5-2c28328b450f",
+  "meta": {
+    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+  },
+  "nodeGroups": [],
+  "id": "VtDD4kut1OwyZHyE",
+  "tags": []
+}

@@ -1,0 +1,715 @@
+{
+  "name": "06 - Controlled Submission",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "1aa18f1f-9da6-47de-ad57-acbb00157221",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1152,
+        272
+      ],
+      "id": "b4330cb7-9843-4b73-9b3d-60342ca33d7d",
+      "name": "Webhook",
+      "webhookId": "1aa18f1f-9da6-47de-ad57-acbb00157221"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ENABLE_LIVE_SUBMISSION = 'false'; // Change to 'true' ONLY on Day 75\n\nconst body = $input.first().json.body || $input.first().json;\nconst requestId = body.request_id;\n\nif (!requestId) {\n  return [{ json: {\n    status: 'BLOCKED',\n    reason: 'MISSING_REQUEST_ID',\n    message: 'request_id is required to submit a feed.'\n  }}];\n}\n\nif (ENABLE_LIVE_SUBMISSION !== 'true') {\n  return [{ json: {\n    status: 'SUBMISSION_DISABLED',\n    request_id: requestId,\n    message: 'Live submission is disabled. Set ENABLE_LIVE_SUBMISSION to true in the Submission Gate code node only when you are deliberately ready to submit to Amazon.',\n    enable_live_submission_current_value: ENABLE_LIVE_SUBMISSION,\n    action_required: 'Do not change this value unless you have reviewed the payload preview, completed all 4 approval confirmations, and are ready for a controlled live test.'\n  }}];\n}\n\nreturn [{ json: {\n  status: 'GATE_PASSED',\n  request_id: requestId,\n  message: 'ENABLE_LIVE_SUBMISSION is true. Proceeding to submission gates.',\n  warning: 'This will submit a real feed to Amazon. Ensure all gates below pass before proceeding.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        272
+      ],
+      "id": "8d200612-d83f-461c-a5b2-3ae53d494f2f",
+      "name": "Submission Gate"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        800,
+        336
+      ],
+      "id": "a889d54f-157b-436a-b8fe-9a44d3d36697",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "url": "=https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $('Submission Gate').first().json.request_id }}&order=id.desc&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -720,
+        0
+      ],
+      "id": "1163801a-3aa2-458a-a4c6-2e2d4410e268",
+      "name": "Fetch Approval Status",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const submissionGate = $('Submission Gate').first().json;\nconst approvalRow = $input.first().json;\n\nif (!approvalRow || approvalRow.approval_status !== 'APPROVED_FOR_PAYLOAD_PREVIEW') {\n  return [{ json: {\n    status: 'BLOCKED',\n    gate: 'APPROVAL_GATE',\n    reason: 'APPROVAL_REQUIRED',\n    request_id: submissionGate.request_id,\n    message: 'This request has not been approved for payload preview. Complete the manual approval process in Workflow 04 before submitting.',\n    current_approval_status: approvalRow ? approvalRow.approval_status : 'no approval record found'\n  }}];\n}\n\nconst allConfirmations = \n  approvalRow.confirm_same_product_family === true &&\n  approvalRow.confirm_no_review_manipulation === true &&\n  approvalRow.confirm_understands_risk === true;\n\nif (!allConfirmations) {\n  return [{ json: {\n    status: 'BLOCKED',\n    gate: 'APPROVAL_GATE',\n    reason: 'MISSING_CONFIRMATIONS',\n    request_id: submissionGate.request_id,\n    message: 'One or more required approval confirmations are missing. All four confirmations must be true before submission.',\n    confirm_same_product_family: approvalRow.confirm_same_product_family,\n    confirm_no_review_manipulation: approvalRow.confirm_no_review_manipulation,\n    confirm_understands_risk: approvalRow.confirm_understands_risk\n  }}];\n}\n\nreturn [{ json: {\n  status: 'APPROVAL_GATE_PASSED',\n  request_id: submissionGate.request_id,\n  approved_by: approvalRow.approved_by,\n  approved_at: approvalRow.approved_at\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        0
+      ],
+      "id": "c36fc844-2ea6-445f-94a8-2c0d95dc5de1",
+      "name": "Approval Gate"
+    },
+    {
+      "parameters": {
+        "url": "=https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/payload_previews?request_id=eq.{{ $('Submission Gate').first().json.request_id }}&order=id.desc&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -32,
+        432
+      ],
+      "id": "79ea06ee-edc8-4841-9ef1-4d6ae2cd3c6f",
+      "name": "Fetch Payload Preview",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const submissionGate = $('Submission Gate').first().json;\nconst previewRow = $input.first().json;\n\nif (!previewRow || !previewRow.payload_status) {\n  return [{ json: {\n    status: 'BLOCKED',\n    gate: 'PAYLOAD_GATE',\n    reason: 'NO_PAYLOAD_PREVIEW',\n    request_id: submissionGate.request_id,\n    message: 'No payload preview found for this request. Run Workflow 05 to generate a preview before submitting.'\n  }}];\n}\n\nif (previewRow.payload_status !== 'PREVIEW_ONLY_NOT_SUBMITTED') {\n  return [{ json: {\n    status: 'BLOCKED',\n    gate: 'PAYLOAD_GATE',\n    reason: 'INVALID_PAYLOAD_STATUS',\n    request_id: submissionGate.request_id,\n    message: 'Payload preview status is not valid for submission. Expected PREVIEW_ONLY_NOT_SUBMITTED.',\n    current_status: previewRow.payload_status\n  }}];\n}\n\nlet jsonPayload = null;\ntry {\n  jsonPayload = typeof previewRow.json_payload === 'string'\n    ? JSON.parse(previewRow.json_payload)\n    : previewRow.json_payload;\n} catch(e) {\n  return [{ json: {\n    status: 'BLOCKED',\n    gate: 'PAYLOAD_GATE',\n    reason: 'INVALID_PAYLOAD_JSON',\n    request_id: submissionGate.request_id,\n    message: 'Payload JSON is malformed and cannot be submitted.'\n  }}];\n}\n\nreturn [{ json: {\n  status: 'ALL_GATES_PASSED',\n  request_id: submissionGate.request_id,\n  payload_preview_id: previewRow.id,\n  json_payload: jsonPayload,\n  message: 'All submission gates passed. Ready for feed document creation.',\n  warning: 'ENABLE_LIVE_SUBMISSION is true. Feed will be submitted to Amazon on the next step.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        832
+      ],
+      "id": "82691e54-6e20-4088-b35e-88403b71e7c5",
+      "name": "Payload Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "397a38d7-c976-4c94-bdcd-e1198992c5c8",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "GATE_PASSED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "5c536fb5-7e6c-4389-876f-a58143ff2b12",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -736,
+        256
+      ],
+      "id": "83956db7-9d21-4d90-b9fc-fc83d892ea25",
+      "name": "Submission Gate Check"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://amazon-variation-spapi-proxy-production.up.railway.app/feeds/create-document",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "{   \"marketplace_id\": \"ATVPDKIKX0DER\",   \"request_id\": \"{{ $('Submission Gate').first().json.request_id }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -256,
+        720
+      ],
+      "id": "8028af2e-9c6e-4b5d-85ce-e9219206f69c",
+      "name": "Create Feed Document",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.upload_url }}",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json; charset=UTF-8",
+        "body": "={{ JSON.stringify($('Payload Gate').first().json.json_payload) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -96,
+        720
+      ],
+      "id": "3aef81fe-e4b6-4bda-80e1-ff0721f4ddb4",
+      "name": "Upload to S3",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://amazon-variation-spapi-proxy-production.up.railway.app/feeds/submit",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"feed_document_id\": \"{{ $('Create Feed Document').first().json.feed_document_id }}\",   \"marketplace_id\": \"ATVPDKIKX0DER\",   \"request_id\": \"{{ $('Submission Gate').first().json.request_id }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        96,
+        720
+      ],
+      "id": "4b4d7a7a-30c8-46e7-ac01-7601aab90937",
+      "name": "Submit Feed"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/submission_logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"request_id\": \"{{ $json.request_id }}\",\n  \"feed_id\": \"{{ $json.feed_id }}\",\n  \"feed_document_id\": \"{{ $json.feed_document_id }}\",\n  \"submission_status\": \"{{ $json.submission_status }}\",\n  \"submitted_at\": \"{{ $json.submitted_at }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        720
+      ],
+      "id": "0101d842-6746-4822-addf-b921677174d3",
+      "name": "Log Submission"
+    },
+    {
+      "parameters": {
+        "url": "=https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/validation_results?request_id=eq.{{ $('Submission Gate').first().json.request_id }}&order=id.desc&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        80,
+        128
+      ],
+      "id": "2575d65d-adeb-434e-84b4-2764d925d431",
+      "name": "Fetch Validation Result",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const submissionGate = $('Submission Gate').first().json;\nconst validationRow = $input.first().json;\n\nif (!validationRow || !validationRow.decision) {\n  return [{ json: {\n    status: 'BLOCKED',\n    gate: 'VALIDATION_GATE',\n    reason: 'NO_VALIDATION_RECORD',\n    request_id: submissionGate.request_id,\n    message: 'No validation result found for this request. Run the request through Workflow 01 first.'\n  }}];\n}\n\nif (validationRow.decision === 'BLOCKED') {\n  return [{ json: {\n    status: 'BLOCKED',\n    gate: 'VALIDATION_GATE',\n    reason: 'HARD_BLOCKS_EXIST',\n    request_id: submissionGate.request_id,\n    message: 'This request has hard blocks and cannot be submitted. Fix the issues and revalidate.',\n    validation_decision: validationRow.decision\n  }}];\n}\n\nconst hardBlocks = Array.isArray(validationRow.hard_blocks_json)\n  ? validationRow.hard_blocks_json\n  : (validationRow.hard_blocks_json ? [validationRow.hard_blocks_json] : []);\n\nif (hardBlocks.length > 0) {\n  return [{ json: {\n    status: 'BLOCKED',\n    gate: 'VALIDATION_GATE',\n    reason: 'HARD_BLOCKS_EXIST',\n    request_id: submissionGate.request_id,\n    message: 'Hard blocks exist in the validation result. Cannot submit.',\n    hard_blocks: hardBlocks\n  }}];\n}\n\nreturn [{ json: {\n  status: 'VALIDATION_GATE_PASSED',\n  request_id: submissionGate.request_id,\n  validation_decision: validationRow.decision\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -496,
+        464
+      ],
+      "id": "729c9a26-535c-4a58-a2ce-ce1981c63f64",
+      "name": "Validation Gate"
+    },
+    {
+      "parameters": {
+        "jsCode": "const submitFeedResult = $input.first().json;\nconst createFeedResult = $('Create Feed Document').first().json;\nconst submissionGate = $('Submission Gate').first().json;\n\nreturn [{ json: {\n  request_id: submissionGate.request_id,\n  feed_id: submitFeedResult.feed_id || null,\n  feed_document_id: createFeedResult.feed_document_id || null,\n  submission_status: 'submitted',\n  submitted_at: new Date().toISOString()\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        720
+      ],
+      "id": "b8ff9ee4-a0ea-46d3-b763-1a7df93ee756",
+      "name": "Submission Logger Prep"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Submission Logger Prep').first().json;\nreturn [{ json: {\n  status: 'SUBMITTED',\n  request_id: original.request_id,\n  feed_id: original.feed_id,\n  feed_document_id: original.feed_document_id,\n  submission_status: original.submission_status,\n  submitted_at: original.submitted_at,\n  message: 'Feed successfully submitted to Amazon. Use Workflow 07 (Feed Poller) to check processing status.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        720
+      ],
+      "id": "8075e8cc-313f-4b9f-9de4-3693f68598c0",
+      "name": "Restore After Submission Log"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9f767abf-05c0-4ac6-9ee0-54ce6d2c1651",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "APPROVAL_GATE_PASSED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -256,
+        -16
+      ],
+      "id": "3019443b-fde3-4e0e-8f4b-47c9648b5f09",
+      "name": "Approval Gate Check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3eb2b23b-ef06-4dc8-9dfc-eb1de8422a7d",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "VALIDATION_GATE_PASSED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -304,
+        464
+      ],
+      "id": "c4022232-b46d-426f-8c7e-a4206d2fd99f",
+      "name": "Validation Gate Check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "96e01096-5af8-484b-94fd-b8087ab4b5df",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ALL_GATES_PASSED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -432,
+        1008
+      ],
+      "id": "c6eae756-3c7a-4c26-a09e-7637e8f9aaad",
+      "name": "Payload Gate Check"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Submission Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submission Gate": {
+      "main": [
+        [
+          {
+            "node": "Submission Gate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Approval Status": {
+      "main": [
+        [
+          {
+            "node": "Approval Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Gate": {
+      "main": [
+        [
+          {
+            "node": "Approval Gate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Payload Preview": {
+      "main": [
+        [
+          {
+            "node": "Payload Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Gate": {
+      "main": [
+        [
+          {
+            "node": "Payload Gate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submission Gate Check": {
+      "main": [
+        [
+          {
+            "node": "Fetch Approval Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Feed Document": {
+      "main": [
+        [
+          {
+            "node": "Upload to S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to S3": {
+      "main": [
+        [
+          {
+            "node": "Submit Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Feed": {
+      "main": [
+        [
+          {
+            "node": "Submission Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Submission": {
+      "main": [
+        [
+          {
+            "node": "Restore After Submission Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Validation Result": {
+      "main": [
+        [
+          {
+            "node": "Validation Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation Gate": {
+      "main": [
+        [
+          {
+            "node": "Validation Gate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Submission Log": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submission Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "Log Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Gate Check": {
+      "main": [
+        [
+          {
+            "node": "Fetch Validation Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation Gate Check": {
+      "main": [
+        [
+          {
+            "node": "Fetch Payload Preview",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Gate Check": {
+      "main": [
+        [
+          {
+            "node": "Create Feed Document",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "656cb65a-ea42-46a2-8b5e-dbfc69d57302",
+  "meta": {
+    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+  },
+  "nodeGroups": [],
+  "id": "ug7GHwcdVtMsfCWl",
+  "tags": []
+}

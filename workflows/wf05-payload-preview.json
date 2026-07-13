@@ -1,0 +1,480 @@
+{
+  "name": "05 - Payload Preview",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0d89c819-401f-41f7-baae-be858cb04f74",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1744,
+        -992
+      ],
+      "id": "0fd8486f-ffb9-4e6a-800e-d4b8ada84e64",
+      "name": "Webhook",
+      "webhookId": "0d89c819-401f-41f7-baae-be858cb04f74"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: {\n    decision: 'BLOCKED',\n    reason: 'MISSING_REQUEST_ID',\n    message: 'request_id is required.'\n  }}];\n}\n\nreturn [{ json: {\n  request_id: body.request_id,\n  decision: 'VALID_INPUT'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1488,
+        -992
+      ],
+      "id": "e3c718f2-270c-48a6-933a-25603c1a4cd2",
+      "name": "Payload Input Validator"
+    },
+    {
+      "parameters": {
+        "url": "=https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $json.request_id }}&select=approval_status&order=id.desc&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1280,
+        -992
+      ],
+      "id": "75f557b8-3f4a-4f75-bf89-8b0a4367b4f2",
+      "name": "Fetch Approval Status",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const approvalRaw = $input.first().json;\nconst prev = $('Payload Input Validator').first().json;\nconst approvalRow = Array.isArray(approvalRaw) ? (approvalRaw[0] || {}) : approvalRaw;\nconst approvalStatus = approvalRow.approval_status || '';\n\nif (approvalStatus !== 'APPROVED_FOR_PAYLOAD_PREVIEW') {\n  return [{ json: {\n    request_id: prev.request_id,\n    decision: 'BLOCKED',\n    reason: 'APPROVAL_REQUIRED',\n    message: 'This request has not been approved for payload preview. Current status: ' + (approvalStatus || 'not approved')\n  }}];\n}\n\nreturn [{ json: {\n  request_id: prev.request_id,\n  decision: 'APPROVAL_CONFIRMED',\n  approval_status: approvalStatus\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1072,
+        -992
+      ],
+      "id": "b1b6688d-6037-438e-a74b-df2ac6c18cf7",
+      "name": "Restore After Approval Fetch"
+    },
+    {
+      "parameters": {
+        "url": "=https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/merge_request_items?request_id=eq.{{ $json.request_id }}&select=asin,sku,variation_value,normalized_brand,normalized_product_type",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -864,
+        -992
+      ],
+      "id": "d939052d-8bc4-453d-8739-e57d22f9913f",
+      "name": "Fetch Items",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allInput = $input.all();\nconst prev = $('Restore After Approval Fetch').first().json;\n\nif (prev.decision === 'BLOCKED') {\n  return [{ json: prev }];\n}\n\n// Handle both possible n8n behaviors: the HTTP Request node may return the\n// JSON array response as ONE item (item.json = [...]), or n8n may split it\n// into multiple items (one item per array element, as we just confirmed\n// happens here). Handle both robustly so this can't silently drop rows.\nlet rawItems = [];\nif (allInput.length === 1 && Array.isArray(allInput[0].json)) {\n  rawItems = allInput[0].json;\n} else {\n  rawItems = allInput.map(function(i) { return i.json; });\n}\n\n// Defensive filter: skip any row missing sku or asin — a NULL/blank\n// database row should never reach the JSON_LISTINGS_FEED payload.\nconst items = rawItems.filter(function(item) {\n  return item && item.sku && item.asin;\n});\n\nconst skippedCount = rawItems.length - items.length;\n\nreturn [{ json: {\n  ...prev,\n  items: items,\n  skipped_invalid_items: skippedCount\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1680,
+        -608
+      ],
+      "id": "2c9e6205-a7e1-4b49-ad52-712a8261384c",
+      "name": "Restore After Items Fetch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const restored = $input.first().json;\nif (restored.decision === 'BLOCKED') {\n  return [{ json: restored }];\n}\n\nconst CANONICAL_VALUES_MAP = {\n  'extra small': 'XS',\n  'small': 'S',\n  'medium': 'M',\n  'large': 'L',\n  'extra large': 'XL',\n  'extra extra large': 'XXL',\n  'xxl': 'XXL'\n};\n\nfunction canonicalize(value) {\n  if (value === undefined || value === null || value === '') return value;\n  const trimmed = String(value).trim();\n  const lower = trimmed.toLowerCase();\n  if (CANONICAL_VALUES_MAP[lower]) return CANONICAL_VALUES_MAP[lower];\n  return trimmed;\n}\n\nconst THEME_ATTRIBUTE_MAP = {\n  Color: 'color_name',\n  Size: 'size_name',\n  Flavor: 'flavor_name',\n  Style: 'style_name',\n  Scent: 'scent_name',\n  Material: 'material_type'\n};\n\nconst items = restored.items || [];\nconst requestId = restored.request_id;\nconst parentSku = 'PARENT-' + requestId;\nconst brand = items[0]?.normalized_brand || 'UnknownBrand';\nconst productType = items[0]?.normalized_product_type || 'CLOTHING';\nconst variationStructure = restored.variation_structure || 'single_theme';\nconst matrixCells = restored.matrix_cells || null;\nconst validationErrors = [];\n\nlet themeName = restored.requested_variation_theme;\nif (!themeName) {\n  themeName = variationStructure === 'double_theme' ? 'ColorSize' : 'Color';\n  validationErrors.push('No requested_variation_theme found — defaulted to ' + themeName + '. Check merge_requests table for this request_id.');\n}\n\nconst parentObject = {\n  sku: parentSku,\n  productType: productType,\n  attributes: {\n    parentage_level: [{ value: 'parent' }],\n    child_relationship_type: [{ value: 'variation' }],\n    variation_theme: [{ name: themeName }],\n    brand: [{ value: brand }]\n  }\n};\n\nlet childObjects = [];\n\nif (variationStructure === 'double_theme') {\n  if (!matrixCells || !Array.isArray(matrixCells) || matrixCells.length === 0) {\n    validationErrors.push('Double-theme request has no matrix cells in variation_matrices table. Cannot build payload.');\n    return [{ json: {\n      request_id: requestId,\n      decision: 'BLOCKED',\n      reason: 'MISSING_MATRIX_CELLS',\n      message: 'No matrix cells found for this double-theme request. Run the validation workflow first to generate the matrix.',\n      validation_errors: validationErrors,\n      is_valid: false\n    }}];\n  }\n\n  const seenCombinations = {};\n  matrixCells.forEach(function(cell) {\n    if (cell.status !== 'filled') return;\n    const sizeVal = canonicalize(cell.size) || 'Unknown';\n    const colorVal = canonicalize(cell.color) || 'Unknown';\n    const combinationKey = sizeVal + '|' + colorVal;\n    if (seenCombinations[combinationKey]) {\n      validationErrors.push('Duplicate Size+Color combination: ' + sizeVal + ' / ' + colorVal + '. Cell: ' + cell.cell_id);\n    }\n    seenCombinations[combinationKey] = true;\n    childObjects.push({\n      sku: cell.sku,\n      parentSku: parentSku,\n      productType: productType,\n      attributes: {\n        parentage_level: [{ value: 'child' }],\n        child_parent_sku_relationship: [{\n          child_relationship_type: 'variation',\n          parent_sku: parentSku\n        }],\n        brand: [{ value: brand }],\n        size_name: [{ value: sizeVal }],\n        color_name: [{ value: colorVal }]\n      }\n    });\n  });\n\n} else {\n  const themeAttribute = THEME_ATTRIBUTE_MAP[themeName];\n  if (!themeAttribute) {\n    validationErrors.push('Variation theme \"' + themeName + '\" has no known Amazon attribute mapping — falling back to color_name.');\n  }\n  const attributeKey = themeAttribute || 'color_name';\n  childObjects = items.map(function(item) {\n    const attributes = {\n      parentage_level: [{ value: 'child' }],\n      child_parent_sku_relationship: [{\n        child_relationship_type: 'variation',\n        parent_sku: parentSku\n      }],\n      brand: [{ value: brand }]\n    };\n    attributes[attributeKey] = [{ value: canonicalize(item.variation_value) || 'Unknown' }];\n    return {\n      sku: item.sku,\n      parentSku: parentSku,\n      productType: productType,\n      attributes: attributes\n    };\n  });\n}\n\nconst jsonPayload = {\n  header: {\nsellerId: restored.seller_id || 'YOUR-SELLER-ID',\n    version: '2.0',\n    issueLocale: 'en_US'\n  },\n  body: {\n    operationType: 'UPDATE',\n    listings: [parentObject].concat(childObjects)\n  }\n};\n\nreturn [{ json: {\n  request_id: requestId,\n  decision: 'PAYLOAD_READY',\n  parent_sku: parentSku,\n  child_count: childObjects.length,\n  payload_type: 'JSON_LISTINGS_FEED',\n  payload_status: 'PREVIEW_ONLY_NOT_SUBMITTED',\n  json_payload: jsonPayload,\n  validation_errors: validationErrors,\n  is_valid: validationErrors.length === 0\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        -608
+      ],
+      "id": "e2d67dc0-ae65-4a22-82ba-0d354bc7985d",
+      "name": "Build Payload"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\n\nif (prev.decision === 'BLOCKED') {\n  return [{ json: prev }];\n}\n\nreturn [{ json: {\n  _original_payload: prev,\n  request_id: prev.request_id,\n  payload_type: prev.payload_type || 'JSON_LISTINGS_FEED',\n  payload_status: 'PREVIEW_ONLY_NOT_SUBMITTED',\n  json_payload: JSON.stringify(prev.json_payload || {}),\n  validation_result_json: JSON.stringify({ decision: prev.decision })\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        -608
+      ],
+      "id": "afeeb350-6aae-4333-ae56-c51349e02619",
+      "name": "Payload Logger Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/payload_previews",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"request_id\": \"{{ $json.request_id }}\",\n  \"payload_type\": \"{{ $json.payload_type }}\",\n  \"payload_status\": \"{{ $json.payload_status }}\",\n  \"json_payload\": {{ $json.json_payload }},\n  \"validation_result_json\": {{ $json.validation_result_json }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -224,
+        -608
+      ],
+      "id": "0569c8c5-ba7b-44e3-9667-490c72b4f7d4",
+      "name": "Log Payload Preview",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Payload Logger Prep').first().json;\nreturn [{ json: original._original_payload }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -608
+      ],
+      "id": "902819f4-d1ea-48cd-9abb-00efd0749ecd",
+      "name": "Restore After Payload Log"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        192,
+        -608
+      ],
+      "id": "d40f1b00-d042-4381-a227-9ad68753c1c5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "url": "=https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Payload Input Validator').first().json.request_id }}&order=id.desc&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1472,
+        -608
+      ],
+      "id": "6596345b-9aa7-4f20-8273-d05e86821519",
+      "name": "Fetch Merge Request",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const restored = $('Restore After Items Fetch').first().json;\n\nif (restored.decision === 'BLOCKED') {\n  return [{ json: restored }];\n}\n\nconst merge = $input.first().json || {};\nlet cells = merge.cells || null;\n\nif (typeof cells === 'string') {\n  try { cells = JSON.parse(cells); } catch(e) { cells = null; }\n}\n\nreturn [{ json: Object.assign({}, restored, {\n  requested_variation_theme: merge.requested_variation_theme || null,\n  variation_structure: merge.variation_structure || null,\n  seller_id: merge.seller_id || null\n}) }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1264,
+        -608
+      ],
+      "id": "ed70c254-b751-4e7a-9d1b-fc6857b50687",
+      "name": "Restore After Merge Fetch"
+    },
+    {
+      "parameters": {
+        "url": "=https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/variation_matrices?request_id=eq.{{ $('Payload Input Validator').first().json.request_id }}&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1056,
+        -608
+      ],
+      "id": "30a81be8-3a71-434a-b6a1-6f54db564ced",
+      "name": "Fetch Matrix",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const restored = $('Restore After Merge Fetch').first().json;\n\nif (restored.decision === 'BLOCKED') {\n  return [{ json: restored }];\n}\n\nconst matrixRow = $input.first().json || {};\nlet cells = matrixRow.cells || null;\n\nif (typeof cells === 'string') {\n  try { cells = JSON.parse(cells); } catch(e) { cells = null; }\n}\n\nreturn [{ json: Object.assign({}, restored, {\n  matrix_cells: cells\n}) }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        -608
+      ],
+      "id": "6a93af96-b775-44b4-b5d6-0fcd7d1c01e0",
+      "name": "Restore After Matrix Fetch"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Payload Input Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Input Validator": {
+      "main": [
+        [
+          {
+            "node": "Fetch Approval Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Approval Status": {
+      "main": [
+        [
+          {
+            "node": "Restore After Approval Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Approval Fetch": {
+      "main": [
+        [
+          {
+            "node": "Fetch Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Items": {
+      "main": [
+        [
+          {
+            "node": "Restore After Items Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Items Fetch": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Payload": {
+      "main": [
+        [
+          {
+            "node": "Payload Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "Log Payload Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Payload Preview": {
+      "main": [
+        [
+          {
+            "node": "Restore After Payload Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Payload Log": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Restore After Merge Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Merge Fetch": {
+      "main": [
+        [
+          {
+            "node": "Fetch Matrix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Matrix": {
+      "main": [
+        [
+          {
+            "node": "Restore After Matrix Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Matrix Fetch": {
+      "main": [
+        [
+          {
+            "node": "Build Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "3d862589-a65a-40e5-8bfb-05d2e6e621fa",
+  "meta": {
+    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+  },
+  "nodeGroups": [],
+  "id": "Ft11n6SBe758tjrH",
+  "tags": []
+}

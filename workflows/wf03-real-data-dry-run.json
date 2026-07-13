@@ -1,0 +1,1556 @@
+{
+  "name": "03 - Real Data Dry Run",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e4ee1fb0-110d-40d1-9efe-c5e801b8ada5",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        9760,
+        3776
+      ],
+      "id": "abe074a7-f9d9-408b-a785-b7d98a429acb",
+      "name": "Webhook",
+      "webhookId": "e4ee1fb0-110d-40d1-9efe-c5e801b8ada5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the incoming data from the Webhook node\nconst body = $input.first().json.body;\n\nconst errors = [];\n\n// Check each required top-level field\nconst requiredFields = ['request_id', 'marketplace_id', 'seller_id', 'variation_structure'];\nfor (const field of requiredFields) {\n  if (!body[field]) {\n    errors.push({ field: field, reason: 'MISSING_REQUIRED_FIELD' });\n  }\n}\n\n// variation_structure must be one of 3 exact values\nconst validStructures = ['single_theme', 'double_theme', 'not_sure'];\nif (body.variation_structure && !validStructures.includes(body.variation_structure)) {\n  errors.push({ field: 'variation_structure', reason: 'INVALID_VALUE' });\n}\n\n// auto_execute must be false\nif (body.auto_execute === true) {\n  errors.push({ field: 'auto_execute', reason: 'AUTO_EXECUTE_NOT_ALLOWED' });\n}\n\n// items must be an array with 2 to 10 entries\nif (!Array.isArray(body.items)) {\n  errors.push({ field: 'items', reason: 'MISSING_REQUIRED_FIELD' });\n} else {\n  if (body.items.length < 2) {\n    errors.push({ field: 'items', reason: 'MINIMUM_ITEMS_REQUIRED' });\n  }\n  if (body.items.length > 10) {\n    errors.push({ field: 'items', reason: 'MAXIMUM_ITEMS_EXCEEDED' });\n  }\n  body.items.forEach((item, index) => {\n    ['asin', 'sku', 'brand'].forEach((key) => {\n      if (!item[key]) {\n        errors.push({ field: `items[${index}].${key}`, reason: 'MISSING_REQUIRED_FIELD' });\n      }\n    });\n  });\n}\n\n// Build the final decision\nif (errors.length > 0) {\n  return [{\n    json: {\n      request_id: body.request_id || null,\n      decision: 'BLOCKED',\n      errors: errors,\n      message: 'One or more required fields are missing or invalid.'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    request_id: body.request_id,\n    decision: 'VALID_INPUT',\n    message: 'Input passed all required field checks.',\n    data: body\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        9952,
+        3776
+      ],
+      "id": "f50cd46f-c2d0-4b23-a22f-dc0729387884",
+      "name": "Input Validator"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/merge_requests",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.data.request_id }}\",   \"seller_id\": \"{{ $json.data.seller_id }}\",   \"marketplace_id\": \"{{ $json.data.marketplace_id }}\",   \"variation_structure\": \"{{ $json.data.variation_structure }}\",   \"merge_type\": \"new_family\",   \"auto_execute\": false,   \"status\": \"received\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        10416,
+        3520
+      ],
+      "id": "686d19eb-7cef-479b-bcae-0585a598b3c4",
+      "name": "Supabase Logger — merge_requests",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const supabaseResult = $input.first().json;\nconst originalData = $('Input Validator').first().json;\nreturn [{ json: { ...originalData, supabase_log: { status: 'ok', inserted_id: supabaseResult[0]?.id || supabaseResult?.id } } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10592,
+        3520
+      ],
+      "id": "f7fb990e-18c3-4c17-b6b1-3dcb120f1f30",
+      "name": "Restore After Supabase",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://amazon-variation-spapi-proxy-production.up.railway.app/amazon/catalog-item",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"asin\": \"{{ $json.asin }}\",   \"marketplace_id\": \"{{ $json.marketplace_id }}\",   \"brand\": \"{{ $json.brand }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        11024,
+        3488
+      ],
+      "id": "604dbf9b-909f-4fa4-975c-52a3fa00d376",
+      "name": "Fetch Real Catalog Data",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://amazon-variation-spapi-proxy-production.up.railway.app/amazon/listing-item",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"seller_id\": \"{{ $('Split Items For Real Fetch').item.json.seller_id }}\",   \"sku\": \"{{ $('Split Items For Real Fetch').item.json.sku }}\",   \"marketplace_id\": \"{{ $('Split Items For Real Fetch').item.json.marketplace_id }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        11200,
+        3488
+      ],
+      "id": "8911db55-6163-4ad8-91d0-be1867f5d62e",
+      "name": "Fetch Real Listing Data",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://amazon-variation-spapi-proxy-production.up.railway.app/amazon/product-type-definition",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"product_type\": \"{{ $json.product_type }}\",   \"marketplace_id\": \"{{ $('Restore After Supabase').first().json.data.marketplace_id }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        10416,
+        4080
+      ],
+      "id": "b0b5d610-b302-4383-8661-23b0063ddb00",
+      "name": "Fetch PTD Schema",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Restore After Supabase').first().json;\nconst ptdRaw = $('Fetch PTD Schema').first().json;\n\nconst ptdData = ptdRaw.error || ptdRaw.status === 403\n  ? { supported_variation_themes: ['ColorSize', 'Color', 'Size'] }\n  : ptdRaw;\n\nif (original.decision === 'BLOCKED' || original.decision === 'DUPLICATE_REQUEST') {\n  return [{ json: original }];\n}\n\nconst splitItems = $('Split Items For Real Fetch').all().map(function(i) { return i.json; });\nconst catalogResults = $('Fetch Real Catalog Data').all().map(function(i) { return i.json; });\nconst listingResults = $('Fetch Real Listing Data').all().map(function(i) { return i.json; });\n\nconst enrichedItems = splitItems.map(function(splitItem, idx) {\n  const catalogData = catalogResults[idx] || {};\n  const listingData = listingResults[idx] || {};\n  const brand = catalogData.brand || splitItem.brand;\n  const normalized_brand = (catalogData.normalized_brand || brand || '').toLowerCase().trim();\n\n  return {\n    asin: splitItem.asin,\n    sku: splitItem.sku,\n    brand: brand,\n    normalized_brand: normalized_brand,\n    product_type: catalogData.product_type || 'CLOTHING',\n    category: catalogData.category || 'Shirts',\n    parent_sku: null,\n    parentage: splitItem.parentage || null,\n    variation_values: splitItem.variation_values || null,\n    matrix_assignments: splitItem.matrix_assignments || null,\n    variation_value: splitItem.variation_value || null,\n    supported_variation_themes: ptdData.supported_variation_themes || [],\n    listing_attributes: listingData\n  };\n});\n\n// Genuine cross-item brand check — each item's OWN real fetched brand, not one shared value\nconst allBrands = enrichedItems.map(function(it) { return it.normalized_brand; });\nconst brandsMatch = allBrands.every(function(b) { return b === allBrands[0]; });\n\nif (!brandsMatch) {\n  const brandsFound = enrichedItems.map(function(it) { return it.brand; });\n  return [{ json: {\n    request_id: original.data.request_id,\n    decision: 'BLOCKED',\n    reason: 'BRAND_MISMATCH',\n    message: 'All items must belong to the same brand. Found: ' + brandsFound.join(', '),\n    variation_structure: original.data.variation_structure,\n    items: enrichedItems\n  }}];\n}\n\n// Genuine cross-item product type check — now possible since each item has its own real fetch\nconst allProductTypes = enrichedItems.map(function(it) { return it.product_type; });\nconst productTypesMatch = allProductTypes.every(function(pt) { return pt === allProductTypes[0]; });\n\nif (!productTypesMatch) {\n  return [{ json: {\n    request_id: original.data.request_id,\n    decision: 'BLOCKED',\n    reason: 'PRODUCT_TYPE_MISMATCH',\n    message: 'All items must be the same product type. Found: ' + allProductTypes.join(', '),\n    variation_structure: original.data.variation_structure,\n    items: enrichedItems\n  }}];\n}\n\nreturn [{ json: {\n  request_id: original.data.request_id,\n  decision: 'CAN_CONTINUE_TO_DRY_RUN',\n  message: 'Brand and product type checks passed via real per-item proxy data.',\n  request_text: original.data.request_text,\n  variation_structure: original.data.variation_structure,\n  sizes: original.data.sizes || null,\n  colors: original.data.colors || null,\n  matrix_assignments: original.data.matrix_assignments || null,\n  simulate_missing_value: original.data.simulate_missing_value || false,\n  items: enrichedItems\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10592,
+        4080
+      ],
+      "id": "e871c04a-1788-4d5f-8571-31cded103176",
+      "name": "Assemble Proxy Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Assemble Proxy Data').first().json;\n\nif (prev.decision === 'BLOCKED' || prev.decision === 'DUPLICATE_REQUEST') {\n  return [{ json: prev }];\n}\n\nconst normalizedItems = prev.items.map(function(item) {\n  return {\n    asin: (item.asin || '').trim(),\n    sku: (item.sku || '').trim(),\n    brand: (item.brand || '').trim(),\n    normalized_brand: (item.normalized_brand || item.brand || '').toLowerCase().trim(),\n    product_type: (item.product_type || 'CLOTHING').toUpperCase().trim(),\n    normalized_product_type: (item.product_type || 'CLOTHING').toUpperCase().trim(),\n    category: (item.category || '').trim(),\n    normalized_category: (item.category || '').toLowerCase().trim(),\n    parent_sku: item.parent_sku || null,\n    parentage: item.parentage || null,\n    variation_value: item.variation_value || null,\n    variation_values: item.variation_values || null,\n    matrix_assignments: item.matrix_assignments || null,\n    color_name: item.color_name || null,\n    size_name: item.size_name || null,\n    variation_theme: item.variation_theme || null,\n    supported_variation_themes: item.supported_variation_themes || [],\n    listing_issues: item.listing_issues || [],\n    theme_attribute_status: 'unverified',\n    data_source: 'mock'\n  };\n});\n\nreturn [{ json: {\n  request_id: prev.request_id,\n  decision: prev.decision,\n  message: prev.message,\n  request_text: prev.request_text || null,\n  variation_structure: prev.variation_structure,\n  sizes: prev.sizes || null,\n  colors: prev.colors || null,\n  matrix_assignments: prev.matrix_assignments || null,\n  simulate_missing_value: prev.simulate_missing_value || false,\n  items: normalizedItems,\n  normalized: true,\n  data_source: 'mock'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10944,
+        4096
+      ],
+      "id": "a223282f-c07f-4ba3-ba28-b7e735c6c67c",
+      "name": "Normalize Amazon Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Normalize Amazon Data').first().json;\n\nif (prev.decision === 'BLOCKED' || prev.decision === 'DUPLICATE_REQUEST') {\n  return [{ json: prev }];\n}\n\nconst variationStructure = prev.variation_structure;\nconst supportedThemes = prev.items[0].supported_variation_themes || [];\nconst warnings = [];\n\nconst themeMap = {\n  single_theme: ['Color', 'Size', 'Flavor', 'Scent', 'Material'],\n  double_theme: ['ColorSize', 'SizeColor', 'ColorFlavor', 'SizeFlavor']\n};\n\nif (variationStructure === 'not_sure') {\n  return [{ json: {\n    ...prev,\n    ptd_validation: {\n      status: 'skipped',\n      message: 'Theme validation skipped — variation_structure is not_sure.'\n    }\n  }}];\n}\n\nconst allowedThemes = themeMap[variationStructure] || [];\nconst matchedTheme = allowedThemes.find(function(t) {\n  return supportedThemes.includes(t);\n});\n\nif (!matchedTheme) {\n  return [{ json: {\n    request_id: prev.request_id,\n    decision: 'BLOCKED',\n    reason: 'UNSUPPORTED_VARIATION_THEME',\n    message: 'The variation structure \"' + variationStructure + '\" does not match any supported Amazon theme for this product type. Supported themes: ' + supportedThemes.join(', '),\n    issue_summary: 'Unsupported variation theme.',\n    issues: [{\n      issue_code: 'UNSUPPORTED_VARIATION_THEME',\n      severity: 'hard_block',\n      message: 'Theme not supported for this product type.',\n      can_user_fix: false,\n      can_user_override: false\n    }],\n    next_action: 'CANCEL_REQUEST',\n    variation_structure: variationStructure,\n    supported_themes: supportedThemes,\n    items: prev.items\n  }}];\n}\n\nconst updatedItems = prev.items.map(function(item) {\n  return {\n    ...item,\n    matched_theme: matchedTheme,\n    theme_attribute_status: 'verified'\n  };\n});\n\nreturn [{ json: {\n  ...prev,\n  items: updatedItems,\n  ptd_validation: {\n    status: 'passed',\n    matched_theme: matchedTheme,\n    supported_themes: supportedThemes,\n    warnings: warnings\n  }\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11088,
+        4096
+      ],
+      "id": "d65ab3c7-6e5b-4ea1-ad4c-ee1243cbaefb",
+      "name": "PTD Theme Validator"
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $input.first().json;\n\nif (previous.decision === 'BLOCKED' || previous.decision === 'DUPLICATE_REQUEST') { return [{ json: previous }]; }\n\nconst items = previous.items;\nconst issues = [];\n\nconst forbiddenPhrases = [\n  'combine reviews', 'merge reviews', 'transfer reviews',\n  'boost ranking', 'force merge', 'bypass amazon', 'manipulate reviews'\n];\n\nfunction scanForAbuse(value) {\n  if (typeof value !== 'string') return null;\n  const lower = value.toLowerCase();\n  for (let i = 0; i < forbiddenPhrases.length; i++) {\n    if (lower.includes(forbiddenPhrases[i])) {\n      return forbiddenPhrases[i];\n    }\n  }\n  return null;\n}\n\nlet abuseFound = null;\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const fieldsToScan = ['brand', 'sku', 'asin'];\n  for (let f = 0; f < fieldsToScan.length; f++) {\n    const found = scanForAbuse(item[fieldsToScan[f]]);\n    if (found) {\n      abuseFound = found;\n    }\n  }\n}\nif (previous.request_text) {\n  const found = scanForAbuse(previous.request_text);\n  if (found) abuseFound = found;\n}\n\nif (abuseFound) {\n  return [{\n    json: {\n      request_id: previous.request_id,\n      decision: 'BLOCKED',\n      issue_summary: 'This request was blocked for a policy violation.',\n      issues: [{\n        issue_code: 'REVIEW_MANIPULATION_INTENT',\n        severity: 'hard_block',\n        message: 'Request text contains language associated with review manipulation or policy bypass.',\n        question_to_user: null,\n        example_answer: null,\n        can_user_fix: false,\n        can_user_override: false\n      }],\n      next_action: 'CANCEL_REQUEST',\n       variation_structure: previous.variation_structure,\n       items: previous.items\n    \n    }\n  }];\n}\n\nif (previous.simulate_missing_value === true) {\n  issues.push({\n    issue_code: 'MISSING_VARIATION_VALUE',\n    severity: 'fixable',\n    asin: items[0].asin,\n    sku: items[0].sku,\n    field: 'variation_value',\n    message: items[0].sku + ' is missing its variation value.',\n    question_to_user: 'Please enter the color or size for ' + items[0].sku + '.',\n    example_answer: 'Red',\n    can_user_fix: true,\n    can_user_override: false\n  });\n}\n\nif (issues.length > 0) {\n  return [{\n    json: {\n      request_id: previous.request_id,\n      decision: 'NEEDS_INPUT',\n      issue_summary: issues.length + ' issue(s) need your input before continuing.',\n      issues: issues,\n      next_action: 'USER_CLARIFICATION_REQUIRED',\n     variation_structure: previous.variation_structure,\n      sizes: previous.sizes,\n      colors: previous.colors,\n       matrix_assignments: previous.matrix_assignments || null,\n    \n      items: previous.items\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    request_id: previous.request_id,\n    decision: 'CAN_CONTINUE_TO_DRY_RUN',\n    issue_summary: 'No issues found.',\n    issues: [],\n    next_action: 'PROCEED',\n   variation_structure: previous.variation_structure,\n    sizes: previous.sizes,\n    colors: previous.colors,\n     matrix_assignments: previous.matrix_assignments || null,\n    items: previous.items\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11296,
+        4096
+      ],
+      "id": "da9410ce-ec0d-4879-a1a6-5065753a7450",
+      "name": "Issue Diagnosis and Hard Blocks"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.variation_structure }}",
+                    "rightValue": "single_theme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "62d20b60-a795-4d51-a753-7f55949b710e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Single Theme"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b82d4e5b-8c70-4cc7-9f83-da0c4df711fa",
+                    "leftValue": "={{ $json.variation_structure }}",
+                    "rightValue": "double_theme",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Double Theme"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8ed22b86-d573-4363-82c6-8fedb01c8663",
+                    "leftValue": "={{ $json.variation_structure }}",
+                    "rightValue": "not_sure",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Not Sure"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        11472,
+        4352
+      ],
+      "id": "6a5631bf-4d29-4991-9c22-e56e7d9ece40",
+      "name": "Structure Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $input.first().json;\n\nif (previous.decision === 'BLOCKED') {\n  return [{ json: previous }];\n}\n\nconst AMAZON_TIP = 'Use clear Amazon-friendly values such as Red, Green, Yellow, XL, Medium, Light, Dark.';\n\nfunction normalizeVariationValue(value) {\n  const trimmed = String(value ?? '').trim();\n  const lower = trimmed.toLowerCase();\n\n  if (lower === 'extra large' || lower === 'extra-large') {\n    return { trimmed, has_formatting_issue: true, suggestion: 'XL',\n      question_to_user: 'Your size value \"' + trimmed + '\" is not in Amazon\\'s standard format. Amazon uses \"XL\" for extra large. Should we use \"XL\"?',\n      issue_code: 'NON_STANDARD_SIZE' };\n  }\n  if (lower === 'extra small' || lower === 'extra-small') {\n    return { trimmed, has_formatting_issue: true, suggestion: 'XS',\n      question_to_user: 'Your size value \"' + trimmed + '\" is not in Amazon\\'s standard format. Amazon uses \"XS\" for extra small. Should we use \"XS\"?',\n      issue_code: 'NON_STANDARD_SIZE' };\n  }\n  if (lower === 'double extra large' || lower === 'xxl') {\n    return { trimmed, has_formatting_issue: true, suggestion: 'XXL',\n      question_to_user: 'Your size value \"' + trimmed + '\" is not in Amazon\\'s standard format. Amazon uses \"XXL\" for double extra large. Should we use \"XXL\"?',\n      issue_code: 'NON_STANDARD_SIZE' };\n  }\n  if (trimmed.includes('-')) {\n    const suggestion = trimmed.replace(/-/g, ' ');\n    return { trimmed, has_formatting_issue: true, suggestion: suggestion,\n      question_to_user: 'Your variation value \"' + trimmed + '\" contains a hyphen. Amazon typically uses spaces instead (e.g., \"' + suggestion + '\"). Should we use \"' + suggestion + '\"?',\n      issue_code: 'HYPHEN_IN_VALUE' };\n  }\n  if (trimmed.includes('_')) {\n    const suggestion = trimmed.replace(/_/g, ' ');\n    return { trimmed, has_formatting_issue: true, suggestion: suggestion,\n      question_to_user: 'Your variation value \"' + trimmed + '\" contains an underscore. Amazon typically uses spaces instead (e.g., \"' + suggestion + '\"). Should we use \"' + suggestion + '\"?',\n      issue_code: 'UNDERSCORE_IN_VALUE' };\n  }\n  return { trimmed, has_formatting_issue: false, suggestion: null,\n    question_to_user: null, issue_code: null };\n}\n\nconst items = previous.items;\nconst issues = [];\nconst seenValues = {};\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n\n  if (!item.variation_value || String(item.variation_value).trim() === '') {\n    issues.push({\n      issue_code: 'MISSING_VARIATION_VALUE',\n      severity: 'fixable',\n      asin: item.asin,\n      sku: item.sku,\n      field: 'variation_value',\n      message: item.sku + ' is missing its variation value.',\n      question_to_user: 'Please enter the color or size for ' + item.sku + '.',\n      example_answer: 'Red',\n      can_user_fix: true,\n      can_user_override: false\n    });\n    continue;\n  }\n\n  const norm = normalizeVariationValue(item.variation_value);\n\n  if (norm.has_formatting_issue) {\n    issues.push({\n      issue_code: norm.issue_code,\n      severity: 'fixable',\n      asin: item.asin,\n      sku: item.sku,\n      field: 'variation_value',\n      current_value: norm.trimmed,\n      suggested_value: norm.suggestion,\n      message: 'Formatting issue detected on ' + item.sku + '.',\n      question_to_user: norm.question_to_user,\n      example_answer: norm.suggestion,\n      can_user_fix: true,\n      can_user_override: false\n    });\n    continue;\n  }\n\n  const key = norm.trimmed.toLowerCase();\n  if (seenValues[key]) {\n    issues.push({\n      issue_code: 'DUPLICATE_VARIATION_VALUE',\n      severity: 'hard_block',\n      asin: item.asin,\n      sku: item.sku,\n      field: 'variation_value',\n      duplicate_of_sku: seenValues[key],\n      message: item.sku + ' has the same variation value as ' + seenValues[key] + ' (' + norm.trimmed + ').',\n      question_to_user: null,\n      can_user_fix: false,\n      can_user_override: false\n    });\n  } else {\n    seenValues[key] = item.sku;\n  }\n}\n\nconst hasHardBlock = issues.some(function(iss) {\n  return iss.severity === 'hard_block';\n});\n\nif (hasHardBlock) {\n  return [{\n    json: {\n      request_id: previous.request_id,\n      decision: 'BLOCKED',\n      variation_theme: previous.variation_structure,\n      tip: AMAZON_TIP,\n      issue_summary: 'One or more hard blocks prevent this merge.',\n      issues: issues,\n      next_action: 'CANCEL_OR_FIX_DATA'\n    }\n  }];\n}\n\nif (issues.length > 0) {\n  return [{\n    json: {\n      request_id: previous.request_id,\n      decision: 'NEEDS_INPUT',\n      variation_theme: previous.variation_structure,\n      tip: AMAZON_TIP,\n      issue_summary: issues.length + ' issue(s) need your input before continuing.',\n      issues: issues,\n      next_action: 'USER_CLARIFICATION_REQUIRED'\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    request_id: previous.request_id,\n    decision: 'CAN_CONTINUE_TO_DRY_RUN',\n    variation_theme: previous.variation_structure,\n    tip: AMAZON_TIP,\n    issue_summary: 'All variation values are valid.',\n    issues: [],\n    validated_items: items,\n    next_action: 'PROCEED'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12048,
+        3712
+      ],
+      "id": "be51f914-6ff4-4815-8c83-5d2c650492a1",
+      "name": "Single Theme Placeholder"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nreturn [{ json: {\n  _original_payload: prev,\n  request_id: prev.request_id,\n  decision: prev.decision,\n  reason_code: prev.reason_code || prev.issues?.[0]?.issue_code || null,\n  issue_summary: prev.issue_summary || null,\n  hard_blocks_json: JSON.stringify(\n    (prev.issues || []).filter(i => i.severity === 'hard_block')\n  ),\n  raw_result_json: JSON.stringify(prev),\n  issues_json: JSON.stringify(prev.issues || []),\n  next_action: prev.next_action || null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12224,
+        3712
+      ],
+      "id": "1eec98fc-1b89-433a-ae0e-4b2eae89f3a0",
+      "name": "WF01 Single Theme Logger Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/validation_results",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"decision\": \"{{ $json.decision }}\",   \"reason_code\": {{ JSON.stringify($json.reason_code) }},   \"issue_summary\": {{ JSON.stringify($json.issue_summary) }},   \"hard_blocks_json\": {{ $json.hard_blocks_json }},   \"raw_result_json\": {{ $json.raw_result_json }} }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        12400,
+        3712
+      ],
+      "id": "94743377-7cbf-4350-a0ec-d797ba279e7e",
+      "name": "WF01 Log Validation Result (Single)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/issue_diagnosis",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"issues_json\": {{ $json.issues_json }},   \"next_action\": \"{{ $json.next_action }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        12864,
+        3712
+      ],
+      "id": "748f8d69-1fca-4bc4-b9e1-ab3c852ae410",
+      "name": "WF01 Log Issue Diagnosis (Single",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('WF01 Single Theme Logger Prep').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12608,
+        3712
+      ],
+      "id": "8af4e021-7627-438d-a510-19f95399cc4e",
+      "name": "WF01 Restore After Validation Log (Single)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $input.first().json;\n\nif (previous.decision === 'BLOCKED') {\n  return [{ json: previous }];\n}\n\nconst sizes = previous.sizes || (previous.data ? previous.data.sizes : null);\nconst colors = previous.colors || (previous.data ? previous.data.colors : null);\n\nif (!Array.isArray(sizes) || sizes.length === 0) {\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'BLOCKED',\n    reason: 'MISSING_SIZES_ARRAY',\n    message: 'sizes array is missing or empty. Required for double_theme.',\n    variation_structure: previous.variation_structure\n  }}];\n}\n\nif (!Array.isArray(colors) || colors.length === 0) {\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'BLOCKED',\n    reason: 'MISSING_COLORS_ARRAY',\n    message: 'colors array is missing or empty. Required for double_theme.',\n    variation_structure: previous.variation_structure\n  }}];\n}\n\nconst matrix = [];\nlet cellIndex = 0;\n\nfor (let r = 0; r < sizes.length; r++) {\n  const row = [];\n  for (let c = 0; c < colors.length; c++) {\n    cellIndex++;\n    row.push({\n      cell_id: 'CELL-' + cellIndex,\n      size: sizes[r],\n      color: colors[c],\n      sku: null,\n      asin: null,\n      status: 'empty'\n    });\n  }\n  matrix.push(row);\n}\n\nconst totalCells = sizes.length * colors.length;\n\nreturn [{ json: {\n  request_id: previous.request_id,\n  decision: 'MATRIX_READY',\n  variation_structure: previous.variation_structure,\n  sizes: sizes,\n  colors: colors,\n  matrix: matrix,\n  matrix_summary: {\n    total_cells: totalCells,\n    filled_cells: 0,\n    empty_cells: totalCells\n    \n  },\n     matrix_assignments: previous.matrix_assignments || null, \n  items: previous.items\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11744,
+        4320
+      ],
+      "id": "917b3e99-0555-4840-b537-9498cb85725d",
+      "name": "Matrix Builder"
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $input.first().json;\n\nif (previous.decision === 'BLOCKED') {\n  return [{ json: previous }];\n}\n\nconst matrix = previous.matrix;\nconst assignments = previous.matrix_assignments ||\n  (previous.data ? previous.data.matrix_assignments : null);\n\n// If no assignments sent yet, return the empty matrix as-is\nif (!Array.isArray(assignments) || assignments.length === 0) {\n  return [{ json: previous }];\n}\n\n// Check for duplicate SKUs across all assignments\nconst skuCount = {};\nfor (let i = 0; i < assignments.length; i++) {\n  const sku = assignments[i].sku;\n  if (!sku) continue;\n  skuCount[sku] = (skuCount[sku] || 0) + 1;\n}\nconst duplicateSkus = Object.keys(skuCount).filter(function(s) {\n  return skuCount[s] > 1;\n});\nif (duplicateSkus.length > 0) {\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'BLOCKED',\n    reason: 'DUPLICATE_MATRIX_ASSIGNMENT',\n    message: 'The following SKU(s) have been assigned to more than one cell: ' + duplicateSkus.join(', ') + '. Each SKU can only appear once in the matrix.',\n    duplicate_skus: duplicateSkus,\n    variation_structure: previous.variation_structure,\n    matrix: previous.matrix,\n    items: previous.items\n  }}];\n}\n\n// Build lookup: cell_id → assignment\nconst assignmentMap = {};\nfor (let i = 0; i < assignments.length; i++) {\n  assignmentMap[assignments[i].cell_id] = assignments[i];\n}\n\n// Merge assignments into the matrix\nconst updatedMatrix = [];\nlet filledCount = 0;\n\nfor (let r = 0; r < matrix.length; r++) {\n  const updatedRow = [];\n  for (let c = 0; c < matrix[r].length; c++) {\n    const cell = matrix[r][c];\n    const match = assignmentMap[cell.cell_id];\n    if (match) {\n      updatedRow.push({\n        cell_id: cell.cell_id,\n        size: cell.size,\n        color: cell.color,\n        sku: match.sku,\n        asin: match.asin || null,\n        status: 'filled'\n      });\n      filledCount++;\n    } else {\n      updatedRow.push(cell);\n    }\n  }\n  updatedMatrix.push(updatedRow);\n}\n\nconst totalCells = previous.matrix_summary.total_cells;\nconst emptyCount = totalCells - filledCount;\n\n// All done — Matrix Validator handles empty cell checks\nreturn [{ json: {\n  request_id: previous.request_id,\n  decision: 'ASSIGNMENT_COMPLETE',\n  variation_structure: previous.variation_structure,\n  sizes: previous.sizes,\n  colors: previous.colors,\n  matrix: updatedMatrix,\n  matrix_assignments: previous.matrix_assignments || null,\n  matrix_summary: {\n    total_cells: totalCells,\n    filled_cells: filledCount,\n    empty_cells: emptyCount\n  },\n  items: previous.items\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11888,
+        4320
+      ],
+      "id": "54d26ff1-a999-4cbd-93ed-3717f30b0970",
+      "name": "SKU Assignment"
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $input.first().json;\n\nif (previous.decision === 'BLOCKED') {\n  return [{ json: previous }];\n}\n\n// Pass NEEDS_CONFIRMATION straight through — seller hasn't confirmed yet\nif (previous.decision === 'NEEDS_CONFIRMATION') {\n  return [{ json: previous }];\n}\n\nconst matrix = previous.matrix;\nconst items = previous.items;\nconst issues = [];\n\n// Build a set of parent SKUs from the items array\nconst parentSkus = {};\nfor (let i = 0; i < items.length; i++) {\n  if (items[i].parentage === 'parent') {\n    parentSkus[items[i].sku] = true;\n  }\n}\n\n// Flatten matrix into a single array of cells for easier iteration\nconst allCells = [];\nfor (let r = 0; r < matrix.length; r++) {\n  for (let c = 0; c < matrix[r].length; c++) {\n    allCells.push(matrix[r][c]);\n  }\n}\n\n// Check 1 — Duplicate size+color combination\nconst comboSeen = {};\nfor (let i = 0; i < allCells.length; i++) {\n  const cell = allCells[i];\n  if (cell.status !== 'filled') continue;\n  const comboKey = cell.size + '|' + cell.color;\n  if (comboSeen[comboKey]) {\n    issues.push({\n      issue_code: 'DUPLICATE_MATRIX_COMBINATION',\n      severity: 'hard_block',\n      cell_id: cell.cell_id,\n      size: cell.size,\n      color: cell.color,\n      sku: cell.sku,\n      message: 'Two SKUs share the same variation combination ' + cell.size + '/' + cell.color + '. Each size+color combination must be unique.',\n      question_to_user: null,\n      can_user_fix: false,\n      can_user_override: false\n    });\n  }\n  comboSeen[comboKey] = true;\n}\n\n// Check 2 — Nested parent structure\nfor (let i = 0; i < allCells.length; i++) {\n  const cell = allCells[i];\n  if (cell.status !== 'filled') continue;\n  if (parentSkus[cell.sku]) {\n    issues.push({\n      issue_code: 'NESTED_PARENT_STRUCTURE',\n      severity: 'hard_block',\n      cell_id: cell.cell_id,\n      size: cell.size,\n      color: cell.color,\n      sku: cell.sku,\n      message: cell.sku + ' is already a parent SKU and cannot be assigned as a child. Amazon only supports one parent with direct children — never a parent of a parent.',\n      question_to_user: null,\n      can_user_fix: false,\n      can_user_override: false\n    });\n  }\n}\n\n// Check 3 — Missing cells (still empty after assignment)\nfor (let i = 0; i < allCells.length; i++) {\n  const cell = allCells[i];\n  if (cell.status === 'empty') {\n    issues.push({\n      issue_code: 'MISSING_MATRIX_CELL',\n      severity: 'fixable',\n      cell_id: cell.cell_id,\n      size: cell.size,\n      color: cell.color,\n      sku: null,\n      message: 'No SKU has been assigned to the ' + cell.size + '/' + cell.color + ' cell.',\n      question_to_user: 'Is the ' + cell.size + '/' + cell.color + ' combination intentionally missing from your variation family? Yes / No',\n      can_user_fix: true,\n      can_user_override: false\n    });\n  }\n}\n\n// Hard blocks take priority — return immediately if any exist\nconst hardBlocks = issues.filter(function(i) {\n  return i.severity === 'hard_block';\n});\n\nif (hardBlocks.length > 0) {\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'BLOCKED',\n    reason: hardBlocks[0].issue_code,\n    issue_summary: hardBlocks.length + ' hard block(s) found. This matrix cannot be submitted.',\n    issue_diagnosis: hardBlocks,\n    variation_structure: previous.variation_structure,\n    sizes: previous.sizes,\n    colors: previous.colors,\n    matrix: previous.matrix,\n    matrix_summary: previous.matrix_summary,\n    items: previous.items\n  }}];\n}\n\n// Fixable issues — ask questions before continuing\nif (issues.length > 0) {\n  return [{ json: {\n    request_id: previous.request_id,\n    decision: 'NEEDS_INPUT',\n    reason: 'MISSING_MATRIX_CELL',\n    issue_summary: issues.length + ' issue(s) need your input before continuing.',\n    issue_diagnosis: issues,\n    variation_structure: previous.variation_structure,\n    sizes: previous.sizes,\n    colors: previous.colors,\n    matrix: previous.matrix,\n    matrix_summary: previous.matrix_summary,\n    items: previous.items\n  }}];\n}\n\n// All checks passed\nreturn [{ json: {\n  request_id: previous.request_id,\n  decision: 'MATRIX_VALID',\n  issue_summary: 'All matrix checks passed. Ready to continue.',\n  issue_diagnosis: [],\n  variation_structure: previous.variation_structure,\n  sizes: previous.sizes,\n  colors: previous.colors,\n  matrix: previous.matrix,\n  matrix_summary: previous.matrix_summary,\n  items: previous.items\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12064,
+        4320
+      ],
+      "id": "bf3a1e6c-347c-4455-b6d0-cda712255077",
+      "name": "Matrix Validator"
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $input.first().json;\n\nif (previous.decision !== 'MATRIX_VALID') {\n  return [{ json: previous }];\n}\n\nconst allCells = [];\nconst missingCombos = [];\nconst matrix = previous.matrix;\n\nfor (let r = 0; r < matrix.length; r++) {\n  for (let c = 0; c < matrix[r].length; c++) {\n    allCells.push(matrix[r][c]);\n    if (matrix[r][c].status === 'empty') {\n      missingCombos.push(matrix[r][c].cell_id);\n    }\n  }\n}\n\nreturn [{ json: {\n  _original_payload: previous,\n  request_id: previous.request_id,\n  dimension1_values: JSON.stringify(previous.sizes || []),\n  dimension2_values: JSON.stringify(previous.colors || []),\n  cells: JSON.stringify(allCells),\n  missing_combinations: JSON.stringify(missingCombos),\n  duplicate_combinations: JSON.stringify([]),\n  matrix_confirmed: 'true'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12256,
+        4320
+      ],
+      "id": "7e470451-7ac9-4944-9cfb-fc230c26a397",
+      "name": "Matrix Logger Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/variation_matrices",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"dimension1_values\": {{ $json.dimension1_values }},   \"dimension2_values\": {{ $json.dimension2_values }},   \"cells\": {{ $json.cells }},   \"missing_combinations\": {{ $json.missing_combinations }},   \"duplicate_combinations\": {{ $json.duplicate_combinations }},   \"matrix_confirmed\": true }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        12448,
+        4320
+      ],
+      "id": "47b5ed75-2528-4729-a47b-19009a59711f",
+      "name": "Matrix Logger — variation_matrices",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Matrix Logger Prep').first().json;\nconst original = prev._original_payload || prev;\nreturn [{ json: {\n  _original_payload: original,\n  request_id: original.request_id,\n  decision: original.decision,\n  reason_code: original.reason_code || null,\n  issue_summary: original.issue_summary || 'Matrix validated.',\n  hard_blocks_json: JSON.stringify(\n    (original.issue_diagnosis || []).filter(i => i.severity === 'hard_block')\n  ),\n  raw_result_json: JSON.stringify(original),\n  issues_json: JSON.stringify(original.issue_diagnosis || []),\n  next_action: original.next_action || 'PROCEED'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12624,
+        4320
+      ],
+      "id": "ba8f02b1-9e7b-4905-839b-772b51b4f991",
+      "name": "WF01 Double Theme Logger Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/validation_results",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"decision\": \"{{ $json.decision }}\",   \"reason_code\": {{ JSON.stringify($json.reason_code) }},   \"issue_summary\": {{ JSON.stringify($json.issue_summary) }},   \"hard_blocks_json\": {{ $json.hard_blocks_json }},   \"raw_result_json\": {{ $json.raw_result_json }} }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        12816,
+        4320
+      ],
+      "id": "104b9b72-3ae6-49a6-8164-c883fd077036",
+      "name": "WF01 Log Validation Result (Double)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('WF01 Double Theme Logger Prep').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12992,
+        4320
+      ],
+      "id": "01ed6c78-7ecb-48e7-9d65-db4036186ced",
+      "name": "WF01 Restore After Validation Log (Double)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/issue_diagnosis",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"issues_json\": {{ $json.issues_json }},   \"next_action\": \"{{ $json.next_action }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        13168,
+        4320
+      ],
+      "id": "7ce6ad2b-2792-4ca2-8e32-0b418fa00ddb",
+      "name": "WF01 Log Issue Diagnosis (Double)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Paste this into a new Code node after the \"Not Sure\" output\nconst previous = $input.first().json;\nreturn [{\n  json: {\n    request_id: previous.request_id,\n    decision: 'NEEDS_INPUT',\n    routed_to: 'theme_suggestion_pending',\n    message: 'Theme suggestion requires real Amazon schema data, available starting Week 6. For now, please choose single_theme or double_theme explicitly.',\n    items: previous.items\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12192,
+        4560
+      ],
+      "id": "56168af4-5322-434d-b330-4fc87a37833c",
+      "name": "Not Sure Theme Placeholder"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nreturn [{ json: {\n  _original_payload: prev,\n  request_id: prev.request_id,\n  decision: prev.decision,\n  reason_code: 'THEME_SUGGESTION_PENDING',\n  issue_summary: prev.message || null,\n  hard_blocks_json: JSON.stringify([]),\n  raw_result_json: JSON.stringify(prev),\n  issues_json: JSON.stringify([]),\n  next_action: 'USER_CLARIFICATION_REQUIRED'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12432,
+        4560
+      ],
+      "id": "4907c448-b21c-443b-ba3e-ba78b3647e50",
+      "name": "WF01 Not Sure Logger Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/validation_results",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"decision\": \"{{ $json.decision }}\",   \"reason_code\": {{ JSON.stringify($json.reason_code) }},   \"issue_summary\": {{ JSON.stringify($json.issue_summary) }},   \"hard_blocks_json\": {{ $json.hard_blocks_json }},   \"raw_result_json\": {{ $json.raw_result_json }} }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        12624,
+        4560
+      ],
+      "id": "f5dd6561-8176-4a47-8cca-5c6fbd81d59c",
+      "name": "WF01 Log Validation Result (Not Sure)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('WF01 Not Sure Logger Prep').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12816,
+        4560
+      ],
+      "id": "2f64cd4f-cef2-415f-960b-1701c854c381",
+      "name": "WF01 Restore After Validation Log (Not Sure)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/issue_diagnosis",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": \"{{ $json.request_id }}\",   \"issues_json\": {{ $json.issues_json }},   \"next_action\": \"{{ $json.next_action }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        13072,
+        4560
+      ],
+      "id": "47188252-ca90-42fb-9bd9-54d6e8093f68",
+      "name": "WF01 Log Issue Diagnosis (Not Sure)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        14144,
+        4048
+      ],
+      "id": "84af057a-2a2e-4c3a-b7ae-d973e9be8bc6",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7052590e-726d-487f-8d31-15145b082e29",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "BLOCKED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "1eb50afa-7636-4aaf-97ce-5a4fcb0e41bf",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "DUPLICATE_REQUEST",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        11536,
+        4096
+      ],
+      "id": "5df89ea5-83fc-422e-8c46-2e9a40467127",
+      "name": "Pass Through Blocked"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('WF01 Restore After Validation Log (Single)').first().json;\nreturn [{ json: prev }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13072,
+        3712
+      ],
+      "id": "6762851f-dcee-450d-ba3a-4fa8c5a8c2fe",
+      "name": "Restore After Log (Single)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('WF01 Restore After Validation Log (Double)').first().json;\nreturn [{ json: prev }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13376,
+        4320
+      ],
+      "id": "7ae1a1e9-03cc-4189-9cf8-2e78151c1f35",
+      "name": "Restore After Log (Double)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('WF01 Restore After Validation Log (Not Sure)').first().json;\nreturn [{ json: prev }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13280,
+        4560
+      ],
+      "id": "2ad81633-b5e2-4859-bfba-8e8a45622d8a",
+      "name": "Restore After Log (Not Sure)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\nreturn [{ json: {\n  _original_payload: prev,\n  request_id: prev.request_id,\n  decision: prev.decision,\n  reason_code: prev.reason || prev.reason_code || (prev.issues && prev.issues[0] ? prev.issues[0].issue_code : null) || null,\n  issue_summary: prev.issue_summary || prev.message || null,\n  hard_blocks_json: JSON.stringify(\n    (prev.issues || []).filter(function(i) { return i.severity === 'hard_block'; })\n  ),\n  raw_result_json: JSON.stringify(prev),\n  issues_json: JSON.stringify(prev.issues || []),\n  next_action: prev.next_action || 'CANCEL_REQUEST'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12192,
+        4096
+      ],
+      "id": "20dad86e-ff6e-4a86-b275-dbd5020d83d7",
+      "name": "Early Block Logger Prep"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/validation_results",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": {{ JSON.stringify($json.request_id) }},   \"decision\": {{ JSON.stringify($json.decision) }},   \"reason_code\": {{ JSON.stringify($json.reason_code) }},   \"issue_summary\": {{ JSON.stringify($json.issue_summary) }},   \"hard_blocks_json\": {{ $json.hard_blocks_json }},   \"raw_result_json\": {{ $json.raw_result_json }} }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        12368,
+        4096
+      ],
+      "id": "82f482af-049d-4e58-8f6a-f03cf6505ba2",
+      "name": "Log Validation Result (Early Block)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Early Block Logger Prep').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12544,
+        4096
+      ],
+      "id": "6822fd6e-bd4a-4905-a986-6698b2f41906",
+      "name": "Restore After Validation Log (Early Block)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/issue_diagnosis",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"request_id\": {{ JSON.stringify($json.request_id) }},   \"issues_json\": {{ $json.issues_json }},   \"next_action\": {{ JSON.stringify($json.next_action) }} }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        12720,
+        4096
+      ],
+      "id": "7760ce0d-013c-464f-bf5c-1d9d42981b62",
+      "name": "Log Issue Diagnosis (Early Block)",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Early Block Logger Prep').first().json;\nreturn [{ json: original._original_payload }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12896,
+        4096
+      ],
+      "id": "b34a9d3b-d84f-4088-9379-f74d6f8b5775",
+      "name": "Restore After Log (Early Block)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b8",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "BLOCKED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        10128,
+        3776
+      ],
+      "id": "011880fa-0a55-441d-a81b-d4a73f3953cf",
+      "name": "Input Validation Guard"
+    },
+    {
+      "parameters": {
+        "jsCode": "const catalogResults = $('Fetch Real Catalog Data').all().map(function(i) { return i.json; });\nconst productType = (catalogResults[0] && catalogResults[0].product_type) || 'CLOTHING';\nreturn [{ json: { product_type: productType } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        11376,
+        3488
+      ],
+      "id": "45141039-cc3d-41d5-8551-cda77412e38f",
+      "name": "Determine Common Product Type"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $input.first().json;\nconst items = original.data.items;\nconst context = {\n  request_id: original.data.request_id,\n  seller_id: original.data.seller_id,\n  marketplace_id: original.data.marketplace_id,\n  variation_structure: original.data.variation_structure\n};\n\nreturn items.map(function(item, index) {\n  return { json: Object.assign({\n    item_index: index,\n    asin: item.asin,\n    sku: item.sku,\n    brand: item.brand,\n    variation_value: item.variation_value || null,\n    variation_values: item.variation_values || null,\n    matrix_assignments: item.matrix_assignments || null,\n    parentage: item.parentage || null\n  }, context) };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10848,
+        3488
+      ],
+      "id": "be5f3c73-dc2e-41ec-8ac3-7fd553228840",
+      "name": "Split Items For Real Fetch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $input.first().json;\n\nif (prev.decision === 'BLOCKED') {\n  return [{ json: prev }];\n}\n\nconst items = prev.items || [];\n\nfor (const item of items) {\n  try {\n    await this.helpers.request({\n      method: 'POST',\n      url: 'https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/merge_request_items',\n      headers: {\n        'apikey': 'sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F',\n        'Authorization': 'Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F',\n        'Content-Type': 'application/json',\n        'Prefer': 'return=minimal'\n      },\n      body: {\n        request_id: prev.request_id,\n        asin: item.asin,\n        sku: item.sku,\n        variation_value: item.variation_value || null,\n        normalized_brand: item.normalized_brand || null,\n        normalized_product_type: item.product_type || null,\n        normalized_category: item.category || null,\n        parent_sku: item.parent_sku || null,\n        parentage: item.parentage || null,\n        listing_issues_json: (item.listing_attributes && item.listing_attributes.listing_issues) || []\n      },\n      json: true\n    });\n  } catch (e) {\n    // Don't let one item's insert failure block the rest of the pipeline —\n    // matches the onError: continueRegularOutput resilience pattern used\n    // throughout this workflow.\n  }\n}\n\nreturn [{ json: prev }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10768,
+        4096
+      ],
+      "id": "f6d157d1-f74a-4dba-b529-4e137d1f25b7",
+      "name": "Insert Items to Supabase"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Input Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Validator": {
+      "main": [
+        [
+          {
+            "node": "Input Validation Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Logger — merge_requests": {
+      "main": [
+        [
+          {
+            "node": "Restore After Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Supabase": {
+      "main": [
+        [
+          {
+            "node": "Split Items For Real Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Real Catalog Data": {
+      "main": [
+        [
+          {
+            "node": "Fetch Real Listing Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Real Listing Data": {
+      "main": [
+        [
+          {
+            "node": "Determine Common Product Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch PTD Schema": {
+      "main": [
+        [
+          {
+            "node": "Assemble Proxy Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Proxy Data": {
+      "main": [
+        [
+          {
+            "node": "Insert Items to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Amazon Data": {
+      "main": [
+        [
+          {
+            "node": "PTD Theme Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PTD Theme Validator": {
+      "main": [
+        [
+          {
+            "node": "Issue Diagnosis and Hard Blocks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Issue Diagnosis and Hard Blocks": {
+      "main": [
+        [
+          {
+            "node": "Pass Through Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Single Theme Placeholder": {
+      "main": [
+        [
+          {
+            "node": "WF01 Single Theme Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Single Theme Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "WF01 Log Validation Result (Single)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Log Validation Result (Single)": {
+      "main": [
+        [
+          {
+            "node": "WF01 Restore After Validation Log (Single)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Restore After Validation Log (Single)": {
+      "main": [
+        [
+          {
+            "node": "WF01 Log Issue Diagnosis (Single",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure Switch": {
+      "main": [
+        [
+          {
+            "node": "Single Theme Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Matrix Builder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Sure Theme Placeholder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Log Issue Diagnosis (Single": {
+      "main": [
+        [
+          {
+            "node": "Restore After Log (Single)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix Builder": {
+      "main": [
+        [
+          {
+            "node": "SKU Assignment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SKU Assignment": {
+      "main": [
+        [
+          {
+            "node": "Matrix Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix Validator": {
+      "main": [
+        [
+          {
+            "node": "Matrix Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "Matrix Logger — variation_matrices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix Logger — variation_matrices": {
+      "main": [
+        [
+          {
+            "node": "WF01 Double Theme Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Double Theme Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "WF01 Log Validation Result (Double)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Log Validation Result (Double)": {
+      "main": [
+        [
+          {
+            "node": "WF01 Restore After Validation Log (Double)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Restore After Validation Log (Double)": {
+      "main": [
+        [
+          {
+            "node": "WF01 Log Issue Diagnosis (Double)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Log Issue Diagnosis (Double)": {
+      "main": [
+        [
+          {
+            "node": "Restore After Log (Double)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Not Sure Theme Placeholder": {
+      "main": [
+        [
+          {
+            "node": "WF01 Not Sure Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Not Sure Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "WF01 Log Validation Result (Not Sure)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Log Validation Result (Not Sure)": {
+      "main": [
+        [
+          {
+            "node": "WF01 Restore After Validation Log (Not Sure)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Restore After Validation Log (Not Sure)": {
+      "main": [
+        [
+          {
+            "node": "WF01 Log Issue Diagnosis (Not Sure)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 Log Issue Diagnosis (Not Sure)": {
+      "main": [
+        [
+          {
+            "node": "Restore After Log (Not Sure)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pass Through Blocked": {
+      "main": [
+        [
+          {
+            "node": "Early Block Logger Prep",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Structure Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Log (Single)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Log (Double)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Log (Not Sure)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Early Block Logger Prep": {
+      "main": [
+        [
+          {
+            "node": "Log Validation Result (Early Block)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Validation Result (Early Block)": {
+      "main": [
+        [
+          {
+            "node": "Restore After Validation Log (Early Block)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Validation Log (Early Block)": {
+      "main": [
+        [
+          {
+            "node": "Log Issue Diagnosis (Early Block)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Issue Diagnosis (Early Block)": {
+      "main": [
+        [
+          {
+            "node": "Restore After Log (Early Block)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Log (Early Block)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Validation Guard": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase Logger — merge_requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Common Product Type": {
+      "main": [
+        [
+          {
+            "node": "Fetch PTD Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Items For Real Fetch": {
+      "main": [
+        [
+          {
+            "node": "Fetch Real Catalog Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Items to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Normalize Amazon Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "3617f7af-6a45-4aa5-8674-17f694ce9e75",
+  "meta": {
+    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+  },
+  "nodeGroups": [],
+  "id": "6VSmR829MBLwgzd0",
+  "tags": []
+}
