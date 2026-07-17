@@ -61,6 +61,14 @@ services:
     restart: unless-stopped
     depends_on:
       - n8n
+    environment:
+      # The Caddyfile references {$N8N_HOST} and {$LETSENCRYPT_EMAIL} at its
+      # own runtime — those only resolve if explicitly passed through here.
+      # Missing this block is what caused the "wrong argument count... after
+      # 'email'" parse error: Caddy saw a literal, unset reference instead
+      # of a real value.
+      N8N_HOST: ${N8N_HOST}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
     ports:
       - "80:80"
       - "443:443"
