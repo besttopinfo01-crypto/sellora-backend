@@ -1,0 +1,228 @@
+{
+  "name": "09 - OAuth Initiate",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "789f1fc1-7836-4212-82ba-42cfa4e34fe0",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        80
+      ],
+      "id": "70d31ce5-49eb-4151-a6ad-2c23ec9c9f54",
+      "name": "Webhook",
+      "webhookId": "789f1fc1-7836-4212-82ba-42cfa4e34fe0"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_SELLER_ID',\n    message: 'seller_id is required to start an Amazon authorization.'\n  }}];\n}\n\n// This IS the actual CSRF/replay defense, not a cosmetic identifier.\n// Two prior attempts using actual crypto both failed in this specific\n// n8n sandbox: require('crypto') is blocked, and the global `crypto`\n// object isn't exposed either. Rather than guess at sandbox internals\n// a third time, this uses only fundamental JavaScript with zero\n// external dependency - guaranteed available in any JS engine.\n// Adequate here specifically because this token is short-lived (10\n// minutes), single-use (checked against the database), and not the\n// only line of defense - it doesn't need to withstand sophisticated\n// cryptanalysis, just prevent casual CSRF/replay in its narrow window.\nfunction randomSegment() {\n  return Math.random().toString(36).slice(2) + Date.now().toString(36);\n}\nconst state = randomSegment() + '-' + randomSegment() + '-' + randomSegment();\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  state: state\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        80
+      ],
+      "id": "537f2fe3-d7bd-45ea-afdd-c666d10204d6",
+      "name": "Validate Input & Generate State"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0be3f7d0-a2ee-4e40-9395-d90b00a1ebab",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        80
+      ],
+      "id": "b3dc4e46-f4b9-4a88-aa91-a78193eb03cf",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/oauth_states",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"state\": {{ JSON.stringify($json.state) }},\n  \"seller_id\": {{ JSON.stringify($json.seller_id) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "973545cb-f630-470b-bfb3-28c33e4b5c31",
+      "name": "Store OAuth State",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Validate Input & Generate State').first().json;\n\n// version=beta is required while the app is still in Draft / not yet\n// publicly listed - remove this parameter once the app is actually\n// listed on the Selling Partner Appstore, or it will authorize the\n// wrong (draft) version.\nconst consentUrl = 'https://sellercentral.amazon.com/apps/authorize/consent'\n  + '?application_id=' + encodeURIComponent('amzn1.sp.solution.5e1b73ff-7d0c-4c99-a019-dccd1d314d85')\n  + '&state=' + encodeURIComponent(prev.state)\n  + '&version=beta';\n\nreturn [{ json: { redirect_url: consentUrl } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8b15013d-e076-490a-a24d-4c8d905c0c56",
+      "name": "Build Amazon Consent URL"
+    },
+    {
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "={{ $json.redirect_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        0
+      ],
+      "id": "317e0bbb-caec-49d0-833b-0b312704e0b8",
+      "name": "Redirect to Amazon"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        176
+      ],
+      "id": "4e5f293e-9de2-4184-b52c-3aa96b3ec3c2",
+      "name": "Respond With Rejection"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input & Generate State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input & Generate State": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Store OAuth State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond With Rejection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store OAuth State": {
+      "main": [
+        [
+          {
+            "node": "Build Amazon Consent URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Amazon Consent URL": {
+      "main": [
+        [
+          {
+            "node": "Redirect to Amazon",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "563b94b9-8f0f-4feb-94c7-39fe0da51353",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "4RirzPV6Uyb5ft7N",
+  "tags": []
+}

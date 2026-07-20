@@ -1,0 +1,357 @@
+{
+  "name": "10 - OAuth Callback",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "aa0212f6-d1b9-4f04-b80b-fc5ef527a3aa",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1248,
+        160
+      ],
+      "id": "f3db61e7-29eb-475e-97f7-21d06f6fe26a",
+      "name": "Webhook",
+      "webhookId": "aa0212f6-d1b9-4f04-b80b-fc5ef527a3aa"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst q = raw.query ? raw.query : raw;\n\nconst state = q.state;\nconst sellingPartnerId = q.selling_partner_id;\nconst spapiOauthCode = q.spapi_oauth_code;\n\nif (!state || !sellingPartnerId || !spapiOauthCode) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_PARAMS',\n    message: 'Amazon did not return one or more required parameters (state, selling_partner_id, spapi_oauth_code).'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_PARAMS',\n  state: state,\n  selling_partner_id: sellingPartnerId,\n  spapi_oauth_code: spapiOauthCode,\n  received_at: $now.toISO()\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        160
+      ],
+      "id": "68872d93-b56d-4bbe-82d9-44d1b9106491",
+      "name": "Extract Query Params"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "63dd7701-8459-45e0-a32c-e40aed103d7e",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "HAS_PARAMS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -832,
+        160
+      ],
+      "id": "6b978931-6393-4bf6-a345-e98bb6ce639c",
+      "name": "Has Required Params"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/oauth_states?state=eq.{{ $json.state }}&select=seller_id,created_at,used_at",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        80
+      ],
+      "id": "8997b1ea-1f5f-41c9-bc75-3f924576d44d",
+      "name": "Fetch OAuth State",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const params = $('Extract Query Params').first().json;\n\n// Fetch OAuth State's own output confirms this arrives as a bare row\n// object when a match is found, not the raw PostgREST array — so\n// Array.isArray() here was always false, silently treating every real,\n// unused, unexpired state as \"not found.\" Check items.length instead,\n// which correctly reflects zero vs. one item either way.\nconst items = $input.all();\nlet row = null;\nif (items.length > 0) {\n  const data = items[0].json;\n  row = Array.isArray(data) ? data[0] : data;\n}\n\nif (!row || !row.seller_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'UNKNOWN_STATE',\n    message: 'This authorization attempt was not recognized. Please start over from Connect Amazon Account.'\n  }}];\n}\nif (row.used_at) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'STATE_ALREADY_USED',\n    message: 'This authorization link has already been used. Please start over from Connect Amazon Account.'\n  }}];\n}\n// Basic staleness check here; Day 10 builds the full, user-facing\n// clean-restart handling for this specific case in more detail.\nconst ageMinutes = (Date.now() - new Date(row.created_at).getTime()) / 60000;\nif (ageMinutes > 10) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'STATE_EXPIRED',\n    message: 'This authorization attempt took too long and expired. Please start over from Connect Amazon Account.',\n    age_minutes: ageMinutes\n  }}];\n}\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: row.seller_id,\n  state: params.state,\n  selling_partner_id: params.selling_partner_id,\n  spapi_oauth_code: params.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        80
+      ],
+      "id": "a8da9c50-5107-4630-b0dc-43ca0fe25c34",
+      "name": "Validate State"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "561a59aa-d51e-49f2-a854-3b24ea62cafe",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        80
+      ],
+      "id": "5bddd33e-6225-4cf2-88e8-751ee6e2753f",
+      "name": "State Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/oauth_states?state=eq.{{ $json.state }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"used_at\": {{ JSON.stringify($now.toISO()) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2ac1c820-dd26-4e3e-90b2-809702b4b734",
+      "name": "Mark State Used",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ready for Day 9: seller_id, selling_partner_id, and spapi_oauth_code\n// are all we need to actually exchange the code for a refresh token.\n// Not built yet on purpose - the exchange is tomorrow's piece, and the\n// spapi_oauth_code expires in 5 minutes, so whatever runs next needs\n// to fire immediately once this is wired up, not sit queued.\nconst validated = $('Validate State').first().json;\nreturn [{ json: {\n  seller_id: validated.seller_id,\n  selling_partner_id: validated.selling_partner_id,\n  spapi_oauth_code: validated.spapi_oauth_code,\n  ready_for_token_exchange: true\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8b4d6d0c-360a-445c-abac-c4618cda7a7b",
+      "name": "Prepare Handoff (Day 9)"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5e4e464d-e634-4b3e-9b47-96f7933af9ba",
+      "name": "Respond Success (placeholder)"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -208,
+        256
+      ],
+      "id": "33ab24e4-940f-46b1-b75b-f39b5c3b7047",
+      "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -832,
+        368
+      ],
+      "id": "265032fc-3278-4a01-8e08-3bd143f74a38",
+      "name": "Respond Missing Params"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Query Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Query Params": {
+      "main": [
+        [
+          {
+            "node": "Has Required Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Required Params": {
+      "main": [
+        [
+          {
+            "node": "Fetch OAuth State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Missing Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch OAuth State": {
+      "main": [
+        [
+          {
+            "node": "Validate State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate State": {
+      "main": [
+        [
+          {
+            "node": "State Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "State Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Mark State Used",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark State Used": {
+      "main": [
+        [
+          {
+            "node": "Prepare Handoff (Day 9)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Handoff (Day 9)": {
+      "main": [
+        [
+          {
+            "node": "Respond Success (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d07aed39-0824-4a58-b7a3-d29a32184a6b",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "i7dyAOySjI9JKfLG",
+  "tags": []
+}
