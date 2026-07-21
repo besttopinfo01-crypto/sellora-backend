@@ -1,0 +1,196 @@
+{
+  "name": "11 - Amazon Disconnect",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "03d9b497-c014-42b9-8a86-d27f556836af",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        -32
+      ],
+      "id": "7ef48859-66a9-4beb-9091-8117cae5c605",
+      "name": "Webhook",
+      "webhookId": "03d9b497-c014-42b9-8a86-d27f556836af"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_SELLER_ID',\n    message: 'seller_id is required to disconnect an Amazon account.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        -32
+      ],
+      "id": "b3b8741c-eea1-4489-a5e9-b399f3694664",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bb6b57ef-e12a-45ec-bf26-ca05413b1049",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        -32
+      ],
+      "id": "6107eefb-e3cf-40f0-921b-d5036092e11b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/disconnect_amazon_seller",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"p_seller_id\": \"{{ $json.seller_id }}\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -176,
+        -128
+      ],
+      "id": "58144ae9-d355-453c-bfb3-913e7911f297",
+      "name": "Call Disconnect Function",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        32,
+        -128
+      ],
+      "id": "10ac28cc-1e80-42ec-adf5-9045b7bfb616",
+      "name": "Respond Disconnect Result"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -176,
+        64
+      ],
+      "id": "21958b72-222f-42d4-b90c-316496007430",
+      "name": "Respond Missing Seller ID"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Call Disconnect Function",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Missing Seller ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Disconnect Function": {
+      "main": [
+        [
+          {
+            "node": "Respond Disconnect Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5cf6b01a-6187-4065-8f64-520f39b020ec",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "rur7WNGl2PZ71yhn",
+  "tags": []
+}

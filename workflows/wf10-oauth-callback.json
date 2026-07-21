@@ -1,5 +1,5 @@
 {
-  "name": "10 - OAuth Callback",
+  "name": "wf10-oauth-callback",
   "nodes": [
     {
       "parameters": {
@@ -10,8 +10,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1248,
-        160
+        -1680,
+        32
       ],
       "id": "f3db61e7-29eb-475e-97f7-21d06f6fe26a",
       "name": "Webhook",
@@ -24,8 +24,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1040,
-        160
+        -1488,
+        -112
       ],
       "id": "68872d93-b56d-4bbe-82d9-44d1b9106491",
       "name": "Extract Query Params"
@@ -57,8 +57,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -832,
-        160
+        -1344,
+        16
       ],
       "id": "6b978931-6393-4bf6-a345-e98bb6ce639c",
       "name": "Has Required Params"
@@ -82,8 +82,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -624,
-        80
+        -1104,
+        0
       ],
       "id": "8997b1ea-1f5f-41c9-bc75-3f924576d44d",
       "name": "Fetch OAuth State",
@@ -103,8 +103,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        80
+        -912,
+        0
       ],
       "id": "a8da9c50-5107-4630-b0dc-43ca0fe25c34",
       "name": "Validate State"
@@ -136,8 +136,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        80
+        -736,
+        0
       ],
       "id": "5bddd33e-6225-4cf2-88e8-751ee6e2753f",
       "name": "State Is Valid"
@@ -170,8 +170,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -320,
+        -16
       ],
       "id": "2ac1c820-dd26-4e3e-90b2-809702b4b734",
       "name": "Mark State Used",
@@ -190,8 +190,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        0
+        -144,
+        -16
       ],
       "id": "8b4d6d0c-360a-445c-abac-c4618cda7a7b",
       "name": "Prepare Handoff (Day 9)"
@@ -203,21 +203,23 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        416,
-        0
+        368,
+        -16
       ],
       "id": "5e4e464d-e634-4b3e-9b47-96f7933af9ba",
       "name": "Respond Success (placeholder)"
     },
     {
       "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -208,
-        256
+        -416,
+        144
       ],
       "id": "33ab24e4-940f-46b1-b75b-f39b5c3b7047",
       "name": "Respond Rejected"
@@ -229,14 +231,120 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -832,
-        368
+        -1344,
+        224
       ],
       "id": "265032fc-3278-4a01-8e08-3bd143f74a38",
       "name": "Respond Missing Params"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "authorization_code"
+            },
+            {
+              "name": "code",
+              "value": "={{ $json.spapi_oauth_code }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "8d70600e-dc88-40fb-baf0-8edec97a694a",
+      "name": "Exchange Code for Tokens",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/store_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_seller_id\": \"{{ $('Prepare Handoff (Day 9)').first().json.seller_id }}\",\n  \"p_refresh_token\": \"{{ $('Exchange Code for Tokens').first().json.refresh_token }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        192,
+        -16
+      ],
+      "id": "a2bc3d34-3293-4755-b059-b8d604bc3146",
+      "name": "Store Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst message = data.message || 'Something went wrong. Please start over from Connect Amazon Account.';\n\nconst html = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>Connection unsuccessful</title>\n<style>\nbody { font-family: -apple-system, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; color: #1a1a1a; text-align: center; }\nh1 { font-size: 20px; }\np { color: #555; line-height: 1.5; }\na.button { display: inline-block; margin-top: 24px; padding: 12px 24px; background: #232f3e; color: white; text-decoration: none; border-radius: 4px; }\n</style>\n</head>\n<body>\n<h1>We couldn't connect your Amazon account</h1>\n<p>${message}</p>\n<a class=\"button\" href=\"https://catalove.ai/connect-amazon\">Try again</a>\n</body>\n</html>`;\n\nreturn [{ json: { html } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        144
+      ],
+      "id": "2f474cc7-416c-4500-aaa0-211ed0639c90",
+      "name": "Build Rejection Page"
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Exchange Code for Tokens": [
+      {
+        "json": {
+          "access_token": "Atza|fake-access-token-for-testing",
+          "refresh_token": "Atzr|fake-refresh-token-for-testing-001",
+          "token_type": "bearer",
+          "expires_in": 3600
+        }
+      }
+    ],
+    "Prepare Handoff (Day 9)": [
+      {
+        "json": {
+          "seller_id": "4b88cbec-c02f-4416-8f22-4a7b35316b60",
+          "selling_partner_id": "A2EXAMPLEPLACEHOLDER",
+          "spapi_oauth_code": "placeholder-code-abc123",
+          "ready_for_token_exchange": true
+        }
+      }
+    ]
+  },
   "connections": {
     "Webhook": {
       "main": [
@@ -311,7 +419,7 @@
         ],
         [
           {
-            "node": "Respond Rejected",
+            "node": "Build Rejection Page",
             "type": "main",
             "index": 0
           }
@@ -333,7 +441,40 @@
       "main": [
         [
           {
+            "node": "Exchange Code for Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange Code for Tokens": {
+      "main": [
+        [
+          {
+            "node": "Store Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Refresh Token": {
+      "main": [
+        [
+          {
             "node": "Respond Success (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Rejection Page": {
+      "main": [
+        [
+          {
+            "node": "Respond Rejected",
             "type": "main",
             "index": 0
           }
@@ -341,13 +482,13 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "d07aed39-0824-4a58-b7a3-d29a32184a6b",
+  "versionId": "49090727-32c8-468e-9ef2-21da5431373a",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
