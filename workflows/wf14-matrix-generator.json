@@ -1,0 +1,295 @@
+{
+  "name": "wf14-matrix-generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "2ecec6f3-e3c1-4a51-a313-ee3068297770",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        -32
+      ],
+      "id": "3b3ded16-d43f-4430-9afa-53a4aaa7f70f",
+      "name": "Webhook",
+      "webhookId": "2ecec6f3-e3c1-4a51-a313-ee3068297770"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json; const body = rawInput.body ? rawInput.body : rawInput; if (!body.request_id) { return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' }}]; } return [{ json: { decision: 'VALID', request_id: body.request_id }}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        -32
+      ],
+      "id": "64c664a8-2898-4529-8b19-96bfaa31fa31",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8ea40b6a-e51c-4007-8491-da02a744dbb0",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        -32
+      ],
+      "id": "a56297e2-5da2-4fde-af57-0385373ffe2e",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,seller_id,dimension1_theme,dimension1_attribute,dimension2_theme,dimension2_attribute",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -176,
+        -128
+      ],
+      "id": "f6364102-eb7d-436e-8435-bc9ccdfb8a0b",
+      "name": "Fetch Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_request_items?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=sku,asin,dimension1_value,dimension2_value",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        32,
+        -128
+      ],
+      "id": "969026b3-f2a9-44f4-9017-eb70810ab9f9",
+      "name": "Fetch Items",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const merge = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(merge) ? merge[0] : merge;\n\nconst itemsInput = $('Fetch Items').all();\nlet items;\nif (itemsInput.length === 1 && Array.isArray(itemsInput[0].json)) {\n  items = itemsInput[0].json;\n} else {\n  items = itemsInput.map(function(i) { return i.json; });\n}\n\nconst isMatrix = !!mergeRow.dimension2_theme;\nconst dim1Values = [...new Set(items.map(i => i.dimension1_value).filter(Boolean))].sort();\nconst dim2Values = isMatrix\n  ? [...new Set(items.map(i => i.dimension2_value).filter(Boolean))].sort()\n  : [];\n\nconst cells = [];\nconst duplicates = [];\nconst missing = [];\n\nif (isMatrix) {\n  for (const d1 of dim1Values) {\n    for (const d2 of dim2Values) {\n      const matches = items.filter(i => i.dimension1_value === d1 && i.dimension2_value === d2);\n      if (matches.length === 0) {\n        missing.push({ dimension1_value: d1, dimension2_value: d2 });\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: null, status: 'missing' });\n      } else if (matches.length === 1) {\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: matches[0].sku, status: 'filled' });\n      } else {\n        duplicates.push({ dimension1_value: d1, dimension2_value: d2, skus: matches.map(m => m.sku) });\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: matches[0].sku, status: 'duplicate', all_skus: matches.map(m => m.sku) });\n      }\n    }\n  }\n} else {\n  for (const d1 of dim1Values) {\n    const matches = items.filter(i => i.dimension1_value === d1);\n    if (matches.length === 1) {\n      cells.push({ dimension1_value: d1, sku: matches[0].sku, status: 'filled' });\n    } else if (matches.length > 1) {\n      duplicates.push({ dimension1_value: d1, skus: matches.map(m => m.sku) });\n      cells.push({ dimension1_value: d1, sku: matches[0].sku, status: 'duplicate', all_skus: matches.map(m => m.sku) });\n    }\n  }\n}\n\nreturn [{ json: {\n  request_id: mergeRow.request_id,\n  seller_id: mergeRow.seller_id,\n  dimension1_values: dim1Values,\n  dimension2_values: dim2Values,\n  cells: cells,\n  duplicate_combinations: duplicates,\n  missing_combinations: missing,\n  matrix_confirmed: false\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -128
+      ],
+      "id": "77911f2f-dd58-405e-b648-cd98e26ded68",
+      "name": "Generate Matrix"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        656,
+        -128
+      ],
+      "id": "df3e5038-c2b5-4653-8cb1-e9e8ebf69600",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -144,
+        96
+      ],
+      "id": "abb4adf6-ea44-48c4-879a-4b66fb51b242",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/variation_matrices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"request_id\": \"{{ $json.request_id }}\",\n  \"seller_id\": \"{{ $json.seller_id }}\",\n  \"dimension1_values\": {{ JSON.stringify($json.dimension1_values) }},\n  \"dimension2_values\": {{ JSON.stringify($json.dimension2_values) }},\n  \"cells\": {{ JSON.stringify($json.cells) }},\n  \"duplicate_combinations\": {{ JSON.stringify($json.duplicate_combinations) }},\n  \"missing_combinations\": {{ JSON.stringify($json.missing_combinations) }},\n  \"matrix_confirmed\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        -128
+      ],
+      "id": "6485ba53-5d97-4327-aa19-336dac642e1a",
+      "name": "Store Matrix",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Fetch Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Items": {
+      "main": [
+        [
+          {
+            "node": "Generate Matrix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Matrix": {
+      "main": [
+        [
+          {
+            "node": "Store Matrix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Store Matrix": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9d9f6d01-e467-4b80-81ae-03a6b98712c5",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "lsgcKxmH3KF6a1az",
+  "tags": []
+}
