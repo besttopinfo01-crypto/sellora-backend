@@ -1,0 +1,171 @@
+{
+  "info": {
+    "_postman_id": "45a9d5e8-7769-48c1-b07a-5e43e9aa94d4",
+    "name": "New Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "55885551",
+    "_collection_link": "https://go.postman.co/collection/55885551-45a9d5e8-7769-48c1-b07a-5e43e9aa94d4?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Supabase RPC – store_amazon_refresh_token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_api_key_18oj}}RIoP",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0n7p}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\", \"p_refresh_token\": \"Atzr|IwEBIDhQJXCSokYBpVeULVPDtsGg8KLlrkXwNQeKtVkvppsrFwE3y4337Fl41OAQwHjtXAz7mJyRuetqd42sO3Xp14QrQ8pxz2FeDDc-bXuTEZ30XpJK8nLlwuV9J_byAlOu4zgJmhQL6Smkf7H7Bw-GXB8YwaRuJjgIXcuVNlUND_CQH3csfBWcyGwGLS88H4B5zS5ehzyMELIXzAtue00lqjDumQttbgLeK0FLaxaoShNVw6dwwRBQxs0UgEFPeu7yAW-C2BPEdGon2Ec4ovMVldUtxOrPVXXK5f_yokZbOmg5i2C77TqRa0RrTdrM3WGvux8L9G2FgYLBu1XtH1ga_DMe\" } ",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/store_amazon_refresh_token",
+          "protocol": "https",
+          "host": [
+            "dbgzqwophuukxuwgvgsh",
+            "supabase",
+            "co"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "rpc",
+            "store_amazon_refresh_token"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Supabase RPC – get_amazon_refresh_token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{supabase_api_key_18oj}}RIoP",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "{{bearer_token_0n7p}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\", \"p_refresh_token\": \"Atzr|IwEBIDhQJXCSokYBpVeULVPDtsGg8KLlrkXwNQeKtVkvppsrFwE3y4337Fl41OAQwHjtXAz7mJyRuetqd42sO3Xp14QrQ8pxz2FeDDc-bXuTEZ30XpJK8nLlwuV9J_byAlOu4zgJmhQL6Smkf7H7Bw-GXB8YwaRuJjgIXcuVNlUND_CQH3csfBWcyGwGLS88H4B5zS5ehzyMELIXzAtue00lqjDumQttbgLeK0FLaxaoShNVw6dwwRBQxs0UgEFPeu7yAW-C2BPEdGon2Ec4ovMVldUtxOrPVXXK5f_yokZbOmg5i2C77TqRa0RrTdrM3WGvux8L9G2FgYLBu1XtH1ga_DMe\" } ",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/store_amazon_refresh_token",
+          "protocol": "https",
+          "host": [
+            "dbgzqwophuukxuwgvgsh",
+            "supabase",
+            "co"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "rpc",
+            "store_amazon_refresh_token"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Amazon LWA – Exchange Refresh Token",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "password",
+              "value": "{{auth_password_0n0t}}",
+              "type": "string"
+            },
+            {
+              "key": "username",
+              "value": "amzn1.application-oa2-client.18acf950c13143388f768e62a9aeaf7a",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "refresh_token",
+              "type": "text",
+              "uuid": "ff9af237-8df7-48b6-a1a8-1c238bfed920"
+            },
+            {
+              "key": "refresh_token",
+              "value": "",
+              "type": "text",
+              "uuid": "454480a9-d543-45b0-bafb-49f14baec409"
+            }
+          ]
+        },
+        "url": {
+          "raw": "https://api.amazon.com/auth/o2/token",
+          "protocol": "https",
+          "host": [
+            "api",
+            "amazon",
+            "com"
+          ],
+          "path": [
+            "auth",
+            "o2",
+            "token"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "bearer_token_0n7p",
+      "secret": true
+    },
+    {
+      "key": "supabase_api_key_18oj",
+      "secret": true
+    },
+    {
+      "key": "auth_password_0n0t",
+      "secret": true
+    }
+  ]
+}
