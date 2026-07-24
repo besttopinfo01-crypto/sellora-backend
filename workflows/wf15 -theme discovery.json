@@ -1,5 +1,5 @@
 {
-  "name": "15 - Theme Discovery",
+  "name": "wf15 -theme discovery",
   "nodes": [
     {
       "parameters": {
@@ -11,8 +11,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1776,
-        -864
+        -2432,
+        -1008
       ],
       "id": "f9c5f34b-5671-4c46-b6d9-17d9726437ac",
       "name": "Webhook",
@@ -45,8 +45,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1344,
-        -864
+        -2000,
+        -1008
       ],
       "id": "a0f8a1f1-46a3-45cb-9e9a-ca75c0539c6a",
       "name": "Cache Hit?",
@@ -66,8 +66,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1568,
-        -864
+        -2224,
+        -1008
       ],
       "id": "ee584a37-9089-476e-9f75-7f1878d2941b",
       "name": "get_product_type_theme_cache",
@@ -86,8 +86,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1136,
-        -960
+        -1792,
+        -1104
       ],
       "id": "6c0372bc-f8f5-4d54-9493-e93c771b6676",
       "name": "Respond to Webhook"
@@ -112,8 +112,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1136,
-        -768
+        -1792,
+        -912
       ],
       "id": "29a66d91-90dc-4d46-b39d-08dc08b4cbd3",
       "name": "Get Refresh Token",
@@ -149,8 +149,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -928,
-        -768
+        -1584,
+        -912
       ],
       "id": "e2089b94-03b9-4a78-bdff-f6666d23fb97",
       "name": "Exchange for Access Token",
@@ -158,6 +158,96 @@
         "httpBasicAuth": {
           "id": "GaNwuUXcMv16Z5kh",
           "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/definitions/2020-09-01/productTypes/{{ $('Webhook').item.json.body.product_type }}?marketplaceIds={{ $('Webhook').item.json.body.marketplace_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1376,
+        -912
+      ],
+      "id": "6c43172c-b2ec-41af-bda4-270209aa65a2",
+      "name": "Get Product Type Definition"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.schema.link.resource }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1168,
+        -912
+      ],
+      "id": "d0df78ef-09a2-436e-98d4-af5a03cd842f",
+      "name": "Fetch Schema"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const schema = $json;\nconst themeProperty = schema.properties.variation_theme.items.properties.name;\n\nconst validThemes = themeProperty.enum || [];\nconst deprecatedThemes = (themeProperty.$lifecycle && themeProperty.$lifecycle.enumDeprecated) || [];\n\nconst definition = $('Get Product Type Definition').item.json;\n\nreturn {\n  json: {\n    product_type: definition.productType,\n    marketplace_id: definition.marketplaceIds[0],\n    valid_themes: validThemes,\n    deprecated_themes: deprecatedThemes,\n    product_type_version: definition.productTypeVersion.version\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -912
+      ],
+      "id": "52214c10-fba8-4c77-9f6f-ed723406b17b",
+      "name": "Parse Variation Themes",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/upsert_product_type_theme_cache",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_product_type\": \"{{ $json.product_type }}\", \"p_marketplace_id\": \"{{ $json.marketplace_id }}\", \"p_valid_themes\": {{ JSON.stringify($json.valid_themes) }}, \"p_deprecated_themes\": {{ JSON.stringify($json.deprecated_themes) }}, \"p_product_type_version\": \"{{ $json.product_type_version }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -752,
+        -912
+      ],
+      "id": "386ef374-ca42-489c-831a-14b8b7296c0c",
+      "name": "Save to Cache",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
         }
       }
     }
@@ -214,6 +304,50 @@
           }
         ]
       ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Get Product Type Definition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Product Type Definition": {
+      "main": [
+        [
+          {
+            "node": "Fetch Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Schema": {
+      "main": [
+        [
+          {
+            "node": "Parse Variation Themes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Variation Themes": {
+      "main": [
+        [
+          {
+            "node": "Save to Cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -222,7 +356,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "75a7253c-659f-4d8d-9b49-5c50efe6b878",
+  "versionId": "95887b09-d7ed-4625-b1da-70865f616a26",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
