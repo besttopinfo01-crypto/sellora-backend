@@ -11,8 +11,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2688,
-        -800
+        -2576,
+        -1200
       ],
       "id": "5134948e-fdca-4727-b34a-266f2be22ca1",
       "name": "Webhook",
@@ -45,12 +45,12 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -2256,
-        -800
+        -2144,
+        -1200
       ],
       "id": "03681888-013c-4dc7-8603-6d8e5263d1d6",
       "name": "Cache Hit?",
-      "alwaysOutputData": true
+      "alwaysOutputData": false
     },
     {
       "parameters": {
@@ -66,8 +66,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2480,
-        -800
+        -2368,
+        -1200
       ],
       "id": "343e11b2-14b0-4537-9c59-8d03ce81c745",
       "name": "get_product_type_theme_cache",
@@ -78,19 +78,6 @@
           "name": "Supabase Service Role"
         }
       }
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5,
-      "position": [
-        -608,
-        -768
-      ],
-      "id": "9043cd7d-0fbd-4d9e-b000-2490a3e48ce6",
-      "name": "Respond to Webhook"
     },
     {
       "parameters": {
@@ -112,8 +99,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2048,
-        -704
+        -2560,
+        -784
       ],
       "id": "57ba4580-48c4-4a4e-a886-4c364c88b6e7",
       "name": "Get Refresh Token",
@@ -149,8 +136,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1840,
-        -704
+        -2352,
+        -784
       ],
       "id": "c36361d4-3522-4d52-bb94-46b8771ec0af",
       "name": "Exchange for Access Token",
@@ -178,8 +165,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1632,
-        -704
+        -2144,
+        -784
       ],
       "id": "1987f8c6-719e-4345-8d49-751f47dbd49c",
       "name": "Get Product Type Definition"
@@ -198,8 +185,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1424,
-        -704
+        -1936,
+        -784
       ],
       "id": "3efecdf5-d0d9-453b-b88f-d99c4684d5e5",
       "name": "Fetch Schema"
@@ -212,8 +199,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1216,
-        -704
+        -1728,
+        -784
       ],
       "id": "1059e435-ef9a-48ad-b18c-58d9b9574eef",
       "name": "Parse Variation Themes",
@@ -239,8 +226,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1008,
-        -704
+        -1520,
+        -784
       ],
       "id": "c553c3b5-5c0b-4f05-87ce-ddd5236a7352",
       "name": "Save to Cache",
@@ -258,11 +245,37 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -816,
-        -704
+        -1328,
+        -784
       ],
       "id": "10592be2-d60d-4d4f-8c08-9f1c17d88bbb",
       "name": "Format Cache Miss Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1664,
+        -1200
+      ],
+      "id": "ca60c02b-0e42-4faf-b59c-35245d0a2726",
+      "name": "Respond to Webhook (Hit)"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1072,
+        -896
+      ],
+      "id": "9043cd7d-0fbd-4d9e-b000-2490a3e48ce6",
+      "name": "Respond to Webhook (Miss)"
     }
   ],
   "pinData": {},
@@ -293,7 +306,7 @@
       "main": [
         [
           {
-            "node": "Respond to Webhook",
+            "node": "Respond to Webhook (Hit)",
             "type": "main",
             "index": 0
           }
@@ -377,7 +390,7 @@
       "main": [
         [
           {
-            "node": "Respond to Webhook",
+            "node": "Respond to Webhook (Miss)",
             "type": "main",
             "index": 0
           }
@@ -385,13 +398,13 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "2aa1cc77-a7f3-4b4a-bcb8-97433c358469",
+  "versionId": "2b8d02bc-73b0-4a9b-87d9-f4440c3e0c07",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
