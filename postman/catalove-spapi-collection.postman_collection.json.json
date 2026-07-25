@@ -8,7 +8,7 @@
   },
   "item": [
     {
-      "name": "Supabase RPC – store_amazon_refresh_token",
+      "name": "Supabase RPC \u2013 store_amazon_refresh_token",
       "request": {
         "auth": {
           "type": "noauth"
@@ -28,7 +28,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{ \"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\", \"p_refresh_token\": \"Atzr|IwEBIDhQJXCSokYBpVeULVPDtsGg8KLlrkXwNQeKtVkvppsrFwE3y4337Fl41OAQwHjtXAz7mJyRuetqd42sO3Xp14QrQ8pxz2FeDDc-bXuTEZ30XpJK8nLlwuV9J_byAlOu4zgJmhQL6Smkf7H7Bw-GXB8YwaRuJjgIXcuVNlUND_CQH3csfBWcyGwGLS88H4B5zS5ehzyMELIXzAtue00lqjDumQttbgLeK0FLaxaoShNVw6dwwRBQxs0UgEFPeu7yAW-C2BPEdGon2Ec4ovMVldUtxOrPVXXK5f_yokZbOmg5i2C77TqRa0RrTdrM3WGvux8L9G2FgYLBu1XtH1ga_DMe\" } ",
+          "raw": "{\n  \"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\",\n  \"p_refresh_token\": \"{{amazon_refresh_token_test}}\"\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -54,7 +54,7 @@
       "response": []
     },
     {
-      "name": "Supabase RPC – get_amazon_refresh_token",
+      "name": "Supabase RPC \u2013 get_amazon_refresh_token",
       "request": {
         "auth": {
           "type": "noauth"
@@ -74,7 +74,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{ \"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\", \"p_refresh_token\": \"Atzr|IwEBIDhQJXCSokYBpVeULVPDtsGg8KLlrkXwNQeKtVkvppsrFwE3y4337Fl41OAQwHjtXAz7mJyRuetqd42sO3Xp14QrQ8pxz2FeDDc-bXuTEZ30XpJK8nLlwuV9J_byAlOu4zgJmhQL6Smkf7H7Bw-GXB8YwaRuJjgIXcuVNlUND_CQH3csfBWcyGwGLS88H4B5zS5ehzyMELIXzAtue00lqjDumQttbgLeK0FLaxaoShNVw6dwwRBQxs0UgEFPeu7yAW-C2BPEdGon2Ec4ovMVldUtxOrPVXXK5f_yokZbOmg5i2C77TqRa0RrTdrM3WGvux8L9G2FgYLBu1XtH1ga_DMe\" } ",
+          "raw": "{\"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\"}",
           "options": {
             "raw": {
               "language": "json"
@@ -82,7 +82,7 @@
           }
         },
         "url": {
-          "raw": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/store_amazon_refresh_token",
+          "raw": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
           "protocol": "https",
           "host": [
             "dbgzqwophuukxuwgvgsh",
@@ -93,14 +93,14 @@
             "rest",
             "v1",
             "rpc",
-            "store_amazon_refresh_token"
+            "get_amazon_refresh_token"
           ]
         }
       },
       "response": []
     },
     {
-      "name": "Amazon LWA – Exchange Refresh Token",
+      "name": "Amazon LWA \u2013 Exchange Refresh Token",
       "request": {
         "auth": {
           "type": "basic",
@@ -152,6 +152,86 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "n8n Webhook \u2013 wf15 Theme Discovery (cache hit: SHIRT)",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"product_type\": \"SHIRT\", \"marketplace_id\": \"ATVPDKIKX0DER\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://n8n.catalove.ai/webhook-test/1b8b779a-d9cb-4c71-af8e-9dc72d45cd08",
+          "protocol": "https",
+          "host": [
+            "n8n",
+            "catalove",
+            "ai"
+          ],
+          "path": [
+            "webhook-test",
+            "1b8b779a-d9cb-4c71-af8e-9dc72d45cd08"
+          ]
+        },
+        "description": "Should hit product_type_theme_cache immediately (already seeded per the Day 16 handover) and respond with valid_themes/deprecated_themes without touching Amazon at all -- fast path, no dependency on wf15 being published.\n\nUses the TEST url (/webhook-test/...) since it works whether or not wf15 is published yet -- click \"Execute workflow\" in the wf15 editor first to arm it, then send this within a few seconds. Once wf15 is published, swap webhook-test -> webhook in the URL to hit it for real."
+      },
+      "response": []
+    },
+    {
+      "name": "n8n Webhook \u2013 wf15 Theme Discovery (cache miss: SHOES)",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"product_type\": \"SHOES\", \"marketplace_id\": \"ATVPDKIKX0DER\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://n8n.catalove.ai/webhook-test/1b8b779a-d9cb-4c71-af8e-9dc72d45cd08",
+          "protocol": "https",
+          "host": [
+            "n8n",
+            "catalove",
+            "ai"
+          ],
+          "path": [
+            "webhook-test",
+            "1b8b779a-d9cb-4c71-af8e-9dc72d45cd08"
+          ]
+        },
+        "description": "Assumes SHOES/ATVPDKIKX0DER is NOT already in product_type_theme_cache -- swap in any real product type you know is genuinely uncached if this one has been tested before. This forces the miss path: refresh token -> LWA exchange -> live PTD schema fetch -> parse -> save to cache -> and now (post-fix) an actual response back, instead of the old dead end.\n\nSame TEST-url note as above: click \"Execute workflow\" on wf15 first, send within a few seconds, swap to /webhook/ once published."
+      },
+      "response": []
     }
   ],
   "variable": [
@@ -165,6 +245,10 @@
     },
     {
       "key": "auth_password_0n0t",
+      "secret": true
+    },
+    {
+      "key": "amazon_refresh_token_test",
       "secret": true
     }
   ]
