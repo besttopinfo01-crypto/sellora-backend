@@ -1,0 +1,301 @@
+{
+  "name": "wf17 - existing parent lookup",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e8f2a6b4-5c17-4d93-a0e2-7b9d4c1f8e56",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        16,
+        -144
+      ],
+      "id": "29fe3484-b528-473a-82d0-b2be35b24773",
+      "name": "Webhook",
+      "webhookId": "e8f2a6b4-5c17-4d93-a0e2-7b9d4c1f8e56"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.parent_asin || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'parent_asin and marketplace_id are both required.'\n  }}];\n}\n\nconst asin = String(body.parent_asin).trim().toUpperCase();\n\n// Amazon ASINs are exactly 10 alphanumeric characters.\nif (!/^[A-Z0-9]{10}$/.test(asin)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_ASIN_FORMAT',\n    message: 'parent_asin must be a 10-character alphanumeric Amazon ASIN (e.g. B0CVFVHY93).',\n    parent_asin: body.parent_asin\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  parent_asin: asin,\n  marketplace_id: body.marketplace_id\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -144
+      ],
+      "id": "76362726-cf64-4d39-b265-95bdbe74bf21",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a2b3c4d-0017-4e5f-8a9b-00000000c001",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        432,
+        -144
+      ],
+      "id": "47a31493-b2ee-4067-92aa-72c48c88a1c3",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        640,
+        -240
+      ],
+      "id": "130028cc-a129-4b53-bbcb-3ae68c4e14ea",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        848,
+        -240
+      ],
+      "id": "94b6bcf9-75e0-4bf8-884f-df818da4c3d5",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/catalog/2022-04-01/items/{{ $('Validate Input').first().json.parent_asin }}?marketplaceIds={{ $('Validate Input').first().json.marketplace_id }}&includedData=summaries,relationships,productTypes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1056,
+        -240
+      ],
+      "id": "9b13ae6a-52a3-4e1f-9981-c1b5ff64f301",
+      "name": "Fetch Catalog Item",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst req = $('Validate Input').first().json;\n\n// A real Catalog Items response always carries the asin back.\nif (!upstream || upstream.error || !upstream.asin) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'PARENT_NOT_FOUND',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    message: 'Amazon Catalog Items API did not return this ASIN for this marketplace. Check the ASIN, the marketplace_id, and that the stored refresh token is still valid.',\n    upstream_raw: upstream\n  }}];\n}\n\nfunction forMarketplace(list) {\n  if (!Array.isArray(list)) return {};\n  return list.find(function(e) { return e.marketplaceId === req.marketplace_id; }) || list[0] || {};\n}\n\nconst summary = forMarketplace(upstream.summaries);\nconst ptEntry = forMarketplace(upstream.productTypes);\nconst relEntry = forMarketplace(upstream.relationships);\n\nconst groups = Array.isArray(relEntry.relationships) ? relEntry.relationships : [];\nconst variationGroup = groups.find(function(g) { return g.type === 'VARIATION'; }) || null;\n\nconst childAsins = (variationGroup && Array.isArray(variationGroup.childAsins)) ? variationGroup.childAsins : [];\nconst parentAsins = (variationGroup && Array.isArray(variationGroup.parentAsins)) ? variationGroup.parentAsins : [];\nconst variationTheme = (variationGroup && variationGroup.variationTheme) ? variationGroup.variationTheme : null;\n\nconst baseInfo = {\n  brand: summary.brand || null,\n  item_name: summary.itemName || null,\n  product_type: ptEntry.productType || null,\n  category: (summary.browseClassification && summary.browseClassification.displayName) || null\n};\n\n// Case 1: this ASIN has children -> it IS a variation parent.\nif (childAsins.length > 0) {\n  return [{ json: {\n    decision: 'PARENT_CONFIRMED',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    parent_preview: Object.assign({}, baseInfo, {\n      variation_theme: variationTheme ? (variationTheme.theme || null) : null,\n      theme_attributes: variationTheme ? (variationTheme.attributes || []) : [],\n      child_count: childAsins.length,\n      child_asins: childAsins\n    }),\n    raw_variation_group: variationGroup\n  }}];\n}\n\n// Case 2: this ASIN itself belongs to a parent -> it is a CHILD, not a parent.\nif (parentAsins.length > 0) {\n  return [{ json: {\n    decision: 'NOT_A_PARENT',\n    reason: 'ASIN_IS_A_CHILD',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    is_child_of: parentAsins,\n    message: 'This ASIN is itself a child in an existing variation family. Enter its parent ASIN instead.',\n    item_info: baseInfo,\n    raw_variation_group: variationGroup\n  }}];\n}\n\n// Case 3: no VARIATION relationship at all -> standalone listing.\nreturn [{ json: {\n  decision: 'NOT_A_PARENT',\n  reason: 'NO_VARIATION_FAMILY',\n  parent_asin: req.parent_asin,\n  marketplace_id: req.marketplace_id,\n  message: 'This ASIN exists but has no variation relationships in the catalog - it is a standalone listing, not a parent.',\n  item_info: baseInfo\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        -240
+      ],
+      "id": "cc56453a-c5e6-45ee-9bc0-8a6d761cd2ac",
+      "name": "Parse Parent Data"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1472,
+        -240
+      ],
+      "id": "55948e3d-6f91-4da6-85f6-bd5c1164df6e",
+      "name": "Respond With Parent Data"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        640,
+        -48
+      ],
+      "id": "9a95d25f-9f97-42dc-984c-da23035de389",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Fetch Catalog Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Catalog Item": {
+      "main": [
+        [
+          {
+            "node": "Parse Parent Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Parent Data": {
+      "main": [
+        [
+          {
+            "node": "Respond With Parent Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d77f3ac0-6d21-4247-b0f1-3a3e6d27d765",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "ofYWHoYLAbGZFVIa",
+  "tags": []
+}
