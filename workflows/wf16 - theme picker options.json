@@ -1,0 +1,214 @@
+{
+  "name": "wf16 - theme picker options",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b4e7d2c6-91f3-4a58-8c0d-2f6a5e9b7d13",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1120,
+        -32
+      ],
+      "id": "2d747a93-3519-45ee-abdc-118c3ca5b1d8",
+      "name": "Webhook",
+      "webhookId": "b4e7d2c6-91f3-4a58-8c0d-2f6a5e9b7d13"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.product_type || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'product_type and marketplace_id are both required.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  product_type: body.product_type,\n  marketplace_id: body.marketplace_id\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -912,
+        -32
+      ],
+      "id": "5864e3f1-d8e7-482f-b00b-d231576589fd",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a2b3c4d-0016-4e5f-8a9b-00000000c001",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -704,
+        -32
+      ],
+      "id": "e6062499-6874-48e0-a80b-e5125d29fca7",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/1b8b779a-d9cb-4c71-af8e-9dc72d45cd08",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"product_type\": \"{{ $('Validate Input').first().json.product_type }}\",\n  \"marketplace_id\": \"{{ $('Validate Input').first().json.marketplace_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -496,
+        -128
+      ],
+      "id": "1f1d5964-cc5b-4052-95dc-23edc42e990b",
+      "name": "Fetch Theme Data (wf15)",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst req = $('Validate Input').first().json;\n\nconst valid = Array.isArray(upstream.valid_themes) ? upstream.valid_themes : null;\n\nif (!valid) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'UPSTREAM_NO_THEME_DATA',\n    product_type: req.product_type,\n    marketplace_id: req.marketplace_id,\n    message: 'wf15 returned no valid_themes. Confirm the product type is a real Amazon product type for this marketplace, and that wf15 is Active.',\n    upstream_raw: upstream\n  }}];\n}\n\nconst deprecated = Array.isArray(upstream.deprecated_themes) ? upstream.deprecated_themes : [];\nconst deprecatedSet = new Set(deprecated);\n\n// Core Day 17 rule: only offer themes Amazon is NOT retiring.\n// Real-data example (SHIRT): COLOR/SIZE is deprecated, SIZE/COLOR is not.\nconst usable = valid.filter(function(t) { return !deprecatedSet.has(t); });\n\n// Slash segments ARE the dimensions: 'SIZE/COLOR' = 2-dimension theme.\nconst parsed = usable.map(function(t) {\n  return { theme: t, dimensions: t.split('/') };\n});\n\nconst singleDimension = parsed.filter(function(p) { return p.dimensions.length === 1; });\nconst twoDimension = parsed.filter(function(p) { return p.dimensions.length === 2; });\n\n// V1 supports 1 or 2 dimensions (GUI spec). 3+ segment themes are excluded\n// from the picker lists but returned openly below - never silently hidden.\nconst excludedOverTwo = parsed\n  .filter(function(p) { return p.dimensions.length > 2; })\n  .map(function(p) { return p.theme; });\n\nreturn [{ json: {\n  decision: 'OPTIONS_READY',\n  product_type: req.product_type,\n  marketplace_id: req.marketplace_id,\n  counts: {\n    valid_total: valid.length,\n    deprecated_total: deprecated.length,\n    usable_total: usable.length,\n    single_dimension: singleDimension.length,\n    two_dimension: twoDimension.length,\n    excluded_over_two_dimensions: excludedOverTwo.length\n  },\n  single_dimension_themes: singleDimension,\n  two_dimension_themes: twoDimension,\n  excluded_over_two_dimensions: excludedOverTwo,\n  product_type_version: upstream.product_type_version || null,\n  fetched_at: upstream.fetched_at || null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        -128
+      ],
+      "id": "b0a53ac6-1dd7-4167-8e63-610430699d77",
+      "name": "Filter & Parse Themes"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -80,
+        -128
+      ],
+      "id": "4dc125bf-8a69-4a5f-8c66-7c6cf760aa57",
+      "name": "Respond With Options"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -496,
+        64
+      ],
+      "id": "0889ac9e-8656-4215-9b83-a4cb641d732a",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Theme Data (wf15)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Theme Data (wf15)": {
+      "main": [
+        [
+          {
+            "node": "Filter & Parse Themes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Parse Themes": {
+      "main": [
+        [
+          {
+            "node": "Respond With Options",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "eea61352-ecf7-4f45-9851-f992426ef4f9",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "Rwfr8EvO4vxjO5pi",
+  "tags": []
+}
