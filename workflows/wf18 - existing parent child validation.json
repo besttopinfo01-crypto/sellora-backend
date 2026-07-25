@@ -1,0 +1,450 @@
+{
+  "name": "wf18 - existing parent child validation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "f3a9c1d7-6b24-4e85-9c30-8d5f2a7b4c19",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1664,
+        160
+      ],
+      "id": "155c7c3b-3dab-4ea7-a17b-b6c896383ce0",
+      "name": "Webhook",
+      "webhookId": "f3a9c1d7-6b24-4e85-9c30-8d5f2a7b4c19"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nconst errors = [];\nif (!body.parent_asin) errors.push('parent_asin');\nif (!body.child_asin) errors.push('child_asin');\nif (!body.marketplace_id) errors.push('marketplace_id');\nif (!body.proposed_values || typeof body.proposed_values !== 'object' || Array.isArray(body.proposed_values)) errors.push('proposed_values (object keyed by attribute name)');\n\nif (errors.length > 0) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'Missing or invalid: ' + errors.join(', ') + '.'\n  }}];\n}\n\nconst parentAsin = String(body.parent_asin).trim().toUpperCase();\nconst childAsin = String(body.child_asin).trim().toUpperCase();\n\nif (!/^[A-Z0-9]{10}$/.test(parentAsin) || !/^[A-Z0-9]{10}$/.test(childAsin)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_ASIN_FORMAT',\n    message: 'parent_asin and child_asin must each be a 10-character alphanumeric Amazon ASIN.'\n  }}];\n}\n\nif (parentAsin === childAsin) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'CHILD_EQUALS_PARENT',\n    message: 'The candidate child ASIN cannot be the parent ASIN itself.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  parent_asin: parentAsin,\n  child_asin: childAsin,\n  marketplace_id: body.marketplace_id,\n  proposed_values: body.proposed_values,\n  proposed_theme: body.proposed_theme || null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1456,
+        160
+      ],
+      "id": "17a100e9-7406-4b88-bc44-85e835251879",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a2b3c4d-0018-4e5f-8a9b-00000000c001",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1248,
+        160
+      ],
+      "id": "0ff8a197-c223-4163-9d8f-84ea3d9aef5e",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1040,
+        64
+      ],
+      "id": "174dfe7e-afd1-491b-a817-0bbfd09bc463",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -832,
+        64
+      ],
+      "id": "369e269c-503c-40ff-b682-b12731d31459",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/catalog/2022-04-01/items/{{ $('Validate Input').first().json.parent_asin }}?marketplaceIds={{ $('Validate Input').first().json.marketplace_id }}&includedData=summaries,relationships,productTypes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        64
+      ],
+      "id": "a44276c0-6926-4f0e-924e-ce4a7e2c9881",
+      "name": "Fetch Parent",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst req = $('Validate Input').first().json;\n\nif (!upstream || upstream.error || !upstream.asin) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'PARENT_NOT_FOUND',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    message: 'Amazon Catalog Items API did not return this parent ASIN for this marketplace.',\n    upstream_raw: upstream\n  }}];\n}\n\nfunction forMarketplace(list) {\n  if (!Array.isArray(list)) return {};\n  return list.find(function(e) { return e.marketplaceId === req.marketplace_id; }) || list[0] || {};\n}\n\nconst summary = forMarketplace(upstream.summaries);\nconst ptEntry = forMarketplace(upstream.productTypes);\nconst relEntry = forMarketplace(upstream.relationships);\nconst groups = Array.isArray(relEntry.relationships) ? relEntry.relationships : [];\nconst variationGroup = groups.find(function(g) { return g.type === 'VARIATION'; }) || null;\nconst childAsins = (variationGroup && Array.isArray(variationGroup.childAsins)) ? variationGroup.childAsins : [];\nconst variationTheme = (variationGroup && variationGroup.variationTheme) ? variationGroup.variationTheme : null;\n\nif (childAsins.length === 0) {\n  const parentAsinsOfIt = (variationGroup && Array.isArray(variationGroup.parentAsins)) ? variationGroup.parentAsins : [];\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: parentAsinsOfIt.length > 0 ? 'PARENT_ASIN_IS_A_CHILD' : 'PARENT_HAS_NO_FAMILY',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    is_child_of: parentAsinsOfIt,\n    message: parentAsinsOfIt.length > 0\n      ? 'The given parent ASIN is itself a child in another variation family. Enter its real parent instead.'\n      : 'The given parent ASIN has no variation family in the catalog - it is a standalone listing.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'PARENT_CONFIRMED',\n  parent_asin: req.parent_asin,\n  child_asin: req.child_asin,\n  marketplace_id: req.marketplace_id,\n  proposed_values: req.proposed_values,\n  proposed_theme: req.proposed_theme,\n  parent: {\n    brand: summary.brand || null,\n    normalized_brand: (summary.brand || '').toLowerCase().trim(),\n    item_name: summary.itemName || null,\n    product_type: (ptEntry.productType || '').toUpperCase().trim() || null,\n    category: (summary.browseClassification && summary.browseClassification.displayName) || null,\n    variation_theme: variationTheme ? (variationTheme.theme || null) : null,\n    theme_attributes: variationTheme ? (variationTheme.attributes || []) : [],\n    child_asins: childAsins,\n    child_count: childAsins.length\n  }\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        64
+      ],
+      "id": "11569993-3ced-455e-8d36-4629c88fb078",
+      "name": "Parent Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a2b3c4d-0018-4e5f-8a9b-00000000c002",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "PARENT_CONFIRMED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        64
+      ],
+      "id": "f0ccc3aa-3400-4ac3-bfbd-9471dae9fb5d",
+      "name": "Parent OK"
+    },
+    {
+      "parameters": {
+        "jsCode": "const gate = $input.first().json;\n\nconst existing = gate.parent.child_asins;\nconst candidate = gate.child_asin;\nconst candidateInFamily = existing.indexOf(candidate) !== -1;\n\nconst all = existing.slice();\nif (!candidateInFamily) all.push(candidate);\n\nreturn [{ json: {\n  ctx: gate,\n  candidate_in_family: candidateInFamily,\n  existing_child_asins: existing,\n  identifiers: all.join(',')\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "21b1974f-40ee-477d-92a2-d20d2b56eb15",
+      "name": "Prepare Batch List"
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/catalog/2022-04-01/items?identifiers={{ $json.identifiers }}&identifiersType=ASIN&marketplaceIds={{ $('Validate Input').first().json.marketplace_id }}&includedData=summaries,attributes,productTypes,relationships",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "14f5c19e-22a5-4f54-94fd-3a65f232ea92",
+      "name": "Fetch Family Batch",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const batch = $input.first().json;\nconst prep = $('Prepare Batch List').first().json;\nconst ctx = prep.ctx;\nconst parent = ctx.parent;\n\nif (!batch || batch.error || !Array.isArray(batch.items)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'FAMILY_FETCH_FAILED',\n    message: 'The batch catalog fetch for the family + candidate did not return items.',\n    upstream_raw: batch\n  }}];\n}\n\nconst mkId = ctx.marketplace_id;\n\nfunction forMarketplace(list) {\n  if (!Array.isArray(list)) return {};\n  return list.find(function(e) { return e.marketplaceId === mkId; }) || list[0] || {};\n}\n\nfunction findItem(asin) {\n  return batch.items.find(function(it) { return it.asin === asin; }) || null;\n}\n\nfunction norm(v) {\n  if (v === null || v === undefined) return null;\n  return String(v).trim().toLowerCase();\n}\n\n// Catalog attributes: object keyed by attribute name, values like [{value: 'Green', marketplaceId: ...}]\nfunction getAttrValue(item, attrName) {\n  if (!item || !item.attributes || !item.attributes[attrName]) return null;\n  const entries = item.attributes[attrName];\n  if (!Array.isArray(entries) || entries.length === 0) return null;\n  const entry = entries.find(function(e) { return e.marketplaceId === mkId; }) || entries[0];\n  return (entry && entry.value !== undefined) ? entry.value : null;\n}\n\nconst themeAttrs = parent.theme_attributes || [];\nconst checks = [];\n\n// --- Candidate item must exist in the catalog ---\nconst candidateItem = findItem(ctx.child_asin);\nif (!candidateItem) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'CHILD_NOT_FOUND',\n    child_asin: ctx.child_asin,\n    marketplace_id: mkId,\n    message: 'The candidate child ASIN was not returned by the Amazon catalog for this marketplace.'\n  }}];\n}\n\nconst candSummary = forMarketplace(candidateItem.summaries);\nconst candPt = forMarketplace(candidateItem.productTypes);\nconst candidate = {\n  asin: ctx.child_asin,\n  brand: candSummary.brand || null,\n  normalized_brand: (candSummary.brand || '').toLowerCase().trim(),\n  item_name: candSummary.itemName || null,\n  product_type: (candPt.productType || '').toUpperCase().trim() || null\n};\n\n// --- Existing children: real current variation values (tuples across theme attrs) ---\nconst existingChildren = prep.existing_child_asins.map(function(asin) {\n  const item = findItem(asin);\n  const values = {};\n  const normalizedTuple = [];\n  let anyMissing = false;\n  themeAttrs.forEach(function(attr) {\n    const v = getAttrValue(item, attr);\n    values[attr] = v;\n    if (v === null) anyMissing = true;\n    normalizedTuple.push(norm(v));\n  });\n  return {\n    asin: asin,\n    found_in_catalog: !!item,\n    values: values,\n    normalized_tuple: normalizedTuple,\n    values_incomplete: anyMissing\n  };\n});\n\n// --- Proposed values, normalized against the parent's theme attributes ---\nconst proposed = {};\nconst proposedTuple = [];\nconst missingAttrs = [];\nthemeAttrs.forEach(function(attr) {\n  const raw = ctx.proposed_values ? ctx.proposed_values[attr] : undefined;\n  if (raw === undefined || raw === null || String(raw).trim() === '') {\n    missingAttrs.push(attr);\n    proposed[attr] = null;\n    proposedTuple.push(null);\n  } else {\n    proposed[attr] = raw;\n    proposedTuple.push(norm(raw));\n  }\n});\n\n// ================= CHECKS (all reported, not first-failure) =================\n\n// 1. Brand match (hard block on mismatch)\nif (candidate.normalized_brand && candidate.normalized_brand === parent.normalized_brand) {\n  checks.push({ check: 'BRAND_MATCH', status: 'pass', parent_brand: parent.brand, child_brand: candidate.brand });\n} else {\n  checks.push({\n    check: 'BRAND_MATCH', status: 'hard_block', issue_code: 'BRAND_MISMATCH',\n    parent_brand: parent.brand, child_brand: candidate.brand,\n    message: 'The candidate child brand (' + (candidate.brand || 'unknown') + ') does not match the parent brand (' + (parent.brand || 'unknown') + '). All items in a variation family must share the same brand.'\n  });\n}\n\n// 2. Product type match (hard block on mismatch)\nif (candidate.product_type && candidate.product_type === parent.product_type) {\n  checks.push({ check: 'PRODUCT_TYPE_MATCH', status: 'pass', product_type: parent.product_type });\n} else {\n  checks.push({\n    check: 'PRODUCT_TYPE_MATCH', status: 'hard_block', issue_code: 'PRODUCT_TYPE_MISMATCH',\n    parent_product_type: parent.product_type, child_product_type: candidate.product_type,\n    message: 'The candidate child product type (' + (candidate.product_type || 'unknown') + ') does not match the parent product type (' + (parent.product_type || 'unknown') + ').'\n  });\n}\n\n// 3. Theme match - only when a proposed_theme was explicitly sent.\n//    The theme is otherwise INHERITED from the parent (it cannot be changed after creation).\nif (ctx.proposed_theme) {\n  if (ctx.proposed_theme === parent.variation_theme) {\n    checks.push({ check: 'THEME_MATCH', status: 'pass', theme: parent.variation_theme });\n  } else {\n    checks.push({\n      check: 'THEME_MATCH', status: 'hard_block', issue_code: 'THEME_MISMATCH',\n      parent_theme: parent.variation_theme, proposed_theme: ctx.proposed_theme,\n      message: 'This parent already uses theme ' + parent.variation_theme + '. Amazon does not allow changing a variation theme after the parent is created.'\n    });\n  }\n} else {\n  checks.push({ check: 'THEME_MATCH', status: 'pass', theme: parent.variation_theme, note: 'Theme inherited from parent.' });\n}\n\n// 4. All theme attributes provided (fixable - the seller can supply them)\nif (missingAttrs.length === 0) {\n  checks.push({ check: 'THEME_ATTRIBUTES_PROVIDED', status: 'pass', attributes: themeAttrs });\n} else {\n  checks.push({\n    check: 'THEME_ATTRIBUTES_PROVIDED', status: 'fixable', issue_code: 'MISSING_THEME_ATTRIBUTE_VALUE',\n    missing_attributes: missingAttrs,\n    message: 'This parent theme (' + parent.variation_theme + ') requires a value for each of: ' + themeAttrs.join(', ') + '. Missing: ' + missingAttrs.join(', ') + '.'\n  });\n}\n\n// 5. Duplicate combination (hard block) - only checkable when all values were provided\nif (missingAttrs.length === 0) {\n  const clash = existingChildren.find(function(ec) {\n    if (ec.values_incomplete) return false;\n    return ec.normalized_tuple.length === proposedTuple.length &&\n      ec.normalized_tuple.every(function(v, i) { return v === proposedTuple[i]; });\n  });\n  if (clash) {\n    checks.push({\n      check: 'UNIQUE_VARIATION_COMBINATION', status: 'hard_block', issue_code: 'DUPLICATE_VARIATION_VALUE',\n      clashes_with_asin: clash.asin, clashing_values: clash.values, proposed_values: proposed,\n      message: 'The proposed combination is already used by existing child ' + clash.asin + '. Each combination of ' + themeAttrs.join(' + ') + ' must be unique in the family.'\n    });\n  } else {\n    checks.push({ check: 'UNIQUE_VARIATION_COMBINATION', status: 'pass', proposed_values: proposed });\n  }\n} else {\n  checks.push({ check: 'UNIQUE_VARIATION_COMBINATION', status: 'skipped', note: 'Cannot check uniqueness until all theme attribute values are provided.' });\n}\n\n// 6. Candidate already in THIS family (hard block - nothing to merge)\nif (prep.candidate_in_family) {\n  checks.push({\n    check: 'NOT_ALREADY_IN_FAMILY', status: 'hard_block', issue_code: 'ALREADY_IN_FAMILY',\n    message: 'This ASIN is already a child of this exact parent. There is nothing to merge.'\n  });\n} else {\n  checks.push({ check: 'NOT_ALREADY_IN_FAMILY', status: 'pass' });\n}\n\n// 7. DAY 20 PREVIEW (free from the batch data): candidate already belongs to a DIFFERENT parent.\n//    Per PRD: manual_review, never an automatic hard block - seller must resolve or confirm deliberately.\nconst candRel = forMarketplace(candidateItem.relationships);\nconst candGroups = Array.isArray(candRel.relationships) ? candRel.relationships : [];\nconst candVar = candGroups.find(function(g) { return g.type === 'VARIATION'; }) || null;\nconst candParents = (candVar && Array.isArray(candVar.parentAsins)) ? candVar.parentAsins : [];\nconst otherParents = candParents.filter(function(p) { return p !== ctx.parent_asin; });\nif (otherParents.length > 0) {\n  checks.push({\n    check: 'NO_EXISTING_PARENT_CONFLICT', status: 'manual_review', issue_code: 'EXISTING_PARENT_CONFLICT',\n    conflicting_parents: otherParents,\n    message: 'This ASIN already belongs to a different parent (' + otherParents.join(', ') + '). Amazon does not allow one ASIN in two families. Remove it from that family first, or confirm this move is deliberate.'\n  });\n} else if (!prep.candidate_in_family) {\n  checks.push({ check: 'NO_EXISTING_PARENT_CONFLICT', status: 'pass' });\n}\n\n// ================= DECISION =================\nconst hardBlocks = checks.filter(function(c) { return c.status === 'hard_block'; });\nconst fixable = checks.filter(function(c) { return c.status === 'fixable'; });\nconst manualReviews = checks.filter(function(c) { return c.status === 'manual_review'; });\n\nlet decision = 'CHILD_VALID';\nif (hardBlocks.length > 0) decision = 'BLOCKED';\nelse if (fixable.length > 0) decision = 'NEEDS_INPUT';\nelse if (manualReviews.length > 0) decision = 'MANUAL_REVIEW_REQUIRED';\n\nreturn [{ json: {\n  decision: decision,\n  parent_asin: ctx.parent_asin,\n  child_asin: ctx.child_asin,\n  marketplace_id: mkId,\n  parent: {\n    brand: parent.brand,\n    product_type: parent.product_type,\n    variation_theme: parent.variation_theme,\n    theme_attributes: themeAttrs,\n    child_count: parent.child_count\n  },\n  candidate: candidate,\n  proposed_values: proposed,\n  existing_children: existingChildren,\n  checks: checks,\n  hard_blocks: hardBlocks,\n  fixable_issues: fixable,\n  manual_reviews: manualReviews\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "73351b64-f4e3-45e5-ad21-2eeb0ed8cc35",
+      "name": "Validate Child vs Parent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        0
+      ],
+      "id": "67c09817-263b-43d3-94f3-c5cda034698f",
+      "name": "Respond With Validation"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        176
+      ],
+      "id": "f668eadb-f7e1-478b-830f-fbc66ce105a1",
+      "name": "Respond Parent Issue"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1200,
+        400
+      ],
+      "id": "d8fd62f0-af8f-4c95-b5b4-23c3139207bd",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Fetch Parent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Parent": {
+      "main": [
+        [
+          {
+            "node": "Parent Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parent Gate": {
+      "main": [
+        [
+          {
+            "node": "Parent OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parent OK": {
+      "main": [
+        [
+          {
+            "node": "Prepare Batch List",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Parent Issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Batch List": {
+      "main": [
+        [
+          {
+            "node": "Fetch Family Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Family Batch": {
+      "main": [
+        [
+          {
+            "node": "Validate Child vs Parent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Child vs Parent": {
+      "main": [
+        [
+          {
+            "node": "Respond With Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4656c813-ce50-40c2-b1e5-4fdba26bcb95",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "79VpBAOd0rWh2wqN",
+  "tags": []
+}
