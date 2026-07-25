@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2432,
-        -1008
+        -2688,
+        -800
       ],
-      "id": "f9c5f34b-5671-4c46-b6d9-17d9726437ac",
+      "id": "5134948e-fdca-4727-b34a-266f2be22ca1",
       "name": "Webhook",
       "webhookId": "1b8b779a-d9cb-4c71-af8e-9dc72d45cd08"
     },
@@ -45,10 +45,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -2000,
-        -1008
+        -2256,
+        -800
       ],
-      "id": "a0f8a1f1-46a3-45cb-9e9a-ca75c0539c6a",
+      "id": "03681888-013c-4dc7-8603-6d8e5263d1d6",
       "name": "Cache Hit?",
       "alwaysOutputData": true
     },
@@ -66,10 +66,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2224,
-        -1008
+        -2480,
+        -800
       ],
-      "id": "ee584a37-9089-476e-9f75-7f1878d2941b",
+      "id": "343e11b2-14b0-4537-9c59-8d03ce81c745",
       "name": "get_product_type_theme_cache",
       "alwaysOutputData": true,
       "credentials": {
@@ -86,10 +86,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1792,
-        -1104
+        -608,
+        -768
       ],
-      "id": "6c0372bc-f8f5-4d54-9493-e93c771b6676",
+      "id": "9043cd7d-0fbd-4d9e-b000-2490a3e48ce6",
       "name": "Respond to Webhook"
     },
     {
@@ -112,10 +112,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1792,
-        -912
+        -2048,
+        -704
       ],
-      "id": "29a66d91-90dc-4d46-b39d-08dc08b4cbd3",
+      "id": "57ba4580-48c4-4a4e-a886-4c364c88b6e7",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -149,10 +149,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1584,
-        -912
+        -1840,
+        -704
       ],
-      "id": "e2089b94-03b9-4a78-bdff-f6666d23fb97",
+      "id": "c36361d4-3522-4d52-bb94-46b8771ec0af",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -178,10 +178,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1376,
-        -912
+        -1632,
+        -704
       ],
-      "id": "6c43172c-b2ec-41af-bda4-270209aa65a2",
+      "id": "1987f8c6-719e-4345-8d49-751f47dbd49c",
       "name": "Get Product Type Definition"
     },
     {
@@ -198,10 +198,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1168,
-        -912
+        -1424,
+        -704
       ],
-      "id": "d0df78ef-09a2-436e-98d4-af5a03cd842f",
+      "id": "3efecdf5-d0d9-453b-b88f-d99c4684d5e5",
       "name": "Fetch Schema"
     },
     {
@@ -212,10 +212,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -960,
-        -912
+        -1216,
+        -704
       ],
-      "id": "52214c10-fba8-4c77-9f6f-ed723406b17b",
+      "id": "1059e435-ef9a-48ad-b18c-58d9b9574eef",
       "name": "Parse Variation Themes",
       "onError": "continueRegularOutput"
     },
@@ -239,10 +239,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -752,
-        -912
+        -1008,
+        -704
       ],
-      "id": "386ef374-ca42-489c-831a-14b8b7296c0c",
+      "id": "c553c3b5-5c0b-4f05-87ce-ddd5236a7352",
       "name": "Save to Cache",
       "credentials": {
         "httpCustomAuth": {
@@ -250,6 +250,19 @@
           "name": "Supabase Service Role"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = $('Parse Variation Themes').first().json;\nreturn [{ json: {\n  valid_themes: parsed.valid_themes,\n  deprecated_themes: parsed.deprecated_themes,\n  product_type_version: parsed.product_type_version,\n  fetched_at: new Date().toISOString()\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        -704
+      ],
+      "id": "10592be2-d60d-4d4f-8c08-9f1c17d88bbb",
+      "name": "Format Cache Miss Response"
     }
   ],
   "pinData": {},
@@ -348,6 +361,28 @@
           }
         ]
       ]
+    },
+    "Save to Cache": {
+      "main": [
+        [
+          {
+            "node": "Format Cache Miss Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Cache Miss Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -356,7 +391,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "95887b09-d7ed-4625-b1da-70865f616a26",
+  "versionId": "2aa1cc77-a7f3-4b4a-bcb8-97433c358469",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
