@@ -1,0 +1,454 @@
+{
+  "name": "wf19 - listings item lookup",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a7c3e9d1-4f68-4b2a-9d15-e6c8f3a1b7d4",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1248,
+        192
+      ],
+      "id": "6de2d2eb-2424-4c07-a521-b4430f4838ac",
+      "name": "Webhook",
+      "webhookId": "a7c3e9d1-4f68-4b2a-9d15-e6c8f3a1b7d4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.sku || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'sku and marketplace_id are both required. Note: this endpoint is SKU-keyed (the seller\\'s own internal SKU), not ASIN-keyed - use wf17 for ASIN/Catalog lookups.'\n  }}];\n}\n\n// seller_id will become a real request field in Day 26's multi-seller work.\n// Hardcoded here deliberately, consistent with wf15/17/18 - not new debt,\n// same debt, tracked in one place.\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: '4b88cbec-c02f-4416-8f22-4a7b35316b60',\n  sku: String(body.sku).trim(),\n  marketplace_id: body.marketplace_id,\n  asin_hint: body.asin || null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        192
+      ],
+      "id": "24698e75-a9f1-4fb9-b640-999c1a03f79f",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a2b3c4d-0019-4e5f-8a9b-00000000c001",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -832,
+        192
+      ],
+      "id": "c0244c33-7dd6-4f37-b4ad-34d79fb05c34",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_seller_selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $json.seller_id }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "dcfe0c11-1ea4-4264-ba09-b28c77035fc5",
+      "name": "Get Selling Partner ID",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.first().json;\nconst ctx = $('Validate Input').first().json;\nconst row = Array.isArray(rows) ? rows[0] : rows;\n\nif (!row || !row.selling_partner_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLING_PARTNER_ID_NOT_FOUND',\n    seller_id: ctx.seller_id,\n    message: 'No Amazon Selling Partner ID is stored for this seller yet. Complete the self-authorization step and store the Merchant Token before calling this endpoint (see Day 24 prerequisite).'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_IDENTITY',\n  seller_id: ctx.seller_id,\n  selling_partner_id: row.selling_partner_id,\n  sku: ctx.sku,\n  marketplace_id: ctx.marketplace_id,\n  asin_hint: ctx.asin_hint\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "e2949d23-a64f-4f25-9af7-95ae7f601016",
+      "name": "Identity Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a2b3c4d-0019-4e5f-8a9b-00000000c002",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "HAS_IDENTITY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "08bb1a6a-03bd-409c-aa89-7e086a3b7e9a",
+      "name": "Has Identity"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $json.seller_id }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "12ee0955-a5ee-468b-99e6-b5526c45f8bb",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c0d35148-aa6c-4eff-99be-4962fafef8fa",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const identity = $('Identity Gate').first().json;\nconst token = $input.first().json.access_token;\n\nconst included = 'summaries,attributes,issues';\nconst url = 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/'\n  + encodeURIComponent(identity.selling_partner_id) + '/'\n  + encodeURIComponent(identity.sku)\n  + '?marketplaceIds=' + encodeURIComponent(identity.marketplace_id)\n  + '&includedData=' + encodeURIComponent(included);\n\nreturn [{ json: { url: url, access_token: token } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "683ffffa-aab1-430d-894d-05ca06a9ae93",
+      "name": "Build Listings URL"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "8f93aeee-b9de-42b1-a1e5-712b877a23c1",
+      "name": "Fetch Listing Item",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst identity = $('Identity Gate').first().json;\n\n// A genuine SP-API 404 for an unlisted SKU, or any other upstream error.\nif (!upstream || upstream.error || (!upstream.sku && !upstream.summaries)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'LISTING_NOT_FOUND',\n    sku: identity.sku,\n    marketplace_id: identity.marketplace_id,\n    message: 'No listing was found for this SKU under this seller account in this marketplace. Check the SKU and marketplace_id.',\n    upstream_raw: upstream\n  }}];\n}\n\nfunction forMarketplace(list) {\n  if (!Array.isArray(list)) return {};\n  return list.find(function(e) { return e.marketplaceId === identity.marketplace_id; }) || list[0] || {};\n}\n\nconst summary = forMarketplace(upstream.summaries);\n\n// DEFENSIVE PARSE (Day 24, first-ever call to this endpoint in the rebuild):\n// written against the documented Listings Items attribute shape, same\n// pattern as wf17's first build - if real data comes back differently,\n// paste the raw response and the parse gets corrected against real shape,\n// same as every other endpoint in this project so far.\nconst rawAttributes = upstream.attributes || {};\nconst attributes = {};\nObject.keys(rawAttributes).forEach(function(attrName) {\n  const entries = rawAttributes[attrName];\n  if (!Array.isArray(entries) || entries.length === 0) {\n    attributes[attrName] = entries;\n    return;\n  }\n  const relevant = entries.filter(function(e) { return !e.marketplace_id || e.marketplace_id === identity.marketplace_id; });\n  const list = relevant.length > 0 ? relevant : entries;\n  const allHaveValue = list.every(function(e) { return e && e.value !== undefined; });\n\n  if (allHaveValue && list.length === 1) {\n    attributes[attrName] = list[0].value;                            // color, brand, list_price, ... (proven: \"Blue\")\n  } else if (allHaveValue) {\n    attributes[attrName] = list.map(function(e) { return e.value; }); // bullet_point -> all 5 values now, not just #1\n  } else {\n    attributes[attrName] = entries;                                   // shirt_size, neck, sleeve, images: compound, kept raw\n  }\n});\n\nconst issues = Array.isArray(upstream.issues) ? upstream.issues : [];\n\nreturn [{ json: {\n  decision: 'LISTING_FOUND',\n  sku: identity.sku,\n  asin_hint: identity.asin_hint,\n  marketplace_id: identity.marketplace_id,\n  product_type: summary.productType || null,\n  status: summary.status || null,\n  item_name: summary.itemName || null,\n  attributes: attributes,\n  attribute_names_set: Object.keys(attributes),\n  issues: issues,\n  has_issues: issues.length > 0,\n  raw_upstream: upstream\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "0d376538-1f8f-4f3e-8ab1-27573e29bd0c",
+      "name": "Parse Listing Data"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "6191c478-7953-484b-8cdb-bb11a5b7297f",
+      "name": "Respond With Listing Data"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        240
+      ],
+      "id": "9e90bc86-205f-4ff4-8dd4-e714f9cb98d5",
+      "name": "Respond Missing Identity"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -832,
+        384
+      ],
+      "id": "a9b30d34-0d37-4148-b270-443885042fd7",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Get Selling Partner ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Selling Partner ID": {
+      "main": [
+        [
+          {
+            "node": "Identity Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identity Gate": {
+      "main": [
+        [
+          {
+            "node": "Has Identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Identity": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Missing Identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Build Listings URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Listings URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch Listing Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Listing Item": {
+      "main": [
+        [
+          {
+            "node": "Parse Listing Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Listing Data": {
+      "main": [
+        [
+          {
+            "node": "Respond With Listing Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "aebec00d-7ba7-4317-afd1-618eaa3b6442",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "9PmhPs8FsuN3cJqA",
+  "tags": []
+}
