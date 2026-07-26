@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.parent_asin || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'parent_asin and marketplace_id are both required.'\n  }}];\n}\n\nconst asin = String(body.parent_asin).trim().toUpperCase();\n\n// Amazon ASINs are exactly 10 alphanumeric characters.\nif (!/^[A-Z0-9]{10}$/.test(asin)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_ASIN_FORMAT',\n    message: 'parent_asin must be a 10-character alphanumeric Amazon ASIN (e.g. B0CVFVHY93).',\n    parent_asin: body.parent_asin\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  parent_asin: asin,\n  marketplace_id: body.marketplace_id\n}}];"
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\n\nif (!body.parent_asin || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'parent_asin and marketplace_id are both required.'\n  }}];\n}\n\nconst asin = String(body.parent_asin).trim().toUpperCase();\n\nif (!/^[A-Z0-9]{10}$/.test(asin)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_ASIN_FORMAT',\n    message: 'parent_asin must be a 10-character alphanumeric Amazon ASIN (e.g. B0CVFVHY93).',\n    parent_asin: body.parent_asin\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  parent_asin: asin,\n  marketplace_id: body.marketplace_id\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -73,7 +73,7 @@
         "genericAuthType": "httpCustomAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{ \"p_seller_id\": \"4b88cbec-c02f-4416-8f22-4a7b35316b60\" }",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\" }",
         "options": {
           "response": {
             "response": {
@@ -289,9 +289,10 @@
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "availableInMCP": false
   },
-  "versionId": "d77f3ac0-6d21-4247-b0f1-3a3e6d27d765",
+  "versionId": "07e54638-f814-4d9b-b790-cec6d7f1e550",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
