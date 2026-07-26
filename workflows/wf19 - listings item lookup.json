@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.sku || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'sku and marketplace_id are both required. Note: this endpoint is SKU-keyed (the seller\\'s own internal SKU), not ASIN-keyed - use wf17 for ASIN/Catalog lookups.'\n  }}];\n}\n\n// seller_id will become a real request field in Day 26's multi-seller work.\n// Hardcoded here deliberately, consistent with wf15/17/18 - not new debt,\n// same debt, tracked in one place.\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: '4b88cbec-c02f-4416-8f22-4a7b35316b60',\n  sku: String(body.sku).trim(),\n  marketplace_id: body.marketplace_id,\n  asin_hint: body.asin || null\n}}];"
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_SELLER_ID',\n    message: 'seller_id is required.'\n  }}];\n}\n\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_SELLER_ID_FORMAT',\n    message: 'seller_id must be a valid UUID.'\n  }}];\n}\n\nif (!body.sku || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'sku and marketplace_id are both required. Note: this endpoint is SKU-keyed (the seller\\'s own internal SKU), not ASIN-keyed - use wf17 for ASIN/Catalog lookups.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  sku: String(body.sku).trim(),\n  marketplace_id: body.marketplace_id,\n  asin_hint: body.asin || null\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -95,7 +95,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows = $input.first().json;\nconst ctx = $('Validate Input').first().json;\nconst row = Array.isArray(rows) ? rows[0] : rows;\n\nif (!row || !row.selling_partner_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLING_PARTNER_ID_NOT_FOUND',\n    seller_id: ctx.seller_id,\n    message: 'No Amazon Selling Partner ID is stored for this seller yet. Complete the self-authorization step and store the Merchant Token before calling this endpoint (see Day 24 prerequisite).'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_IDENTITY',\n  seller_id: ctx.seller_id,\n  selling_partner_id: row.selling_partner_id,\n  sku: ctx.sku,\n  marketplace_id: ctx.marketplace_id,\n  asin_hint: ctx.asin_hint\n}}];"
+        "jsCode": "const rows = $input.first().json;\nconst ctx = $('Validate Input').first().json;\nconst row = Array.isArray(rows) ? rows[0] : rows;\n\nif (!row || !row.selling_partner_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_CONNECTED',\n    seller_id: ctx.seller_id,\n    message: 'No Amazon connection is stored for this seller_id. Either it does not exist, or has not completed self-authorization / Merchant Token setup yet.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_IDENTITY',\n  seller_id: ctx.seller_id,\n  selling_partner_id: row.selling_partner_id,\n  sku: ctx.sku,\n  marketplace_id: ctx.marketplace_id,\n  asin_hint: ctx.asin_hint\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -444,7 +444,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "aebec00d-7ba7-4317-afd1-618eaa3b6442",
+  "versionId": "09adcfb7-b687-4906-a89f-a9bd5da7c875",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
