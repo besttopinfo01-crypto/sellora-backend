@@ -85,8 +85,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1040,
-        64
+        -960,
+        96
       ],
       "id": "174dfe7e-afd1-491b-a817-0bbfd09bc463",
       "name": "Get Refresh Token",
@@ -122,8 +122,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -832,
-        64
+        -768,
+        96
       ],
       "id": "369e269c-503c-40ff-b682-b12731d31459",
       "name": "Exchange for Access Token",
@@ -151,8 +151,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -624,
-        64
+        -560,
+        96
       ],
       "id": "a44276c0-6926-4f0e-924e-ce4a7e2c9881",
       "name": "Fetch Parent",
@@ -166,8 +166,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        64
+        -352,
+        96
       ],
       "id": "11569993-3ced-455e-8d36-4629c88fb078",
       "name": "Parent Gate"
@@ -200,8 +200,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        64
+        -144,
+        96
       ],
       "id": "f0ccc3aa-3400-4ac3-bfbd-9471dae9fb5d",
       "name": "Parent OK"
@@ -213,8 +213,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
-        0
+        64,
+        32
       ],
       "id": "21b1974f-40ee-477d-92a2-d20d2b56eb15",
       "name": "Prepare Batch List"
@@ -226,8 +226,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        416,
-        0
+        480,
+        32
       ],
       "id": "73351b64-f4e3-45e5-ad21-2eeb0ed8cc35",
       "name": "Validate Child vs Parent"
@@ -239,8 +239,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        624,
-        0
+        688,
+        32
       ],
       "id": "67c09817-263b-43d3-94f3-c5cda034698f",
       "name": "Respond With Validation"
@@ -278,11 +278,180 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        0
+        272,
+        32
       ],
       "id": "6532bd39-9550-4f58-82df-fbdd3ca2ac96",
       "name": "Fetch Family Batch"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $('Validate Input').first().json.seller_id }}&select=status,contact_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1152,
+        -208
+      ],
+      "id": "36a57f3f-c633-4cdf-b2fc-1ca7166d4193",
+      "name": "Get Seller Status",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\nconst ctx = $('Validate Input').first().json;\n\nif (!sellerRow) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_FOUND',\n    seller_id: ctx.seller_id,\n    message: 'No seller record exists for this seller_id.'\n  }}];\n}\n\nif (sellerRow.status !== 'active') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_ACTIVE',\n    seller_id: ctx.seller_id,\n    seller_status: sellerRow.status,\n    message: 'This seller account is not active (status: ' + sellerRow.status + '). Access is not permitted.'\n  }}];\n}\n\nreturn [{ json: { decision: 'ELIGIBLE' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -192
+      ],
+      "id": "6b653546-573b-4e43-ac72-fd4647615808",
+      "name": "Seller Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "acd08342-865b-4c12-a35c-fe63f7de1a76",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "ELIGIBLE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -688,
+        -208
+      ],
+      "id": "c8ab0f4d-36ce-43a0-b01d-73207f073064",
+      "name": "Is Eligible"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/check_and_increment_rate_limit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\", \"p_action_type\": \"catalog_items_batch_get\", \"p_max_per_window\": 2 }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -320,
+        -224
+      ],
+      "id": "21f29345-983d-4492-b6e3-6f3d50f927ec",
+      "name": "Rate Limit Gate",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8df65f5d-e700-4557-94f7-38d0c6bdbad6",
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        -224
+      ],
+      "id": "f6992463-f4d5-453b-a02a-faa80e511467",
+      "name": "Check Rate Limit"
+    },
+    {
+      "parameters": {
+        "jsCode": "const status = $input.first().json;\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'RATE_LIMITED',\n    current_count: status.current_count,\n    window_start: status.window_start,\n    message: 'This seller has made too many requests to this operation in the current window. Please retry shortly.'\n  }}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -224
+      ],
+      "id": "c9b08969-47c3-42dc-9189-ea1a7cdbd896",
+      "name": "Format Rate Limit Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        -176
+      ],
+      "id": "7de56429-c392-47c2-b98f-c295c697a1dd",
+      "name": "Respond Rate Limited"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -480,
+        -128
+      ],
+      "id": "216fe621-e93f-4aba-b5f4-344e2ce5e4bf",
+      "name": "Respond Seller Ineligible"
     }
   ],
   "pinData": {},
@@ -313,7 +482,7 @@
       "main": [
         [
           {
-            "node": "Get Refresh Token",
+            "node": "Get Seller Status",
             "type": "main",
             "index": 0
           }
@@ -421,6 +590,86 @@
           }
         ]
       ]
+    },
+    "Is Eligible": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Seller Ineligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Rate Limit Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Rate Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Status": {
+      "main": [
+        [
+          {
+            "node": "Seller Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seller Gate": {
+      "main": [
+        [
+          {
+            "node": "Is Eligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Rate Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -429,7 +678,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "c0da34a2-150e-49a7-bc6a-8da8f21d5b46",
+  "versionId": "41a86a74-ff50-4097-8dc9-cf04e10b7564",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

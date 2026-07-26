@@ -99,8 +99,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1568,
-        -1008
+        -1104,
+        -1072
       ],
       "id": "57ba4580-48c4-4a4e-a886-4c364c88b6e7",
       "name": "Get Refresh Token",
@@ -136,8 +136,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1936,
-        -784
+        -1792,
+        -608
       ],
       "id": "c36361d4-3522-4d52-bb94-46b8771ec0af",
       "name": "Exchange for Access Token",
@@ -165,8 +165,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1728,
-        -784
+        -1584,
+        -608
       ],
       "id": "1987f8c6-719e-4345-8d49-751f47dbd49c",
       "name": "Get Product Type Definition"
@@ -185,8 +185,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1520,
-        -784
+        -1376,
+        -608
       ],
       "id": "3efecdf5-d0d9-453b-b88f-d99c4684d5e5",
       "name": "Fetch Schema"
@@ -199,8 +199,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1312,
-        -784
+        -1168,
+        -608
       ],
       "id": "1059e435-ef9a-48ad-b18c-58d9b9574eef",
       "name": "Parse Variation Themes",
@@ -226,8 +226,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1104,
-        -784
+        -960,
+        -608
       ],
       "id": "c553c3b5-5c0b-4f05-87ce-ddd5236a7352",
       "name": "Save to Cache",
@@ -245,8 +245,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -912,
-        -784
+        -768,
+        -608
       ],
       "id": "10592be2-d60d-4d4f-8c08-9f1c17d88bbb",
       "name": "Format Cache Miss Response"
@@ -271,8 +271,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -656,
-        -896
+        -512,
+        -720
       ],
       "id": "9043cd7d-0fbd-4d9e-b000-2490a3e48ce6",
       "name": "Respond to Webhook (Miss)"
@@ -331,11 +331,120 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1984,
-        -992
+        -2000,
+        -1008
       ],
       "id": "51f98382-2e37-414d-819c-c8f492f26597",
       "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $('Validate Input').first().json.seller_id }}&select=status,contact_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2048,
+        -1360
+      ],
+      "id": "341ec3e1-5c41-489c-937f-1f53ab7b1780",
+      "name": "Get Seller Status",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/check_and_increment_rate_limit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\", \"p_action_type\": \"pt_definitions_get\", \"p_max_per_window\": 2 }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1536,
+        -1040
+      ],
+      "id": "2d524de6-f368-43b0-afa4-ceadcd7c20b3",
+      "name": "Rate Limit Gate",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8df65f5d-e700-4557-94f7-38d0c6bdbad6",
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1344,
+        -1040
+      ],
+      "id": "745a1c44-f991-4a04-9cbd-09e4c43d511d",
+      "name": "Check Rate Limit"
+    },
+    {
+      "parameters": {
+        "jsCode": "const status = $input.first().json;\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'RATE_LIMITED',\n    current_count: status.current_count,\n    window_start: status.window_start,\n    message: 'This seller has made too many requests to this operation in the current window. Please retry shortly.'\n  }}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1136,
+        -864
+      ],
+      "id": "b5a0efd4-d0fb-4210-abe9-28acc5e281bb",
+      "name": "Format Rate Limit Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -944,
+        -816
+      ],
+      "id": "c630036a-f7e7-4aca-a9f3-827148268709",
+      "name": "Respond Rate Limited"
     }
   ],
   "pinData": {},
@@ -373,7 +482,7 @@
         ],
         [
           {
-            "node": "Get Refresh Token",
+            "node": "Rate Limit Gate",
             "type": "main",
             "index": 0
           }
@@ -472,7 +581,7 @@
       "main": [
         [
           {
-            "node": "get_product_type_theme_cache",
+            "node": "Get Seller Status",
             "type": "main",
             "index": 0
           }
@@ -480,6 +589,57 @@
         [
           {
             "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Rate Limit Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Rate Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Status": {
+      "main": [
+        [
+          {
+            "node": "get_product_type_theme_cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Rate Limit Response",
             "type": "main",
             "index": 0
           }
@@ -493,7 +653,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "8cc72f94-b2f4-456e-bf82-f8d68f166583",
+  "versionId": "f598d9b5-d1fb-4a76-a47e-59cdf6fc2f2e",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

@@ -11,8 +11,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1248,
-        192
+        -1296,
+        -320
       ],
       "id": "6de2d2eb-2424-4c07-a521-b4430f4838ac",
       "name": "Webhook",
@@ -25,8 +25,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1040,
-        192
+        -1088,
+        -320
       ],
       "id": "24698e75-a9f1-4fb9-b640-999c1a03f79f",
       "name": "Validate Input"
@@ -59,8 +59,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -832,
-        192
+        -880,
+        -320
       ],
       "id": "c0244c33-7dd6-4f37-b4ad-34d79fb05c34",
       "name": "Is Valid"
@@ -79,8 +79,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -624,
-        96
+        -672,
+        -416
       ],
       "id": "dcfe0c11-1ea4-4264-ba09-b28c77035fc5",
       "name": "Get Selling Partner ID",
@@ -95,13 +95,13 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows = $input.first().json;\nconst ctx = $('Validate Input').first().json;\nconst row = Array.isArray(rows) ? rows[0] : rows;\n\nif (!row || !row.selling_partner_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_CONNECTED',\n    seller_id: ctx.seller_id,\n    message: 'No Amazon connection is stored for this seller_id. Either it does not exist, or has not completed self-authorization / Merchant Token setup yet.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_IDENTITY',\n  seller_id: ctx.seller_id,\n  selling_partner_id: row.selling_partner_id,\n  sku: ctx.sku,\n  marketplace_id: ctx.marketplace_id,\n  asin_hint: ctx.asin_hint\n}}];"
+        "jsCode": "const rows = $('Get Selling Partner ID').first().json;\nconst ctx = $('Validate Input').first().json;\nconst identityRow = Array.isArray(rows) ? rows[0] : rows;\n\nconst sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\n\nif (!sellerRow) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_FOUND',\n    seller_id: ctx.seller_id,\n    message: 'No seller record exists for this seller_id.'\n  }}];\n}\n\nif (sellerRow.status !== 'active') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_ACTIVE',\n    seller_id: ctx.seller_id,\n    seller_status: sellerRow.status,\n    message: 'This seller account is not active (status: ' + sellerRow.status + '). Access is not permitted.'\n  }}];\n}\n\nif (!identityRow || !identityRow.selling_partner_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_CONNECTED',\n    seller_id: ctx.seller_id,\n    message: 'No Amazon connection is stored for this seller_id. Either it does not exist, or has not completed self-authorization / Merchant Token setup yet.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_IDENTITY',\n  seller_id: ctx.seller_id,\n  selling_partner_id: identityRow.selling_partner_id,\n  sku: ctx.sku,\n  marketplace_id: ctx.marketplace_id,\n  asin_hint: ctx.asin_hint\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        96
+        -256,
+        -416
       ],
       "id": "e2949d23-a64f-4f25-9af7-95ae7f601016",
       "name": "Identity Gate"
@@ -134,8 +134,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        96
+        -640,
+        336
       ],
       "id": "08bb1a6a-03bd-409c-aa89-7e086a3b7e9a",
       "name": "Has Identity"
@@ -148,7 +148,7 @@
         "genericAuthType": "httpCustomAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={ \"p_seller_id\": \"{{ $json.seller_id }}\" }",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\" }",
         "options": {
           "response": {
             "response": {
@@ -160,8 +160,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -144,
+        -48
       ],
       "id": "12ee0955-a5ee-468b-99e6-b5526c45f8bb",
       "name": "Get Refresh Token",
@@ -197,8 +197,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        208,
-        0
+        176,
+        240
       ],
       "id": "c0d35148-aa6c-4eff-99be-4962fafef8fa",
       "name": "Exchange for Access Token",
@@ -216,8 +216,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        416,
-        0
+        336,
+        -64
       ],
       "id": "683ffffa-aab1-430d-894d-05ca06a9ae93",
       "name": "Build Listings URL"
@@ -239,12 +239,13 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
-        0
+        544,
+        -64
       ],
       "id": "8f93aeee-b9de-42b1-a1e5-712b877a23c1",
       "name": "Fetch Listing Item",
       "alwaysOutputData": true,
+      "retryOnFail": true,
       "onError": "continueRegularOutput"
     },
     {
@@ -254,8 +255,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        832,
-        0
+        752,
+        -64
       ],
       "id": "0d376538-1f8f-4f3e-8ab1-27573e29bd0c",
       "name": "Parse Listing Data"
@@ -267,8 +268,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1040,
-        0
+        960,
+        -64
       ],
       "id": "6191c478-7953-484b-8cdb-bb11a5b7297f",
       "name": "Respond With Listing Data"
@@ -280,8 +281,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        0,
-        240
+        -432,
+        480
       ],
       "id": "9e90bc86-205f-4ff4-8dd4-e714f9cb98d5",
       "name": "Respond Missing Identity"
@@ -293,11 +294,121 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -832,
-        384
+        -880,
+        -128
       ],
       "id": "a9b30d34-0d37-4148-b270-443885042fd7",
       "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $('Validate Input').first().json.seller_id }}&select=status,contact_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -464,
+        -416
+      ],
+      "id": "7452cc04-95fb-4ccf-93a9-284ef2864e66",
+      "name": "Get Seller Status",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/check_and_increment_rate_limit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\",\n    \"p_action_type\": \"listings_items_get\",\n    \"p_max_per_window\": 2\n  }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -496,
+        240
+      ],
+      "id": "26b2b120-9624-4248-8240-323dd87c875f",
+      "name": "Rate Limit Gate",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d3b78f1a-860a-479f-bf85-f2ca0ce8fbe2",
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -288,
+        240
+      ],
+      "id": "6a32f63c-cd89-4d11-9e05-b0e4aa07ecb9",
+      "name": "Check Rate Limit"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        32,
+        480
+      ],
+      "id": "448daa80-d553-4ffc-9027-4f5d225f19a3",
+      "name": "Respond Rate Limited"
+    },
+    {
+      "parameters": {
+        "jsCode": "const status = $input.first().json;\nreturn [{ json: {\n  decision: 'REJECTED',\n  reason: 'RATE_LIMITED',\n  current_count: status.current_count,\n  window_start: status.window_start,\n  message: 'This seller has made too many requests to this operation in the current window. Please retry shortly.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        368
+      ],
+      "id": "17253d21-b67e-4aa2-8ce7-c8ca5e1abf66",
+      "name": "Format Rate Limit Response"
     }
   ],
   "pinData": {},
@@ -346,7 +457,7 @@
       "main": [
         [
           {
-            "node": "Identity Gate",
+            "node": "Get Seller Status",
             "type": "main",
             "index": 0
           }
@@ -368,7 +479,7 @@
       "main": [
         [
           {
-            "node": "Get Refresh Token",
+            "node": "Rate Limit Gate",
             "type": "main",
             "index": 0
           }
@@ -436,6 +547,57 @@
           }
         ]
       ]
+    },
+    "Get Seller Status": {
+      "main": [
+        [
+          {
+            "node": "Identity Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Rate Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Rate Limit Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Rate Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -444,7 +606,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "09adcfb7-b687-4906-a89f-a9bd5da7c875",
+  "versionId": "cf667de3-f043-4afe-811f-081729fa4452",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
