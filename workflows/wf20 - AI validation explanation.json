@@ -1,0 +1,275 @@
+{
+  "name": "wf20 - AI validation explanation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "c9e4f7a2-8b16-4d59-a3e0-6f2c1b8d5e94",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "78dcc271-7b46-43d4-b4c5-c098f83005fa",
+      "name": "Webhook",
+      "webhookId": "c9e4f7a2-8b16-4d59-a3e0-6f2c1b8d5e94"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.decision) {\n  return [{ json: {\n    gate: 'REJECTED',\n    reason: 'MISSING_DECISION',\n    message: \"A decision field is required - pass wf18's full validation response object as the request body.\"\n  }}];\n}\n\nconst REAL_OUTCOMES = ['CHILD_VALID', 'BLOCKED', 'NEEDS_INPUT', 'MANUAL_REVIEW_REQUIRED'];\nif (REAL_OUTCOMES.indexOf(body.decision) === -1) {\n  return [{ json: {\n    gate: 'SKIP',\n    decision: body.decision,\n    seller_id: body.seller_id || null,\n    message: 'This decision (' + body.decision + ') is not a completed validation outcome (likely an intake-level rejection) - no AI explanation generated; the original message already covers it.',\n    original_message: body.message || null\n  }}];\n}\n\nreturn [{ json: {\n  gate: 'PROCEED',\n  decision: body.decision,\n  seller_id: body.seller_id || null,\n  parent_asin: body.parent_asin || null,\n  child_asin: body.child_asin || null,\n  hard_blocks: body.hard_blocks || [],\n  fixable_issues: body.fixable_issues || [],\n  manual_reviews: body.manual_reviews || [],\n  warnings: body.warnings || [],\n  informational_notes: body.informational_notes || [],\n  formatting_suggestions: body.formatting_suggestions || []\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "7231b046-5017-43fd-a08a-dc5027f4cbc4",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a2b3c4d-0020-4e5f-8a9b-00000000c001",
+              "leftValue": "={{ $json.gate }}",
+              "rightValue": "PROCEED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "11d25603-f9ce-4b69-8e81-6404c2e58453",
+      "name": "Should Call AI"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Validate Input').first().json;\n\nfunction summarizeChecks(label, arr) {\n  if (!arr || arr.length === 0) return label + ': none';\n  return label + ' (' + arr.length + '): ' + arr.map(function(item) {\n    return (item.issue_code || item.check) + ' - ' + item.message;\n  }).join(' | ');\n}\n\nfunction summarizeFormatting(arr) {\n  if (!arr || arr.length === 0) return 'Formatting suggestions: none';\n  return 'Formatting suggestions (' + arr.length + '): ' + arr.map(function(s) {\n    return s.attribute + ': \"' + s.original + '\" -> \"' + s.suggested + '\" (' + s.reasons.join(', ') + ')';\n  }).join(' | ');\n}\n\nconst promptText = 'Explain this variation-merge validation result.\\n' +\n  'Decision: ' + input.decision + '\\n' +\n  'Parent ASIN: ' + (input.parent_asin || 'n/a') + ', Candidate ASIN: ' + (input.child_asin || 'n/a') + '\\n' +\n  summarizeChecks('Hard blocks', input.hard_blocks) + '\\n' +\n  summarizeChecks('Fixable issues', input.fixable_issues) + '\\n' +\n  summarizeChecks('Manual reviews', input.manual_reviews) + '\\n' +\n  summarizeChecks('Warnings', input.warnings) + '\\n' +\n  summarizeChecks('Informational notes', input.informational_notes) + '\\n' +\n  summarizeFormatting(input.formatting_suggestions);\n\nreturn [{ json: { ai_prompt: promptText } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5de39758-66bd-4c0e-9961-02565d5ecf85",
+      "name": "Build AI Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 1000,\n  \"system\": \"You are an Amazon catalog safety explanation assistant. You receive a deterministic validation result for merging a candidate child listing into an existing Amazon variation family. You must not override the decision or suggest workarounds - you only explain what has already been decided.\\n\\nThe decision will be exactly one of: CHILD_VALID, BLOCKED, NEEDS_INPUT, or MANUAL_REVIEW_REQUIRED. Only use the words 'hard block', 'permanently blocked', or 'cannot proceed' if the decision is exactly BLOCKED. If NEEDS_INPUT, describe the issue as needing the seller's input to fix, not a permanent block. If MANUAL_REVIEW_REQUIRED, explain the seller needs to personally review and confirm something before proceeding - this is not a block, but requires their attention. If CHILD_VALID, give a positive, confirming summary.\\n\\nYou will receive checks across six severity tiers: hard_block (blocks the decision entirely), fixable (seller can supply missing info), manual_review (needs the seller's personal confirmation, never auto-blocks), warning (a caution to read, never blocks), info (purely informational, never blocks), and suggestion (an optional formatting improvement, never blocks and never auto-applied). If more than one check is present across any tiers, name and briefly explain each one individually - never imply there is only a single issue when more exist, and never omit a lower-severity item just because a hard_block is also present.\\n\\nFor issue_code REVIEW_MANIPULATION_INTENT: state plainly this is a permanent block for review-manipulation language, unrelated to the variation data itself.\\nFor BRAND_MISMATCH: name both the family brand and the candidate's brand.\\nFor PRODUCT_TYPE_MISMATCH: name both product types.\\nFor THEME_MISMATCH: name the parent's existing theme and explain it cannot be changed once set.\\nFor MISSING_THEME_ATTRIBUTE_VALUE: name the specific missing attribute(s).\\nFor DUPLICATE_VARIATION_VALUE: name the ASIN it clashes with and the clashing values.\\nFor ALREADY_IN_FAMILY: explain there is nothing to merge since it is already a child of this exact parent.\\nFor EXISTING_PARENT_CONFLICT: name the conflicting parent ASIN and explain this needs the seller's deliberate confirmation.\\nFor GENERIC_BRAND_MATCH: explain that \\\"Generic\\\" does not uniquely confirm shared origin the way a registered brand does, and point to the corroborating evidence given (product type, category).\\nFor BRAND_INDETERMINATE: explain the family's brand could not be determined from the catalog and needs the seller's confirmation.\\nFor NEW_ASIN_INTO_ESTABLISHED_PARENT: reassure the seller this is normal for a growing family, not a risk signal.\\nFor FORMATTING_SUGGESTIONS: name the suggested change(s) and note they are optional, never automatic.\\n\\nReturn ONLY strict JSON with fields: plain_english_summary, seller_next_action, risk_explanation, affected_items. No markdown, no other text.\",\n  \"messages\": [\n    { \"role\": \"user\", \"content\": {{ JSON.stringify($json.ai_prompt) }} }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "190ef1f1-cd5b-49ae-b5d8-e9ced54f0954",
+      "name": "Call Claude",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "r2H1ykX6gxgcUp9i",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $input.first().json;\nconst input = $('Validate Input').first().json;\n\nlet parsed = null;\nlet parseError = null;\ntry {\n  const textBlock = (aiResponse.content || []).find(function(c) { return c.type === 'text'; });\n  const rawText = textBlock ? textBlock.text : '';\n  const cleaned = rawText.replace(/```json|```/g, '').trim();\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  parseError = e.message;\n}\n\nconst requiredFields = ['plain_english_summary', 'seller_next_action', 'risk_explanation', 'affected_items'];\nconst missingFields = parsed ? requiredFields.filter(function(f) { return !(f in parsed); }) : requiredFields;\nconst aiFailed = !parsed || missingFields.length > 0;\n\n// Graceful fallback (ported from the old build) - never crash, never leave the\n// seller with nothing, even if the AI call or its JSON parsing fails.\nconst explanation = aiFailed ? {\n  plain_english_summary: 'An automated explanation could not be generated for this result.',\n  seller_next_action: 'Please review the validation checks below directly.',\n  risk_explanation: 'Unable to generate an AI explanation at this time.',\n  affected_items: []\n} : parsed;\n\n// SAFETY (Day 31 will stress-test this): decision, ASINs, and every check array\n// are echoed VERBATIM from the deterministic input below - never derived from or\n// replaceable by the AI's own text. The AI contributes only the four explanation\n// fields above; it has no path to alter what was already decided.\nreturn [{ json: {\n  decision: input.decision,\n  seller_id: input.seller_id,\n  parent_asin: input.parent_asin,\n  child_asin: input.child_asin,\n  explanation_status: aiFailed ? 'AI_RESPONSE_INVALID' : 'EXPLAINED',\n  explanation_error: aiFailed ? (parseError || ('missing fields: ' + missingFields.join(', '))) : null,\n  plain_english_summary: explanation.plain_english_summary,\n  seller_next_action: explanation.seller_next_action,\n  risk_explanation: explanation.risk_explanation,\n  affected_items: explanation.affected_items,\n  hard_blocks: input.hard_blocks,\n  fixable_issues: input.fixable_issues,\n  manual_reviews: input.manual_reviews,\n  warnings: input.warnings,\n  informational_notes: input.informational_notes,\n  formatting_suggestions: input.formatting_suggestions\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "ee379804-ec9d-47ae-b597-6c63a162f2ec",
+      "name": "Parse AI Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        0
+      ],
+      "id": "740e1642-4931-4f60-9716-0bcec0406b2c",
+      "name": "Respond With Explanation"
+    },
+    {
+      "parameters": {
+        "jsCode": "const g = $input.first().json;\nreturn [{ json: {\n  decision: g.decision,\n  explanation_status: g.gate === 'SKIP' ? 'SKIPPED_NOT_A_VALIDATION_OUTCOME' : 'REJECTED',\n  message: g.message,\n  original_message: g.original_message || null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        224
+      ],
+      "id": "d3bdd5fc-88ad-4d16-9918-df7fbb958087",
+      "name": "Format Non-AI Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        224
+      ],
+      "id": "b0d21aea-075c-435f-af47-bc41bc73ebb1",
+      "name": "Respond Without Explanation"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Should Call AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Call AI": {
+      "main": [
+        [
+          {
+            "node": "Build AI Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Non-AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build AI Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Respond With Explanation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Non-AI Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Without Explanation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "3fcaad2c-d631-4650-867b-eb0a0d92f9f2",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "DBSjuOhDVgBZApYI",
+  "tags": []
+}
