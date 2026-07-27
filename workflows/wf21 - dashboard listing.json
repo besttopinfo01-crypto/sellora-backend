@@ -1,0 +1,370 @@
+{
+  "name": "wf21 - dashboard listing",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "d5f8a3c1-6e29-4b74-9a2f-8c1b5e7d3f60",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1248,
+        192
+      ],
+      "id": "3dadc4fd-6478-4095-9090-1b0df8340b50",
+      "name": "Webhook",
+      "webhookId": "d5f8a3c1-6e29-4b74-9a2f-8c1b5e7d3f60"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', seller_id: body.seller_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        192
+      ],
+      "id": "a56466a3-85ae-47d8-a628-1e77122df3ad",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c001",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -832,
+        192
+      ],
+      "id": "9e49a4d8-7703-477e-bbea-68590dcd65e4",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $('Validate Input').first().json.seller_id }}&select=status,contact_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "d3de3f5b-7ed5-4e1b-b404-a53acc65f00e",
+      "name": "Get Seller Status",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\nconst ctx = $('Validate Input').first().json;\n\nif (!sellerRow) {\n  return [{ json: { decision: 'REJECTED', reason: 'SELLER_NOT_FOUND', seller_id: ctx.seller_id, message: 'No seller record exists for this seller_id.' } }];\n}\nif (sellerRow.status !== 'active') {\n  return [{ json: { decision: 'REJECTED', reason: 'SELLER_NOT_ACTIVE', seller_id: ctx.seller_id, seller_status: sellerRow.status, message: 'This seller account is not active (status: ' + sellerRow.status + '). Access is not permitted.' } }];\n}\n\nreturn [{ json: { decision: 'ELIGIBLE', seller_id: ctx.seller_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "84bf038b-3dca-411a-be3c-6dc6615d7b7d",
+      "name": "Seller Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c002",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "ELIGIBLE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "fbe3a943-5c42-458e-9322-8079da016368",
+      "name": "Is Eligible"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?seller_id=eq.{{ $('Validate Input').first().json.seller_id }}&select=request_id,status,merge_type,marketplace_id,created_at,dimension1_theme,dimension2_theme&order=created_at.desc",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c902b6ac-1144-4bf5-9b0e-b721e13c135f",
+      "name": "Fetch Merge Requests",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_request_items?seller_id=eq.{{ $('Validate Input').first().json.seller_id }}&select=request_id,parent_sku,parentage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "884d51ac-08eb-4adb-bba2-38127ab35147",
+      "name": "Fetch Merge Request Items",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function collectAll(nodeItems) {\n  // n8n may return a PostgREST array response as ONE item containing the\n  // array, or split it into one item per row - handle both. Same defensive\n  // pattern already used in wf14's Fetch Items node; missed reusing it here\n  // the first time, which is exactly why Fetch Merge Requests' real 4 rows\n  // never reached this node's output correctly.\n  if (nodeItems.length === 1 && Array.isArray(nodeItems[0].json)) {\n    return nodeItems[0].json;\n  }\n  return nodeItems.map(function(i) { return i.json; });\n}\n\nconst ctx = $('Validate Input').first().json;\nconst requests = collectAll($('Fetch Merge Requests').all());\nconst items = collectAll($input.all());\n\n// Group items by request_id for child-count and parent_sku lookup.\nconst itemsByRequest = {};\nitems.forEach(function(item) {\n  if (!itemsByRequest[item.request_id]) itemsByRequest[item.request_id] = [];\n  itemsByRequest[item.request_id].push(item);\n});\n\nconst rows = requests.map(function(req) {\n  const reqItems = itemsByRequest[req.request_id] || [];\n\n  // OPEN QUESTION (still unconfirmed): 'parentage' column's real values are\n  // unknown - may distinguish parent-rows from child-rows within this same\n  // table. For now this counts ALL item rows for the request. Revisit once\n  // real data lets you check `select distinct parentage from merge_request_items`.\n  const childCount = reqItems.length;\n\n  const parentSkuItem = reqItems.find(function(i) { return i.parent_sku; });\n\n  return {\n    request_id: req.request_id,\n    status: req.status,\n    merge_type: req.merge_type,\n    marketplace_id: req.marketplace_id,\n    parent_sku: parentSkuItem ? parentSkuItem.parent_sku : null,\n    child_count: childCount,\n    dimension1_theme: req.dimension1_theme,\n    dimension2_theme: req.dimension2_theme || null,\n    created_at: req.created_at\n  };\n});\n\nreturn [{ json: {\n  decision: 'DASHBOARD_READY',\n  seller_id: ctx.seller_id,\n  count: rows.length,\n  requests: rows\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "358bf15f-b4a8-4e7e-abbc-92467c0a118f",
+      "name": "Aggregate Dashboard Rows"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        0
+      ],
+      "id": "dac0f059-ef31-415c-bfff-577ff169f19b",
+      "name": "Respond With Dashboard"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        240
+      ],
+      "id": "d3ef7dbf-c896-4a54-8ec1-b9180b977387",
+      "name": "Respond Seller Ineligible"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -832,
+        384
+      ],
+      "id": "ef8f38e9-8319-4781-87d3-f2a8df6ead69",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Status": {
+      "main": [
+        [
+          {
+            "node": "Seller Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seller Gate": {
+      "main": [
+        [
+          {
+            "node": "Is Eligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Eligible": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Requests",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Seller Ineligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Requests": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request Items": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Dashboard Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Dashboard Rows": {
+      "main": [
+        [
+          {
+            "node": "Respond With Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "cf7d24d9-8ae0-424a-888b-fcaf9ede3295",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "a4wnfiETBzChBmJa",
+  "tags": []
+}
