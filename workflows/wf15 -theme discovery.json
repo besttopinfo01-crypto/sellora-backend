@@ -347,8 +347,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2048,
-        -1360
+        -2064,
+        -1520
       ],
       "id": "341ec3e1-5c41-489c-937f-1f53ab7b1780",
       "name": "Get Seller Status",
@@ -445,6 +445,66 @@
       ],
       "id": "c630036a-f7e7-4aca-a9f3-827148268709",
       "name": "Respond Rate Limited"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\nconst ctx = $('Validate Input').first().json;\n\nif (!sellerRow) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_FOUND',\n    seller_id: ctx.seller_id,\n    message: 'No seller record exists for this seller_id.'\n  }}];\n}\n\nif (sellerRow.status !== 'active') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_ACTIVE',\n    seller_id: ctx.seller_id,\n    seller_status: sellerRow.status,\n    message: 'This seller account is not active (status: ' + sellerRow.status + '). Access is not permitted.'\n  }}];\n}\n\nreturn [{ json: { decision: 'ELIGIBLE' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1824,
+        -1520
+      ],
+      "id": "44b3b4ad-e25c-488d-88d5-11abb203b031",
+      "name": "Seller Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6b45b124-5b62-463a-bf67-3a3682714aa6",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "ELIGIBLE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1568,
+        -1520
+      ],
+      "id": "3952e8a6-8d75-4795-8f6e-4f53734c2f42",
+      "name": "Is Eligible"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1264,
+        -1472
+      ],
+      "id": "f609ca4c-efaa-46cb-af46-b8322447d057",
+      "name": "Respond Seller Ineligible"
     }
   ],
   "pinData": {},
@@ -610,7 +670,7 @@
       "main": [
         [
           {
-            "node": "get_product_type_theme_cache",
+            "node": "Seller Gate",
             "type": "main",
             "index": 0
           }
@@ -645,6 +705,35 @@
           }
         ]
       ]
+    },
+    "Seller Gate": {
+      "main": [
+        [
+          {
+            "node": "Is Eligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Eligible": {
+      "main": [
+        [
+          {
+            "node": "get_product_type_theme_cache",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Seller Ineligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -653,7 +742,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f598d9b5-d1fb-4a76-a47e-59cdf6fc2f2e",
+  "versionId": "369ae46b-6dc4-4785-8de5-4af0487b950b",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
