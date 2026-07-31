@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -5664,
-        -2064
+        2272,
+        320
       ],
-      "id": "1318aa59-8965-448f-b6fe-707885d69be7",
+      "id": "92569ac2-bc0a-4a25-b8d8-0e5c7def7b83",
       "name": "Webhook",
       "webhookId": "41cec4be-aef4-4da4-9170-1318f366749f",
       "alwaysOutputData": true
@@ -26,10 +26,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4384,
-        -1200
+        3904,
+        1952
       ],
-      "id": "1f5abd7c-eb6b-44a2-a6da-fd039fa80be4",
+      "id": "35a103f8-b3e5-41df-a0a8-d4ff8cf33ea5",
       "name": "Issue Diagnosis and Hard Blocks"
     },
     {
@@ -117,10 +117,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -4208,
-        -1632
+        4080,
+        1520
       ],
-      "id": "7b5ba75f-4048-4756-8083-52c065057538",
+      "id": "937d2ec2-79df-474d-8120-dd48f3df6abf",
       "name": "Structure Switch"
     },
     {
@@ -130,10 +130,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3648,
-        -1824
+        4640,
+        1328
       ],
-      "id": "8407995d-60fd-47c2-9200-419decb8e5cc",
+      "id": "31e19962-f215-4f3c-b19b-1b7f677b15ca",
       "name": "Single Theme Placeholder"
     },
     {
@@ -143,10 +143,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3536,
-        -1040
+        4752,
+        2112
       ],
-      "id": "e72b645e-21f4-4de5-919d-d2b5621aaef2",
+      "id": "9662bb3d-7c34-4d49-85c7-2ca558daff86",
       "name": "Not Sure Theme Placeholder"
     },
     {
@@ -156,10 +156,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5456,
-        -2064
+        2480,
+        320
       ],
-      "id": "363c26ed-2df3-4ce9-99db-f37793ae3173",
+      "id": "3450b5fc-8acc-4a4b-8cfe-e403e892d4e7",
       "name": "Input Validator"
     },
     {
@@ -169,10 +169,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3680,
-        -1440
+        4608,
+        1712
       ],
-      "id": "f6a40dc3-2930-4f36-8669-85026e0422f9",
+      "id": "8e1ab175-4a93-4463-95ac-2820b7f4fd09",
       "name": "Matrix Builder"
     },
     {
@@ -182,10 +182,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3536,
-        -1440
+        4752,
+        1712
       ],
-      "id": "8a181c14-68e8-4b2e-b8ab-ebce998fc758",
+      "id": "fe376eb7-c5b6-4364-807f-5d1f864bd53d",
       "name": "SKU Assignment"
     },
     {
@@ -195,10 +195,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3360,
-        -1440
+        4928,
+        1712
       ],
-      "id": "cbb0c552-5eb0-4258-97d4-f1bb672f905f",
+      "id": "0d569302-9054-417a-bf98-2d7f06bd7e17",
       "name": "Matrix Validator"
     },
     {
@@ -208,10 +208,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5216,
-        -1856
+        2720,
+        528
       ],
-      "id": "9ea2469e-fa8a-421c-9c24-a43f14bad26b",
+      "id": "9b6cbf57-f843-453f-9152-dfa082bb9e87",
       "name": "Restore After Supabase"
     },
     {
@@ -221,10 +221,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4832,
-        -960
+        3616,
+        2192
       ],
-      "id": "f002ac8a-62a6-4628-9a4d-290b9d20c3a4",
+      "id": "51f23431-5ee8-4ca3-b936-ad43a52ddcb5",
       "name": "Split Items for Logging"
     },
     {
@@ -261,10 +261,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -4688,
-        -1296
+        3600,
+        1856
       ],
-      "id": "258edd35-2713-4ade-92fa-90589612de3f",
+      "id": "a7dee7ba-29e0-4d41-855c-41573f9c729b",
       "name": "Insert Item to Supabase",
       "onError": "continueRegularOutput"
     },
@@ -275,10 +275,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4528,
-        -1216
+        3760,
+        1936
       ],
-      "id": "12f4246f-6fe4-4c86-ad24-0102509ca1cb",
+      "id": "6ae58614-1869-4cf1-b488-246dd5bf06f7",
       "name": "Restore After Items Log"
     },
     {
@@ -288,10 +288,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3168,
-        -1440
+        5120,
+        1712
       ],
-      "id": "1e57c3c7-3e3c-4f0f-8579-7fbfc776cd8d",
+      "id": "9bd00230-170f-4669-8206-3ceec85b93b7",
       "name": "Matrix Logger Prep"
     },
     {
@@ -328,10 +328,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2768,
-        -1552
+        5520,
+        1600
       ],
-      "id": "91cdb6df-1a5b-43af-b37f-508639c858ed",
+      "id": "5a8f5859-f370-4ff9-8dcb-963dd21f0e98",
       "name": "Matrix Logger — variation_matrices",
       "onError": "continueRegularOutput"
     },
@@ -342,10 +342,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3472,
-        -1824
+        4816,
+        1328
       ],
-      "id": "ac822680-d803-4bf9-bed1-40dc10c9d47c",
+      "id": "567b30ec-e8d3-415f-8f94-1109f78a878e",
       "name": "WF01 Single Theme Logger Prep"
     },
     {
@@ -382,10 +382,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3296,
-        -1824
+        4992,
+        1328
       ],
-      "id": "50148035-4ab6-4ab3-8cca-3f1b4b58473b",
+      "id": "70c6ab9d-ac05-484c-b808-77da780c18c0",
       "name": "WF01 Log Validation Result (Single)",
       "onError": "continueRegularOutput"
     },
@@ -423,10 +423,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2896,
-        -1824
+        5392,
+        1328
       ],
-      "id": "6c66cf7e-2473-4679-944f-0b9db7ae7e7d",
+      "id": "1231ed56-2c9e-459b-a897-2eb9484a00b9",
       "name": "WF01 Log Issue Diagnosis (Single",
       "onError": "continueRegularOutput"
     },
@@ -437,10 +437,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3088,
-        -1824
+        5200,
+        1328
       ],
-      "id": "108272eb-4043-43ca-bef2-8143e3564c57",
+      "id": "59bceb55-d496-4e47-962d-4020dd9c9dea",
       "name": "WF01 Restore After Validation Log (Single)"
     },
     {
@@ -450,10 +450,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3328,
-        -1040
+        4960,
+        2112
       ],
-      "id": "688a5eac-1887-4440-9446-2ee6edaa39c0",
+      "id": "5b2f42ee-84b8-43bc-9bda-52b46bc3d8a1",
       "name": "WF01 Not Sure Logger Prep"
     },
     {
@@ -490,10 +490,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3136,
-        -1040
+        5152,
+        2112
       ],
-      "id": "829b41d7-de5d-4215-8d76-1b6b88347b3b",
+      "id": "5542b959-4031-4602-abed-9d71efecdeb6",
       "name": "WF01 Log Validation Result (Not Sure)",
       "onError": "continueRegularOutput"
     },
@@ -504,10 +504,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2944,
-        -1040
+        5344,
+        2112
       ],
-      "id": "a4523f59-20ad-4eff-a7ad-97f5bc46ca00",
+      "id": "26142b39-590a-4bdf-991d-97836dbe8e21",
       "name": "WF01 Restore After Validation Log (Not Sure)"
     },
     {
@@ -544,10 +544,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2752,
-        -1040
+        5536,
+        2112
       ],
-      "id": "ea26e09b-c2ba-43cd-9250-8a51ddecdcfd",
+      "id": "042dcf26-4d8d-4f60-b753-f17c505d009b",
       "name": "WF01 Log Issue Diagnosis (Not Sure)",
       "onError": "continueRegularOutput"
     },
@@ -558,10 +558,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2592,
-        -1424
+        5696,
+        1728
       ],
-      "id": "3352306f-fb45-4e5a-b8b0-5b7ebef27539",
+      "id": "1c5993e1-1d1c-42ce-86aa-07afc1b66681",
       "name": "WF01 Double Theme Logger Prep"
     },
     {
@@ -598,10 +598,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2432,
-        -1440
+        5856,
+        1712
       ],
-      "id": "813eb19e-675d-470f-91c0-4a199912a722",
+      "id": "bdf3e87d-480a-4dd8-a6cd-b22086c17e6b",
       "name": "WF01 Log Validation Result (Double)",
       "onError": "continueRegularOutput"
     },
@@ -612,10 +612,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2224,
-        -1376
+        6064,
+        1776
       ],
-      "id": "00930fb9-5aab-495b-93b0-4a4942106bd6",
+      "id": "2b5b9467-2edb-47ba-855e-8e3a73f8ebd8",
       "name": "WF01 Restore After Validation Log (Double)"
     },
     {
@@ -652,10 +652,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2048,
-        -1376
+        6240,
+        1776
       ],
-      "id": "d8e14acf-9a46-4710-88ae-fb76e1fcde8a",
+      "id": "08555443-f2d7-4c1a-b092-2a93b280dd1a",
       "name": "WF01 Log Issue Diagnosis (Double)",
       "onError": "continueRegularOutput"
     },
@@ -684,10 +684,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -5248,
-        -2064
+        2688,
+        320
       ],
-      "id": "89b1da21-a0de-4855-9751-e6cba74222a1",
+      "id": "ac52d420-33a8-4372-86ce-df490d2c7bf8",
       "name": "Check Duplicate Request",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -699,10 +699,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5632,
-        -1856
+        2304,
+        528
       ],
-      "id": "ace1b068-2187-48ed-b7cd-069da4a9921f",
+      "id": "f6a6eede-7001-4fa0-8369-770fce6e65ab",
       "name": "Idempotency Gate"
     },
     {
@@ -739,10 +739,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -5424,
-        -1856
+        2512,
+        528
       ],
-      "id": "7bb89b8b-a302-4581-9c04-3b9dd3a77f0a",
+      "id": "2ecc2cd5-cb18-4c38-ae49-5a75569f80a1",
       "name": "Supabase Logger — merge_requests",
       "onError": "continueRegularOutput"
     },
@@ -759,10 +759,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -5728,
-        -1648
+        2208,
+        736
       ],
-      "id": "13aafbaf-8f31-42c4-b312-fe2d862e462b",
+      "id": "24871eae-e765-417a-9ed4-f3119c150d44",
       "name": "Fetch Catalog Data",
       "onError": "continueRegularOutput"
     },
@@ -779,10 +779,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -5488,
-        -1648
+        2448,
+        736
       ],
-      "id": "7b6aaebf-804b-4a22-a198-0d2a2e6f6195",
+      "id": "33d468a3-0e45-4c79-85f6-f1ec8d4a6921",
       "name": "Fetch Listing Data",
       "onError": "continueRegularOutput"
     },
@@ -798,10 +798,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -5296,
-        -1648
+        2640,
+        736
       ],
-      "id": "410660bd-68ea-493a-ab26-965cc6884cc6",
+      "id": "1fe7794f-4eec-444c-9ca4-4cfaaea3f50c",
       "name": "Fetch PTD Schema",
       "onError": "continueRegularOutput"
     },
@@ -812,10 +812,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5104,
-        -1648
+        2832,
+        736
       ],
-      "id": "c9414453-2b29-4d99-8feb-39d09c028fa4",
+      "id": "97b1c037-83cb-4fe1-8135-e6905448e4e7",
       "name": "Assemble Proxy Data"
     },
     {
@@ -825,23 +825,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5728,
-        -1280
+        3152,
+        1200
       ],
-      "id": "2fa5b3c9-8311-405a-8eac-6b36005d16ce",
+      "id": "738aecb1-d989-4502-9dea-7d60571fffeb",
       "name": "Normalize Amazon Data"
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Normalize Amazon Data').first().json;\nif (prev.decision === 'BLOCKED' || prev.decision === 'DUPLICATE_REQUEST') {\n  return [{ json: prev }];\n}\nconst variationStructure = prev.variation_structure;\nconst supportedThemes = prev.items[0].supported_variation_themes || [];\nconst requiredChildAttributes = prev.required_child_attributes || [];\nconst warnings = [];\nconst themeMap = {\n  single_theme: ['Color', 'Size', 'Flavor', 'Scent', 'Material'],\n  double_theme: ['ColorSize', 'SizeColor', 'ColorFlavor', 'SizeFlavor']\n};\nconst THEME_ATTRIBUTE_MAP = {\n  Color: 'color_name',\n  Size: 'size_name',\n  Flavor: 'flavor_name',\n  Style: 'style_name',\n  Scent: 'scent_name',\n  Material: 'material_type'\n};\nconst THEME_VALUE_ATTRIBUTES = ['color_name', 'size_name', 'flavor_name', 'style_name', 'scent_name', 'material_type'];\n\nif (variationStructure === 'not_sure') {\n  return [{ json: {\n    ...prev,\n    ptd_validation: {\n      status: 'skipped',\n      message: 'Theme validation skipped — variation_structure is not_sure.'\n    }\n  }}];\n}\nconst allowedThemes = themeMap[variationStructure] || [];\nconst matchedTheme = supportedThemes.find(function(t) {\n  return allowedThemes.includes(t);\n});\nif (!matchedTheme) {\n  return [{ json: {\n    request_id: prev.request_id,\n    decision: 'BLOCKED',\n    reason: 'UNSUPPORTED_VARIATION_THEME',\n    message: 'Amazon does not support the variation structure you selected for this product type. The supported variation option(s) for this product are: ' + supportedThemes.join(', ') + '. Please change your variation structure to match one of these and resubmit.',\n    issue_summary: 'Unsupported variation theme.',\n    issues: [{\n      issue_code: 'UNSUPPORTED_VARIATION_THEME',\n      severity: 'hard_block',\n      message: 'Amazon does not support the variation structure you selected for this product type. The supported variation option(s) for this product are: ' + supportedThemes.join(', ') + '. Please change your variation structure to match one of these and resubmit.',\n      can_user_fix: false,\n      can_user_override: false\n    }],\n    next_action: 'CANCEL_REQUEST',\n    variation_structure: variationStructure,\n    supported_themes: supportedThemes,\n    items: prev.items\n  }}];\n}\n\n// FIX-06: warn on required child attributes not covered by this single-theme merge.\n// parent_sku / parentage are skipped — those are structural fields Amazon assigns\n// later in the merge, not seller-provided data, so they'd always be \"missing\" here.\nconst matchedThemeAttribute = THEME_ATTRIBUTE_MAP[matchedTheme];\nif (variationStructure === 'single_theme') {\n  requiredChildAttributes.forEach(function(attr) {\n    if (!THEME_VALUE_ATTRIBUTES.includes(attr)) return;\n    prev.items.forEach(function(item) {\n      const hasValue = (attr === matchedThemeAttribute)\n        ? !!(item.variation_value && String(item.variation_value).trim() !== '')\n        : false;\n      if (!hasValue) {\n        warnings.push({\n          issue_code: 'MISSING_REQUIRED_CHILD_ATTRIBUTE',\n          severity: 'warning',\n          attribute: attr,\n          sku: item.sku,\n          message: attr + ' is required by Amazon for ' + item.normalized_product_type + ' variations but is not present on ' + item.sku + '.',\n          can_user_fix: true\n        });\n      }\n    });\n  });\n}\n\nconst updatedItems = prev.items.map(function(item) {\n  return {\n    ...item,\n    matched_theme: matchedTheme,\n    theme_attribute_status: 'verified'\n  };\n});\nreturn [{ json: {\n  ...prev,\n  items: updatedItems,\n  ptd_validation: {\n    status: 'passed',\n    matched_theme: matchedTheme,\n    supported_themes: supportedThemes,\n    warnings: warnings\n  }\n}}];"
+        "jsCode": "const prev = $('Normalize Amazon Data').first().json;\nif (prev.decision === 'BLOCKED' || prev.decision === 'DUPLICATE_REQUEST') {\n  return [{ json: prev }];\n}\n\nconst variationStructure = prev.variation_structure;\nconst requiredChildAttributes = prev.required_child_attributes || [];\nconst warnings = [];\n\n// Real theme data now comes from wf15's live cache (hit) or wf15's live SP-API\n// fetch (miss) -- both converge here with the same shape. No hardcoded theme\n// lists as of Day 17; this replaces the old themeMap/THEME_ATTRIBUTE_MAP.\nconst themeCacheResult = $json;\nconst validThemes = themeCacheResult.valid_themes || [];\nconst deprecatedThemes = themeCacheResult.deprecated_themes || [];\n\nif (validThemes.length === 0) {\n  const msg = 'No live Amazon theme data is available yet for this product type/marketplace, and the live lookup did not return any. Run Theme Discovery (wf15) for this product type and marketplace, then resubmit.';\n  return [{ json: {\n    request_id: prev.request_id,\n    decision: 'BLOCKED',\n    reason: 'NO_THEME_DATA_AVAILABLE',\n    message: msg,\n    issue_summary: 'Unable to validate variation theme -- no schema data available.',\n    issues: [{\n      issue_code: 'NO_THEME_DATA_AVAILABLE',\n      severity: 'hard_block',\n      message: msg,\n      can_user_fix: false,\n      can_user_override: false\n    }],\n    next_action: 'CANCEL_REQUEST',\n    variation_structure: variationStructure,\n    items: prev.items\n  }}];\n}\n\n// A real Amazon theme name's dimension count is implied by how many \"/\"-joined\n// attributes it names -- e.g. \"COLOR_NAME\" is single-dimension, \"SIZE_NAME/COLOR_NAME\"\n// is two. This is Amazon's actual naming convention, not an invented map, so it stays\n// correct for any product category without a category-by-category lookup table.\nfunction dimensionCount(themeName) {\n  return themeName.split('/').length;\n}\nfunction findRealTheme(list, dimensions) {\n  return list.find(function(t) { return dimensionCount(t) === dimensions; });\n}\n\nif (variationStructure === 'not_sure') {\n  const singleOptions = validThemes.filter(function(t) { return dimensionCount(t) === 1; });\n  const doubleOptions = validThemes.filter(function(t) { return dimensionCount(t) === 2; });\n  return [{ json: {\n    request_id: prev.request_id,\n    decision: 'NEEDS_INPUT',\n    reason: 'THEME_SELECTION_REQUIRED',\n    message: 'Here are the real variation themes Amazon supports for this product type. Pick single_theme or double_theme and resubmit.',\n    issue_summary: 'A specific variation structure is required before continuing.',\n    available_single_themes: singleOptions,\n    available_double_themes: doubleOptions,\n    deprecated_themes: deprecatedThemes,\n    next_action: 'USER_CLARIFICATION_REQUIRED',\n    variation_structure: variationStructure,\n    items: prev.items\n  }}];\n}\n\nconst wantedDimensions = variationStructure === 'double_theme' ? 2 : 1;\nconst matchedTheme = findRealTheme(validThemes, wantedDimensions);\n\nif (!matchedTheme) {\n  const deprecatedMatch = findRealTheme(deprecatedThemes, wantedDimensions);\n  const structureLabel = wantedDimensions === 2 ? 'two-attribute (double)' : 'single-attribute';\n  const message = deprecatedMatch\n    ? 'The variation theme that would match your selection (\"' + deprecatedMatch + '\") has been retired by Amazon for this product type and can no longer be used. Currently supported themes are: ' + validThemes.join(', ') + '.'\n    : 'Amazon does not support a ' + structureLabel + ' variation theme for this product type. Supported themes are: ' + validThemes.join(', ') + '.';\n  const issueCode = deprecatedMatch ? 'DEPRECATED_VARIATION_THEME' : 'UNSUPPORTED_VARIATION_THEME';\n  return [{ json: {\n    request_id: prev.request_id,\n    decision: 'BLOCKED',\n    reason: issueCode,\n    message: message,\n    issue_summary: 'Unsupported variation theme.',\n    issues: [{\n      issue_code: issueCode,\n      severity: 'hard_block',\n      message: message,\n      can_user_fix: false,\n      can_user_override: false\n    }],\n    next_action: 'CANCEL_REQUEST',\n    variation_structure: variationStructure,\n    supported_themes: validThemes,\n    items: prev.items\n  }}];\n}\n\nconst themeParts = matchedTheme.split('/');\nconst dimension1Theme = themeParts[0];\nconst dimension1Attribute = themeParts[0].toLowerCase();\nconst dimension2Theme = themeParts[1] || null;\nconst dimension2Attribute = themeParts[1] ? themeParts[1].toLowerCase() : null;\n\n// FIX-06 (carried forward from the earlier version): warn when the chosen theme's\n// attribute is on Amazon's required-child-attributes list but this item doesn't\n// have a value for it yet. Now checks the actual matched attribute directly instead\n// of guessing via a fixed \"which attributes count as theme attributes\" list.\nif (variationStructure === 'single_theme' && requiredChildAttributes.includes(dimension1Attribute)) {\n  prev.items.forEach(function(item) {\n    const hasValue = !!(item.variation_value && String(item.variation_value).trim() !== '');\n    if (!hasValue) {\n      warnings.push({\n        issue_code: 'MISSING_REQUIRED_CHILD_ATTRIBUTE',\n        severity: 'warning',\n        attribute: dimension1Attribute,\n        sku: item.sku,\n        message: dimension1Attribute + ' is required by Amazon for ' + item.normalized_product_type + ' variations but is not present on ' + item.sku + '.',\n        can_user_fix: true\n      });\n    }\n  });\n}\n\nconst updatedItems = prev.items.map(function(item) {\n  return {\n    ...item,\n    matched_theme: matchedTheme,\n    theme_attribute_status: 'verified'\n  };\n});\n\nreturn [{ json: {\n  ...prev,\n  items: updatedItems,\n  ptd_validation: {\n    status: 'passed',\n    matched_theme: matchedTheme,\n    dimension1_theme: dimension1Theme,\n    dimension1_attribute: dimension1Attribute,\n    dimension2_theme: dimension2Theme,\n    dimension2_attribute: dimension2Attribute,\n    supported_themes: validThemes,\n    deprecated_themes: deprecatedThemes,\n    warnings: warnings\n  }\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5520,
-        -1280
+        3360,
+        1200
       ],
-      "id": "f09d0f37-9ef3-4714-a613-87d699ab30af",
+      "id": "d975a61a-abd5-4cc0-bc34-f9e5fc4721da",
       "name": "PTD Theme Validator"
     },
     {
@@ -851,10 +851,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2688,
-        -1824
+        5600,
+        1328
       ],
-      "id": "31e6b943-2c85-4a9f-86b5-00cfc72f974e",
+      "id": "78b58685-e2d7-4c66-b595-c70686400e10",
       "name": "AI Explanation Prep (Single)"
     },
     {
@@ -886,10 +886,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2448,
-        -1760
+        5840,
+        1392
       ],
-      "id": "7d7a7954-37b3-47c4-a9b8-900a368e583e",
+      "id": "d04f2b60-be0c-419d-b202-73bf8e327b5f",
       "name": "AI Explanation (Single)"
     },
     {
@@ -899,10 +899,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2272,
-        -1760
+        6016,
+        1392
       ],
-      "id": "61a8fa15-498b-4449-9ced-a68b2fe906f3",
+      "id": "1e0b7697-b53f-47c4-ae41-e867642c49f1",
       "name": "AI Logger Prep (Single)"
     },
     {
@@ -939,10 +939,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2032,
-        -1760
+        6256,
+        1392
       ],
-      "id": "d32685c3-274f-42d3-aada-8c9f2f1ebb8a",
+      "id": "db3c3711-1224-4836-9c10-61f94eac649a",
       "name": "Log AI Explanation (Single)",
       "onError": "continueRegularOutput"
     },
@@ -953,10 +953,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1808,
-        -1536
+        6480,
+        1616
       ],
-      "id": "e55d925a-7dcf-48b9-9ec0-45e711359caf",
+      "id": "9bc1dce4-972c-4059-a537-bbaa3454ce19",
       "name": "Restore After AI Log (Single)"
     },
     {
@@ -966,10 +966,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1872,
-        -1200
+        6416,
+        1952
       ],
-      "id": "5189de44-3073-4acf-a9a7-6f4c7fc17c1e",
+      "id": "2010b9a3-7cab-4240-9f85-b2f6f2858011",
       "name": "Pass Through (Double)"
     },
     {
@@ -979,10 +979,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2032,
-        -944
+        6256,
+        2208
       ],
-      "id": "5420ce77-516e-4643-83df-4bd1ca4fcc65",
+      "id": "4a2aead6-10f8-460c-a2b5-08ca73499ac4",
       "name": "Pass Through (Not Sure)"
     },
     {
@@ -992,10 +992,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1520,
-        -1264
+        6768,
+        1888
       ],
-      "id": "f6957cdb-1347-4ae2-82f6-8a595c6767af",
+      "id": "5c3046bc-c451-485b-80ea-125d6e4bed2c",
       "name": "Respond to Webhook"
     },
     {
@@ -1025,10 +1025,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -5312,
-        -1232
+        3408,
+        1504
       ],
-      "id": "c745a912-3125-46f1-bd0c-847e836187b4",
+      "id": "f9e495c1-ec36-4103-acbd-aa21392e7ac3",
       "name": "Theme Matched?"
     },
     {
@@ -1044,10 +1044,10 @@
             },
             {
               "name": "Authorization",
-              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F Authorization →Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9lbGtnZHlmb2VjYXdvc2RxZGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTI5ODEsImV4cCI6MjA5Nzg2ODk4MX0.Fgbdnn2md2HSOx9LB1jB3EjtZ3AKus5WtE6L2LHWMr8"
             },
             {
-              "name": "Content-Type ",
+              "name": "Content-Type",
               "value": "application/json"
             },
             {
@@ -1059,16 +1059,16 @@
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={   \"requested_variation_theme\": \"{{ $json.ptd_validation.matched_theme }}\" }",
+        "body": "={\n  \"requested_variation_theme\": \"{{ $json.ptd_validation.matched_theme }}\",\n  \"dimension1_theme\": \"{{ $json.ptd_validation.dimension1_theme }}\",\n  \"dimension1_attribute\": \"{{ $json.ptd_validation.dimension1_attribute }}\",\n  \"dimension2_theme\": {{ $json.ptd_validation.dimension2_theme ? JSON.stringify($json.ptd_validation.dimension2_theme) : 'null' }},\n  \"dimension2_attribute\": {{ $json.ptd_validation.dimension2_attribute ? JSON.stringify($json.ptd_validation.dimension2_attribute) : 'null' }}\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -5152,
-        -1392
+        3136,
+        1760
       ],
-      "id": "e5871fd1-014c-47cf-a7d8-8808a92c54f0",
+      "id": "d0e482d7-246a-4132-908f-ceaf61c5463e",
       "name": "Update Merge Request Theme"
     },
     {
@@ -1078,10 +1078,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4944,
-        -1392
+        3312,
+        1760
       ],
-      "id": "552ea8b2-3a14-4f57-b0a1-edeff44fe04d",
+      "id": "973664a8-19c9-499c-bb14-c7ec20ebccd7",
       "name": "Restore After Theme Update"
     },
     {
@@ -1122,10 +1122,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -4048,
-        -1168
+        4240,
+        1984
       ],
-      "id": "8eaf550e-d7f2-40a7-ae60-e0684933ed3b",
+      "id": "f6fac492-9137-4e5b-8acc-3127d26659d3",
       "name": "Pass Through Blocked"
     },
     {
@@ -1156,10 +1156,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -2960,
-        -1440
+        5328,
+        1712
       ],
-      "id": "820bedf9-a011-4b72-832c-b061a646e4d9",
+      "id": "bb651d99-c780-4ffa-a1ca-d872d77419e7",
       "name": "Matrix Logger Gate"
     },
     {
@@ -1169,10 +1169,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3840,
-        -1536
+        4448,
+        1616
       ],
-      "id": "bc868964-7b48-4277-afb5-63ed23e00c42",
+      "id": "8d216dab-8607-4122-9366-04ecb7534a0e",
       "name": "Validate Size Color Values"
     },
     {
@@ -1182,10 +1182,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2064,
-        -1936
+        6224,
+        1216
       ],
-      "id": "194ad78c-e4c7-492e-9d14-94129ac5cda7",
+      "id": "1f8c92bd-f136-4824-b1ac-3c47f77ab1b1",
       "name": "AI Explanation Prep (Double)"
     },
     {
@@ -1217,10 +1217,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1856,
-        -1936
+        6432,
+        1216
       ],
-      "id": "6415af85-dc39-4309-b1db-0ec595a859bf",
+      "id": "d3c070d2-7e4f-4f10-a2e6-c029c7a4586c",
       "name": "AI Explanation (Double)"
     },
     {
@@ -1230,10 +1230,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1648,
-        -1936
+        6640,
+        1216
       ],
-      "id": "b64addb9-2254-4fec-8708-d71ea36cee85",
+      "id": "795b16a2-2ddc-4862-9c01-48f734c1876e",
       "name": "AI Logger Prep (Double)"
     },
     {
@@ -1270,10 +1270,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1440,
-        -1936
+        6848,
+        1216
       ],
-      "id": "468965a5-74d3-421a-a9bd-16d2fdb14a92",
+      "id": "58c8712a-556d-4762-b73d-e4715b1eb993",
       "name": "Log AI Explanation (Double)"
     },
     {
@@ -1283,10 +1283,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1264,
-        -1936
+        7024,
+        1216
       ],
-      "id": "7b31eb80-e1aa-4ccd-98fc-824d5b0bbab8",
+      "id": "f38b66a6-a406-451b-a7cf-611df70381e0",
       "name": "Restore After AI Log (Double)"
     },
     {
@@ -1296,10 +1296,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1424,
-        -1584
+        6864,
+        1568
       ],
-      "id": "271d6b7f-2017-4cb1-b993-c10976105efb",
+      "id": "09181b55-ec90-4341-b35a-65a24ef8f04c",
       "name": "AI Explanation Prep (Not Sure)"
     },
     {
@@ -1331,10 +1331,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1216,
-        -1584
+        7072,
+        1568
       ],
-      "id": "221848c6-2d59-4bdd-9a3f-22a5182d2a3a",
+      "id": "4f16946e-c0ed-4cf1-8ddc-a0df6ce2e831",
       "name": "AI Explanation (Not Sure)"
     },
     {
@@ -1344,10 +1344,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1008,
-        -1584
+        7280,
+        1568
       ],
-      "id": "809a7576-8ece-490b-9b0f-09873d0af08c",
+      "id": "dc15ace6-9430-4fe4-9c98-fef6d841afeb",
       "name": "AI Logger Prep (Not Sure)"
     },
     {
@@ -1384,10 +1384,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -800,
-        -1584
+        7488,
+        1568
       ],
-      "id": "30b032d3-189e-44ae-9bb8-9bfcb5eb3f22",
+      "id": "2d709c55-8202-4f54-b232-fb8a86fc788d",
       "name": "Log AI Explanation (Not Sure)"
     },
     {
@@ -1397,11 +1397,90 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -592,
-        -1584
+        7696,
+        1568
       ],
-      "id": "3116ffab-ccdd-4fc0-91ab-fbd82942e7d4",
+      "id": "b362cee4-40e2-4e34-ac3d-e355d096d6b6",
       "name": "Restore After AI Log (Not Sure)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_product_type_theme_cache",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_product_type\": \"{{ $json.items[0].normalized_product_type }}\",\n  \"p_marketplace_id\": \"{{ $('Restore After Supabase').first().json.data.marketplace_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2416,
+        1008
+      ],
+      "id": "a8ae452a-6b2f-49e1-a8f2-6517cd57cb9b",
+      "name": "Get Live Theme Cache",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c2baec08-7c6a-4146-8714-f8e9e0cb8d73",
+              "leftValue": "={{ $json.valid_themes !== undefined }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2512,
+        1008
+      ],
+      "id": "3494f353-3840-4088-84bb-6c448b9c9bf1",
+      "name": "Live Theme Cache Hit?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.catalove.ai/webhook/1b8b779a-d9cb-4c71-af8e-9dc72d45cd08",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"product_type\": \"{{ $('Normalize Amazon Data').first().json.items[0].normalized_product_type }}\",\n  \"marketplace_id\": \"{{ $('Restore After Supabase').first().json.data.marketplace_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2224,
+        1344
+      ],
+      "id": "13434753-2446-4875-9f81-f61869600fae",
+      "name": "Fetch Live Theme Data (wf15)",
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": {},
@@ -1798,7 +1877,7 @@
       "main": [
         [
           {
-            "node": "PTD Theme Validator",
+            "node": "Get Live Theme Cache",
             "type": "main",
             "index": 0
           }
@@ -2089,22 +2168,59 @@
           }
         ]
       ]
+    },
+    "Get Live Theme Cache": {
+      "main": [
+        [
+          {
+            "node": "Live Theme Cache Hit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Live Theme Cache Hit?": {
+      "main": [
+        [
+          {
+            "node": "PTD Theme Validator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Live Theme Data (wf15)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Live Theme Data (wf15)": {
+      "main": [
+        [
+          {
+            "node": "PTD Theme Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
-    "availableInMCP": false,
-    "timeSavedMode": "fixed",
-    "saveExecutionProgress": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "availableInMCP": false
   },
-  "versionId": "be3790dc-edb2-45c3-9852-a6d2f2aef8b2",
+  "versionId": "ddbd1073-c1f2-443e-a838-06362e83930b",
   "meta": {
-    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "L24XjM8FnD7t3xoA",
+  "id": "FrVQ7WXQtjTOMsLe",
   "tags": []
 }

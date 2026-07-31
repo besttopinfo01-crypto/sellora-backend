@@ -1,5 +1,5 @@
 {
-  "name": "WF07 - Feed Poller",
+  "name": "07 - Feed Poller",
   "nodes": [
     {
       "parameters": {
@@ -14,23 +14,23 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        -848,
-        96
+        -1456,
+        176
       ],
-      "id": "ba416d2c-7d95-4ba2-acac-bbb0b1468732",
+      "id": "9c6448c8-dc88-4611-ad18-5577b47d330c",
       "name": "Schedule Trigger"
     },
     {
       "parameters": {
-        "jsCode": "const response = await this.helpers.request({\n  method: 'GET',\n  url: 'https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/submission_logs?submission_status=eq.submitted&order=id.asc',\n  headers: {\n    'apikey': 'sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F',\n    'Authorization': 'Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F',\n    'Content-Type': 'application/json'\n  },\n  json: true\n});\n\nif (!response || response.length === 0) {\n  return [{ json: { status: 'NO_PENDING_FEEDS', message: 'No submitted feeds found.' } }];\n}\n\nreturn response.map(function(row) {\n  return { json: row };\n});"
+        "jsCode": "const response = await this.helpers.request({\n  method: 'GET',\n  url: 'https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/submission_logs?submission_status=eq.submitted&order=id.asc',\n  headers: {\n    'apikey': 'sb_publishable_SeUbs3wrHtleaypYwqNzIw_056I__wt',\n    'Authorization': 'Bearer sb_publishable_SeUbs3wrHtleaypYwqNzIw_056I__wt',\n    'Content-Type': 'application/json'\n  },\n  json: true\n});\n\nif (!response || response.length === 0) {\n  return [{ json: { status: 'NO_PENDING_FEEDS', message: 'No submitted feeds found.' } }];\n}\n\nreturn response.map(function(row) {\n  return { json: row };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -640,
-        96
+        -1248,
+        176
       ],
-      "id": "67e124f7-0cea-4306-99b7-efbac7ed41dc",
+      "id": "a1dd1ac0-2053-46c6-8f54-ed0454f6b206",
       "name": "Fetch Pending Submissions"
     },
     {
@@ -61,10 +61,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -368,
-        96
+        -976,
+        176
       ],
-      "id": "099f1919-96e8-461a-a249-7ee999908fcc",
+      "id": "b32e720f-f2f1-4e1e-94a1-cc7d31aa78d4",
       "name": "Check If Any Pending"
     },
     {
@@ -89,10 +89,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -80,
-        16
+        -688,
+        96
       ],
-      "id": "a9fafafa-ae1a-4f79-af6a-f919008ca0b3",
+      "id": "b1f4274d-1bae-4013-943a-ffa8188c87b4",
       "name": "Fetch Feed Status",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -104,10 +104,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        192,
-        0
+        -416,
+        80
       ],
-      "id": "8de5b46b-fcaa-4f9c-8b70-c6e31aa20546",
+      "id": "23f330fd-842b-453c-9eeb-eb90251282d6",
       "name": "Parse Processing Report"
     },
     {
@@ -138,30 +138,24 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        400,
-        0
+        -208,
+        80
       ],
-      "id": "40d5b04c-4d4a-42ca-a2f4-de0ffb97033d",
+      "id": "47d81dbd-c24b-45cc-8373-121342e4ff25",
       "name": "Is Processing Complete"
     },
     {
       "parameters": {
         "method": "=PATCH",
-        "url": "={{\"https://oelkgdyfoecawosdqdeo.supabase.co/rest/v1/submission_logs?id=eq.\" + $json.submission_log_id}}",
+        "url": "={{\"https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/submission_logs?id=eq.\" + $json.submission_log_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Content-Type",
               "value": "application/json"
-            },
-            {
-              "name": "apikey",
-              "value": "sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer sb_publishable_z6WImqucF8F7sINU0-FwDg_ihaXZ43F"
             },
             {
               "name": "Prefer",
@@ -178,11 +172,25 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        608,
-        -80
+        0,
+        0
       ],
-      "id": "72079b2f-8700-4a11-b6d3-caf81ca72a31",
+      "id": "f8d535db-33f4-44e3-9026-2f438c860a05",
       "name": "Update Submission Log",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        },
+        "httpHeaderAuth": {
+          "id": "r2H1ykX6gxgcUp9i",
+          "name": "Header Auth account"
+        },
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
       "onError": "continueRegularOutput"
     }
   ],
@@ -261,11 +269,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "4bf32ccd-1e53-4bc7-9480-075bfeaf8043",
+  "versionId": "458ffab7-6677-4974-9cbe-e8259947b7c2",
   "meta": {
-    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "wHTMSxidmyYME5Za",
+  "id": "6VKMF86x6bxxHrHr",
   "tags": []
 }

@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1744,
-        -992
+        1424,
+        224
       ],
-      "id": "0fd8486f-ffb9-4e6a-800e-d4b8ada84e64",
+      "id": "f4a320ff-df50-472e-8f12-1c49f73c5fb5",
       "name": "Webhook",
       "webhookId": "0d89c819-401f-41f7-baae-be858cb04f74"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1488,
-        -992
+        1680,
+        224
       ],
-      "id": "e3c718f2-270c-48a6-933a-25603c1a4cd2",
+      "id": "ade1ccb3-2cfa-4ca6-af32-0dc3f5da3f21",
       "name": "Payload Input Validator"
     },
     {
@@ -56,10 +56,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1280,
-        -992
+        1888,
+        224
       ],
-      "id": "75f557b8-3f4a-4f75-bf89-8b0a4367b4f2",
+      "id": "9da41f1f-63d4-4c09-95a8-13968cefd088",
       "name": "Fetch Approval Status",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -71,10 +71,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1072,
-        -992
+        2096,
+        224
       ],
-      "id": "b1b6688d-6037-438e-a74b-df2ac6c18cf7",
+      "id": "bdf18eed-3b72-4d1c-91c5-347401e52ee1",
       "name": "Restore After Approval Fetch"
     },
     {
@@ -102,10 +102,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -864,
-        -992
+        2304,
+        224
       ],
-      "id": "d939052d-8bc4-453d-8739-e57d22f9913f",
+      "id": "77ea82ec-7c85-468b-95e4-b336bdd2c784",
       "name": "Fetch Items",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -117,23 +117,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1680,
-        -608
+        1488,
+        608
       ],
-      "id": "2c9e6205-a7e1-4b49-ad52-712a8261384c",
+      "id": "b8ec926f-19e3-45bb-bb9e-8ca52a78d7ce",
       "name": "Restore After Items Fetch"
     },
     {
       "parameters": {
-        "jsCode": "const restored = $input.first().json;\nif (restored.decision === 'BLOCKED') {\n  return [{ json: restored }];\n}\n\nconst CANONICAL_VALUES_MAP = {\n  'extra small': 'XS',\n  'small': 'S',\n  'medium': 'M',\n  'large': 'L',\n  'extra large': 'XL',\n  'extra extra large': 'XXL',\n  'xxl': 'XXL'\n};\n\nfunction canonicalize(value) {\n  if (value === undefined || value === null || value === '') return value;\n  const trimmed = String(value).trim();\n  const lower = trimmed.toLowerCase();\n  if (CANONICAL_VALUES_MAP[lower]) return CANONICAL_VALUES_MAP[lower];\n  return trimmed;\n}\n\nconst THEME_ATTRIBUTE_MAP = {\n  Color: 'color_name',\n  Size: 'size_name',\n  Flavor: 'flavor_name',\n  Style: 'style_name',\n  Scent: 'scent_name',\n  Material: 'material_type'\n};\n\nconst items = restored.items || [];\nconst requestId = restored.request_id;\nconst parentSku = 'PARENT-' + requestId;\nconst brand = items[0]?.normalized_brand || 'UnknownBrand';\nconst productType = items[0]?.normalized_product_type || 'CLOTHING';\nconst variationStructure = restored.variation_structure || 'single_theme';\nconst matrixCells = restored.matrix_cells || null;\nconst validationErrors = [];\n\nlet themeName = restored.requested_variation_theme;\nif (!themeName) {\n  themeName = variationStructure === 'double_theme' ? 'ColorSize' : 'Color';\n  validationErrors.push('No requested_variation_theme found — defaulted to ' + themeName + '. Check merge_requests table for this request_id.');\n}\n\nconst parentObject = {\n  sku: parentSku,\n  productType: productType,\n  attributes: {\n    parentage_level: [{ value: 'parent' }],\n    child_relationship_type: [{ value: 'variation' }],\n    variation_theme: [{ name: themeName }],\n    brand: [{ value: brand }]\n  }\n};\n\nlet childObjects = [];\n\nif (variationStructure === 'double_theme') {\n  if (!matrixCells || !Array.isArray(matrixCells) || matrixCells.length === 0) {\n    validationErrors.push('Double-theme request has no matrix cells in variation_matrices table. Cannot build payload.');\n    return [{ json: {\n      request_id: requestId,\n      decision: 'BLOCKED',\n      reason: 'MISSING_MATRIX_CELLS',\n      message: 'No matrix cells found for this double-theme request. Run the validation workflow first to generate the matrix.',\n      validation_errors: validationErrors,\n      is_valid: false\n    }}];\n  }\n\n  const seenCombinations = {};\n  matrixCells.forEach(function(cell) {\n    if (cell.status !== 'filled') return;\n    const sizeVal = canonicalize(cell.size) || 'Unknown';\n    const colorVal = canonicalize(cell.color) || 'Unknown';\n    const combinationKey = sizeVal + '|' + colorVal;\n    if (seenCombinations[combinationKey]) {\n      validationErrors.push('Duplicate Size+Color combination: ' + sizeVal + ' / ' + colorVal + '. Cell: ' + cell.cell_id);\n    }\n    seenCombinations[combinationKey] = true;\n    childObjects.push({\n      sku: cell.sku,\n      parentSku: parentSku,\n      productType: productType,\n      attributes: {\n        parentage_level: [{ value: 'child' }],\n        child_parent_sku_relationship: [{\n          child_relationship_type: 'variation',\n          parent_sku: parentSku\n        }],\n        brand: [{ value: brand }],\n        size_name: [{ value: sizeVal }],\n        color_name: [{ value: colorVal }]\n      }\n    });\n  });\n\n} else {\n  const themeAttribute = THEME_ATTRIBUTE_MAP[themeName];\n  if (!themeAttribute) {\n    validationErrors.push('Variation theme \"' + themeName + '\" has no known Amazon attribute mapping — falling back to color_name.');\n  }\n  const attributeKey = themeAttribute || 'color_name';\n  childObjects = items.map(function(item) {\n    const attributes = {\n      parentage_level: [{ value: 'child' }],\n      child_parent_sku_relationship: [{\n        child_relationship_type: 'variation',\n        parent_sku: parentSku\n      }],\n      brand: [{ value: brand }]\n    };\n    attributes[attributeKey] = [{ value: canonicalize(item.variation_value) || 'Unknown' }];\n    return {\n      sku: item.sku,\n      parentSku: parentSku,\n      productType: productType,\n      attributes: attributes\n    };\n  });\n}\n\nconst jsonPayload = {\n  header: {\nsellerId: restored.seller_id || 'YOUR-SELLER-ID',\n    version: '2.0',\n    issueLocale: 'en_US'\n  },\n  body: {\n    operationType: 'UPDATE',\n    listings: [parentObject].concat(childObjects)\n  }\n};\n\nreturn [{ json: {\n  request_id: requestId,\n  decision: 'PAYLOAD_READY',\n  parent_sku: parentSku,\n  child_count: childObjects.length,\n  payload_type: 'JSON_LISTINGS_FEED',\n  payload_status: 'PREVIEW_ONLY_NOT_SUBMITTED',\n  json_payload: jsonPayload,\n  validation_errors: validationErrors,\n  is_valid: validationErrors.length === 0\n}}];"
+        "jsCode": "const restored = $input.first().json;\nif (restored.decision === 'BLOCKED') {\n  return [{ json: restored }];\n}\n\nconst CANONICAL_VALUES_MAP = {\n  'extra small': 'XS',\n  'small': 'S',\n  'medium': 'M',\n  'large': 'L',\n  'extra large': 'XL',\n  'extra extra large': 'XXL',\n  'xxl': 'XXL'\n};\n\nfunction canonicalize(value) {\n  if (value === undefined || value === null || value === '') return value;\n  const trimmed = String(value).trim();\n  const lower = trimmed.toLowerCase();\n  if (CANONICAL_VALUES_MAP[lower]) return CANONICAL_VALUES_MAP[lower];\n  return trimmed;\n}\n\nconst items = restored.items || [];\nconst requestId = restored.request_id;\nconst parentSku = 'PARENT-' + requestId;\nconst brand = items[0]?.normalized_brand || 'UnknownBrand';\nconst productType = items[0]?.normalized_product_type || 'CLOTHING';\nconst variationStructure = restored.variation_structure || 'single_theme';\nconst matrixCells = restored.matrix_cells || null;\nconst validationErrors = [];\n\nlet themeName = restored.requested_variation_theme;\nif (!themeName) {\n  themeName = variationStructure === 'double_theme' ? 'ColorSize' : 'Color';\n  validationErrors.push('No requested_variation_theme found -- defaulted to ' + themeName + '. Check merge_requests table for this request_id.');\n}\n\nconst parentObject = {\n  sku: parentSku,\n  productType: productType,\n  attributes: {\n    parentage_level: [{ value: 'parent' }],\n    child_relationship_type: [{ value: 'variation' }],\n    variation_theme: [{ name: themeName }],\n    brand: [{ value: brand }]\n  }\n};\n\nlet childObjects = [];\n\nif (variationStructure === 'double_theme') {\n  if (!matrixCells || !Array.isArray(matrixCells) || matrixCells.length === 0) {\n    validationErrors.push('Double-theme request has no matrix cells in variation_matrices table. Cannot build payload.');\n    return [{ json: {\n      request_id: requestId,\n      decision: 'BLOCKED',\n      reason: 'MISSING_MATRIX_CELLS',\n      message: 'No matrix cells found for this double-theme request. Run the validation workflow first to generate the matrix.',\n      validation_errors: validationErrors,\n      is_valid: false\n    }}];\n  }\n\n  const seenCombinations = {};\n  matrixCells.forEach(function(cell) {\n    if (cell.status !== 'filled') return;\n    const sizeVal = canonicalize(cell.size) || 'Unknown';\n    const colorVal = canonicalize(cell.color) || 'Unknown';\n    const combinationKey = sizeVal + '|' + colorVal;\n    if (seenCombinations[combinationKey]) {\n      validationErrors.push('Duplicate Size+Color combination: ' + sizeVal + ' / ' + colorVal + '. Cell: ' + cell.cell_id);\n    }\n    seenCombinations[combinationKey] = true;\n    childObjects.push({\n      sku: cell.sku,\n      parentSku: parentSku,\n      productType: productType,\n      attributes: {\n        parentage_level: [{ value: 'child' }],\n        child_parent_sku_relationship: [{\n          child_relationship_type: 'variation',\n          parent_sku: parentSku\n        }],\n        brand: [{ value: brand }],\n        size_name: [{ value: sizeVal }],\n        color_name: [{ value: colorVal }]\n      }\n    });\n  });\n\n} else {\n  // Day 17: dimension1_attribute now comes straight from merge_requests (written by\n  // wf01's PTD Theme Validator from real Amazon theme data), instead of a hardcoded\n  // Color/Size/Flavor -> attribute map that only ever understood the old made-up\n  // theme names. Falls back to lowercasing the theme name itself for any older row\n  // saved before this column was populated.\n  const attributeKey = restored.dimension1_attribute || (themeName ? themeName.toLowerCase() : null);\n  if (!attributeKey) {\n    validationErrors.push('Could not determine the variation attribute for theme \"' + themeName + '\" -- dimension1_attribute is missing on this merge_requests row.');\n  }\n  childObjects = items.map(function(item) {\n    const attributes = {\n      parentage_level: [{ value: 'child' }],\n      child_parent_sku_relationship: [{\n        child_relationship_type: 'variation',\n        parent_sku: parentSku\n      }],\n      brand: [{ value: brand }]\n    };\n    if (attributeKey) {\n      attributes[attributeKey] = [{ value: canonicalize(item.variation_value) || 'Unknown' }];\n    }\n    return {\n      sku: item.sku,\n      parentSku: parentSku,\n      productType: productType,\n      attributes: attributes\n    };\n  });\n}\n\nconst jsonPayload = {\n  header: {\n    sellerId: restored.seller_id || 'YOUR-SELLER-ID',\n    version: '2.0',\n    issueLocale: 'en_US'\n  },\n  body: {\n    operationType: 'UPDATE',\n    listings: [parentObject].concat(childObjects)\n  }\n};\n\nreturn [{ json: {\n  request_id: requestId,\n  decision: 'PAYLOAD_READY',\n  parent_sku: parentSku,\n  child_count: childObjects.length,\n  payload_type: 'JSON_LISTINGS_FEED',\n  payload_status: 'PREVIEW_ONLY_NOT_SUBMITTED',\n  json_payload: jsonPayload,\n  validation_errors: validationErrors,\n  is_valid: validationErrors.length === 0\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -640,
-        -608
+        2528,
+        608
       ],
-      "id": "e2d67dc0-ae65-4a22-82ba-0d354bc7985d",
+      "id": "7ff988f0-c139-4814-8069-080f0e682c7e",
       "name": "Build Payload"
     },
     {
@@ -143,10 +143,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -432,
-        -608
+        2736,
+        608
       ],
-      "id": "afeeb350-6aae-4333-ae56-c51349e02619",
+      "id": "b76ce0af-c6ae-467c-9506-ce99e7098b6c",
       "name": "Payload Logger Prep"
     },
     {
@@ -183,10 +183,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -224,
-        -608
+        2944,
+        608
       ],
-      "id": "0569c8c5-ba7b-44e3-9667-490c72b4f7d4",
+      "id": "283b8640-cbe6-491d-a4f1-826dd42faebe",
       "name": "Log Payload Preview",
       "alwaysOutputData": true
     },
@@ -197,10 +197,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -16,
-        -608
+        3152,
+        608
       ],
-      "id": "902819f4-d1ea-48cd-9abb-00efd0749ecd",
+      "id": "cfd0dd1e-2d7c-4eec-8d04-4397a24d2e66",
       "name": "Restore After Payload Log"
     },
     {
@@ -210,10 +210,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        192,
-        -608
+        3360,
+        608
       ],
-      "id": "d40f1b00-d042-4381-a227-9ad68753c1c5",
+      "id": "60dbb09b-cdf7-4a04-a027-a523fcf9f319",
       "name": "Respond to Webhook"
     },
     {
@@ -241,24 +241,24 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1472,
-        -608
+        1696,
+        608
       ],
-      "id": "6596345b-9aa7-4f20-8273-d05e86821519",
+      "id": "f0ef3243-4eb1-423b-9432-d3875773f76f",
       "name": "Fetch Merge Request",
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "const restored = $('Restore After Items Fetch').first().json;\n\nif (restored.decision === 'BLOCKED') {\n  return [{ json: restored }];\n}\n\nconst merge = $input.first().json || {};\nlet cells = merge.cells || null;\n\nif (typeof cells === 'string') {\n  try { cells = JSON.parse(cells); } catch(e) { cells = null; }\n}\n\nreturn [{ json: Object.assign({}, restored, {\n  requested_variation_theme: merge.requested_variation_theme || null,\n  variation_structure: merge.variation_structure || null,\n  seller_id: merge.seller_id || null\n}) }];"
+        "jsCode": "const restored = $('Restore After Items Fetch').first().json;\n\nif (restored.decision === 'BLOCKED') {\n  return [{ json: restored }];\n}\n\nconst merge = $input.first().json || {};\nlet cells = merge.cells || null;\n\nif (typeof cells === 'string') {\n  try { cells = JSON.parse(cells); } catch(e) { cells = null; }\n}\n\nreturn [{ json: Object.assign({}, restored, {\n  requested_variation_theme: merge.requested_variation_theme || null,\n  variation_structure: merge.variation_structure || null,\n  seller_id: merge.seller_id || null,\n  dimension1_theme: merge.dimension1_theme || null,\n  dimension1_attribute: merge.dimension1_attribute || null,\n  dimension2_theme: merge.dimension2_theme || null,\n  dimension2_attribute: merge.dimension2_attribute || null\n}) }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1264,
-        -608
+        1904,
+        608
       ],
-      "id": "ed70c254-b751-4e7a-9d1b-fc6857b50687",
+      "id": "50937773-246d-412f-9e83-e5e2f33793db",
       "name": "Restore After Merge Fetch"
     },
     {
@@ -286,10 +286,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1056,
-        -608
+        2112,
+        608
       ],
-      "id": "30a81be8-3a71-434a-b6a1-6f54db564ced",
+      "id": "936d9c51-3cc5-4a47-906a-5c9bbcb12b0e",
       "name": "Fetch Matrix",
       "alwaysOutputData": true
     },
@@ -300,10 +300,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -848,
-        -608
+        2320,
+        608
       ],
-      "id": "6a93af96-b775-44b4-b5d6-0fcd7d1c01e0",
+      "id": "9d2248ae-81f8-40c2-93cf-216b05be88a0",
       "name": "Restore After Matrix Fetch"
     }
   ],
@@ -464,17 +464,17 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "3d862589-a65a-40e5-8bfb-05d2e6e621fa",
+  "versionId": "27453a70-3a79-40b9-af56-df5dd1c745f6",
   "meta": {
-    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "Ft11n6SBe758tjrH",
+  "id": "4MtaoUvdiWWE5y28",
   "tags": []
 }

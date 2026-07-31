@@ -1,0 +1,301 @@
+{
+  "name": "24 - Build Existing-Parent Payload",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "7e1c9a4f-2d68-4b93-a5f0-8c6d1e4b9a72",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "d5be59e2-043f-49df-9dfa-0ce91c2aec5c",
+      "name": "Webhook",
+      "webhookId": "7e1c9a4f-2d68-4b93-a5f0-8c6d1e4b9a72"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "c423e318-c26b-47fb-83e6-b7433894d3a0",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0421e9e1-67f0-453e-a30a-976c5c8a4c23",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "6ed6fca3-ad2b-4308-95bf-090875d60d78",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "80e577b7-17a8-49b4-8427-21111adea9fc",
+      "name": "Fetch Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_request_items?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=sku,asin,parent_sku,dimension1_value,dimension2_value,normalized_product_type",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "43abb689-eb7d-4a4f-8b2e-ed6a37829bca",
+      "name": "Fetch Items",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const merge = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(merge) ? merge[0] : merge;\n\nif (!mergeRow) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MERGE_REQUEST_NOT_FOUND',\n    message: 'No merge_requests row found for this request_id.'\n  }}];\n}\n\nconst itemsInput = $('Fetch Items').all();\nlet items;\nif (itemsInput.length === 1 && Array.isArray(itemsInput[0].json)) {\n  items = itemsInput[0].json;\n} else {\n  items = itemsInput.map(function(i) { return i.json; });\n}\n\nif (!items || items.length === 0) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'NO_ITEMS_FOUND',\n    request_id: mergeRow.request_id,\n    message: 'No merge_request_items rows found for this request_id.'\n  }}];\n}\n\nconst missingParentSku = items.filter(function(i) { return !i.parent_sku; });\nif (missingParentSku.length > 0) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_PARENT_SKU',\n    request_id: mergeRow.request_id,\n    message: 'One or more items have no parent_sku stored. Cannot build a real feed without it.',\n    affected_skus: missingParentSku.map(function(i) { return i.sku; })\n  }}];\n}\n\n// Amazon's real theme-name format is already underscore/uppercase (COLOR,\n// SIZE, ITEM_LENGTH, ...) straight from the live PTD API - no CamelCase\n// conversion needed, unlike the legacy flat-file format.\nconst themeName = mergeRow.dimension2_theme\n  ? mergeRow.dimension1_theme + '/' + mergeRow.dimension2_theme\n  : mergeRow.dimension1_theme;\n\nconst mkId = mergeRow.marketplace_id;\n\nconst listings = items.map(function(item) {\n  const patches = [\n    { op: 'add', path: '/attributes/parentage_level', value: [{ value: 'child', marketplace_id: mkId }] },\n    { op: 'add', path: '/attributes/child_parent_sku_relationship', value: [{ child_relationship_type: 'variation', parent_sku: item.parent_sku, marketplace_id: mkId }] },\n    { op: 'add', path: '/attributes/variation_theme', value: [{ name: themeName, marketplace_id: mkId }] },\n    { op: 'add', path: '/attributes/' + mergeRow.dimension1_attribute, value: [{ value: item.dimension1_value, marketplace_id: mkId }] }\n  ];\n\n  if (mergeRow.dimension2_attribute && item.dimension2_value) {\n    patches.push({ op: 'add', path: '/attributes/' + mergeRow.dimension2_attribute, value: [{ value: item.dimension2_value, marketplace_id: mkId }] });\n  }\n\n  return {\n    sku: item.sku,\n    productType: item.normalized_product_type || 'PRODUCT',\n    patches: patches\n  };\n});\n\nconst jsonPayload = {\n  header: {\n    sellerId: mergeRow.seller_id,\n    version: '2.0',\n    issueLocale: 'en_US'\n  },\n  body: {\n    operationType: 'PATCH',\n    listings: listings\n  }\n};\n\nreturn [{ json: {\n  decision: 'PAYLOAD_READY',\n  request_id: mergeRow.request_id,\n  parent_sku: items[0].parent_sku,\n  child_count: listings.length,\n  json_payload: jsonPayload\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "462d5c86-c71c-4638-8f8c-b4488864ca4d",
+      "name": "Build Payload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2bd71503-29f8-456a-a0c0-bb3111d2ac09",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "PAYLOAD_READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "48aeec50-0caf-43c1-ab2b-1c700a57a760",
+      "name": "Is Payload Ready"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        832,
+        0
+      ],
+      "id": "8eafda57-4b0b-440d-83d6-2144fb429df0",
+      "name": "Respond With Payload"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        224
+      ],
+      "id": "7b496ba1-6cc0-4552-b156-cc9b1ab64a7f",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "request_id": "fcb24c5f-763f-4d07-a9d9-1b2db0e96802"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Fetch Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Items": {
+      "main": [
+        [
+          {
+            "node": "Build Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Payload": {
+      "main": [
+        [
+          {
+            "node": "Is Payload Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Payload Ready": {
+      "main": [
+        [
+          {
+            "node": "Respond With Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "aca70897-0483-4f7d-be26-388fa0d83258",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "Vt0Z7Xz4W2yCQkyR",
+  "tags": []
+}

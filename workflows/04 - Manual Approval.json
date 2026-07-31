@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1024,
-        -112
+        0,
+        0
       ],
-      "id": "a3a35f6f-9317-435a-bded-9e0e6aac910a",
+      "id": "5bc69a80-66e0-4442-bcf6-7b69971ffaa7",
       "name": "Webhook",
       "webhookId": "b7665a89-737e-4c60-887f-272ad9f6fac0"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -816,
-        -112
+        208,
+        0
       ],
-      "id": "f46f1340-91e8-4cbe-be69-bf1d65053572",
+      "id": "a65097fe-be82-4ddc-9696-75ceba137e01",
       "name": "Approval Input Validator"
     },
     {
@@ -56,10 +56,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -608,
-        -112
+        416,
+        0
       ],
-      "id": "3a64ba26-dc1a-436e-8d93-ee5176285b4c",
+      "id": "75a937c3-b205-44ae-b32b-056e90965b70",
       "name": "Fetch Validation Result",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -71,10 +71,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -224,
-        -112
+        800,
+        0
       ],
-      "id": "992c8273-3c0b-4e19-9ea1-499db67d0e7c",
+      "id": "8fb2e670-7f15-45a4-9a1b-9f6374ca61bf",
       "name": "Approval Gate"
     },
     {
@@ -84,10 +84,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -32,
-        -112
+        992,
+        0
       ],
-      "id": "23332fd5-291d-49f3-b085-b1e93136110e",
+      "id": "03597296-e2d3-4b25-ac60-a3a149999df8",
       "name": "Approval Logger Prep"
     },
     {
@@ -124,10 +124,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        176,
-        -112
+        1200,
+        0
       ],
-      "id": "735f5c13-dd20-455b-bb11-ad399a412867",
+      "id": "f324eaac-e07d-4962-8b89-bfe45449c9c9",
       "name": "Log Approval",
       "onError": "continueRegularOutput"
     },
@@ -138,10 +138,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        384,
-        -112
+        1408,
+        0
       ],
-      "id": "d355140a-48f9-4d20-969e-250420621794",
+      "id": "8f1c8cde-ba04-4d6c-a528-5c9460648fd5",
       "name": "Restore After Approval Log"
     },
     {
@@ -151,10 +151,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        576,
-        -112
+        1600,
+        0
       ],
-      "id": "b23c0cb3-91b9-4ca7-845f-153860c54e98",
+      "id": "98e45760-9133-46a0-811e-254ed8f31667",
       "name": "Respond to Webhook"
     },
     {
@@ -164,10 +164,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        -112
+        608,
+        0
       ],
-      "id": "b89ae2fc-bc76-4aaf-9e2e-bcdb4243a2ee",
+      "id": "466bc624-8ab9-43ea-bc02-d22f1e012ff1",
       "name": "Restore After Fetch Validation"
     }
   ],
@@ -268,11 +268,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "73447538-8b1f-477f-b5df-4c6d173fe858",
+  "versionId": "076de187-13f3-436c-b9fa-ff90693fe0a7",
   "meta": {
-    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "iaZfa8jfx1n9R6vq",
+  "id": "S0zTB1cuMfXsf58p",
   "tags": []
 }

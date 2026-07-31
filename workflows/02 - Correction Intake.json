@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2080,
-        -768
+        80,
+        -160
       ],
-      "id": "55821ac6-b516-46a2-b822-db632e13eff7",
+      "id": "95c5e79a-ddb0-4cc9-a6b5-c02ed5d7781d",
       "name": "Webhook",
       "webhookId": "4c6533f9-6e9c-4d36-b369-59df63d1744f"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1872,
-        -768
+        288,
+        -160
       ],
-      "id": "87058e1f-07b6-4537-98cd-d5ad00d57ee2",
+      "id": "8c7b114f-6b66-4af6-ac62-8dd0072d4379",
       "name": "Correction Merger"
     },
     {
@@ -38,10 +38,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1664,
-        -768
+        496,
+        -160
       ],
-      "id": "851782f0-e409-4387-8e4e-e8ae1e1c0492",
+      "id": "ef2b7e6a-935c-4dfe-935b-ff2c3321e2ba",
       "name": "Re-Validator"
     },
     {
@@ -51,10 +51,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -832,
-        -448
+        1328,
+        160
       ],
-      "id": "f4cf70a3-77a5-4021-bf1a-1697930929ff",
+      "id": "0c3229d9-1fba-4ae8-94f4-341e3c1ff785",
       "name": "Respond to Webhook"
     },
     {
@@ -64,10 +64,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1872,
-        -448
+        288,
+        160
       ],
-      "id": "896eb833-4e43-4e06-9c5a-cfccf90c1f93",
+      "id": "fa939360-d05b-4a1b-8f85-4b82dc8d1324",
       "name": "WF02 Logger Prep"
     },
     {
@@ -104,10 +104,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1664,
-        -448
+        496,
+        160
       ],
-      "id": "4060995e-2f7c-484f-91f4-6be92d66f740",
+      "id": "3398376b-bc94-4a0b-9108-84cab025f147",
       "name": "WF02 Log Validation Result",
       "onError": "continueRegularOutput"
     },
@@ -118,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1456,
-        -448
+        704,
+        160
       ],
-      "id": "92257b5f-93d6-485d-b072-335d560a5bd5",
+      "id": "46fae10d-5189-49e1-a5f4-4c944fc3e278",
       "name": "WF02 Restore After Validation Log"
     },
     {
@@ -158,10 +158,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1248,
-        -448
+        912,
+        160
       ],
-      "id": "7684f101-fb7e-4c0f-a15a-fe32d17a3f6e",
+      "id": "46712ae7-f369-4a67-8f88-6a236b58e48c",
       "name": "WF02 Log Issue Diagnosis",
       "onError": "continueRegularOutput"
     },
@@ -172,10 +172,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1456,
-        -768
+        704,
+        -160
       ],
-      "id": "dee4c22a-f5e3-4fb8-abce-be2ca0aca09e",
+      "id": "adf7825a-9487-4682-b63e-03de4c6a289b",
       "name": "WF02 Correction Log Prep"
     },
     {
@@ -212,10 +212,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1248,
-        -768
+        912,
+        -160
       ],
-      "id": "f51f95f3-fc5c-4c1c-8416-495041b11b1a",
+      "id": "9520bd36-d5f2-4b9f-9236-710b171feef5",
       "name": "WF02 Log Correction",
       "onError": "continueRegularOutput"
     },
@@ -226,10 +226,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2080,
-        -448
+        80,
+        160
       ],
-      "id": "559c36c5-a7b0-43e1-84ea-21d44204ba3d",
+      "id": "3964fc16-f031-4338-9873-6d9e25488000",
       "name": "WF02 Restore After Correction Log"
     },
     {
@@ -239,10 +239,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1040,
-        -448
+        1120,
+        160
       ],
-      "id": "cc4476da-3392-4232-aa49-47283826affb",
+      "id": "fa792f15-5f5f-4343-9da9-cb39cd5a7cfc",
       "name": "WF02 Restore After Issue Diagnosis Log"
     }
   ],
@@ -370,17 +370,17 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f64c62fe-7623-4b40-bed5-2c28328b450f",
+  "versionId": "0c79853c-d94f-475b-9f84-81e967e89633",
   "meta": {
-    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "VtDD4kut1OwyZHyE",
+  "id": "4sN1sSUhvBHylTRW",
   "tags": []
 }

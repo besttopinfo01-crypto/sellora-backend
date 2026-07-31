@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        9760,
-        3776
+        -1088,
+        288
       ],
-      "id": "abe074a7-f9d9-408b-a785-b7d98a429acb",
+      "id": "4fcbfd2e-af7f-4481-9709-ec398a2d1433",
       "name": "Webhook",
       "webhookId": "e4ee1fb0-110d-40d1-9efe-c5e801b8ada5"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        9952,
-        3776
+        -896,
+        288
       ],
-      "id": "f50cd46f-c2d0-4b23-a22f-dc0729387884",
+      "id": "291a2908-2e6f-4c83-b013-8ef6a2c416a1",
       "name": "Input Validator"
     },
     {
@@ -65,10 +65,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        10416,
-        3520
+        -432,
+        32
       ],
-      "id": "686d19eb-7cef-479b-bcae-0585a598b3c4",
+      "id": "f81b70f9-e414-4cf6-85af-ce0105ec9462",
       "name": "Supabase Logger — merge_requests",
       "onError": "continueRegularOutput"
     },
@@ -79,10 +79,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10592,
-        3520
+        -256,
+        32
       ],
-      "id": "f7fb990e-18c3-4c17-b6b1-3dcb120f1f30",
+      "id": "740f453c-b54d-4f15-b17a-2f72bb1d0219",
       "name": "Restore After Supabase",
       "onError": "continueRegularOutput"
     },
@@ -99,10 +99,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        11024,
-        3488
+        176,
+        0
       ],
-      "id": "604dbf9b-909f-4fa4-975c-52a3fa00d376",
+      "id": "3856e2dc-bc1e-43c5-8443-f9683105ce5a",
       "name": "Fetch Real Catalog Data",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -120,10 +120,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        11200,
-        3488
+        352,
+        0
       ],
-      "id": "8911db55-6163-4ad8-91d0-be1867f5d62e",
+      "id": "cf4a9d35-6ed1-4d39-9e62-4316d2316560",
       "name": "Fetch Real Listing Data",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -141,10 +141,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        10416,
-        4080
+        -432,
+        592
       ],
-      "id": "b0b5d610-b302-4383-8661-23b0063ddb00",
+      "id": "6b928da6-e240-43a0-9cfa-c87b103834c3",
       "name": "Fetch PTD Schema",
       "onError": "continueRegularOutput"
     },
@@ -155,10 +155,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10592,
-        4080
+        -256,
+        592
       ],
-      "id": "e871c04a-1788-4d5f-8571-31cded103176",
+      "id": "ada2e491-e3e9-400c-ac68-8c3e4d234f76",
       "name": "Assemble Proxy Data"
     },
     {
@@ -168,10 +168,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10944,
-        4096
+        96,
+        608
       ],
-      "id": "a223282f-c07f-4ba3-ba28-b7e735c6c67c",
+      "id": "81be449b-0482-443b-a37d-b05996d44646",
       "name": "Normalize Amazon Data"
     },
     {
@@ -181,10 +181,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11088,
-        4096
+        240,
+        608
       ],
-      "id": "d65ab3c7-6e5b-4ea1-ad4c-ee1243cbaefb",
+      "id": "26315bb1-df25-43b5-8ccf-60e6d3ef8a0b",
       "name": "PTD Theme Validator"
     },
     {
@@ -194,10 +194,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11296,
-        4096
+        448,
+        608
       ],
-      "id": "da9410ce-ec0d-4879-a1a6-5065753a7450",
+      "id": "8922a4e8-eca7-450e-979f-aa67ce449f0b",
       "name": "Issue Diagnosis and Hard Blocks"
     },
     {
@@ -285,10 +285,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        11472,
-        4352
+        624,
+        864
       ],
-      "id": "6a5631bf-4d29-4991-9c22-e56e7d9ece40",
+      "id": "fd4f6ab8-1a5d-4493-9c5e-7cad2027c3fe",
       "name": "Structure Switch"
     },
     {
@@ -298,10 +298,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12048,
-        3712
+        1200,
+        224
       ],
-      "id": "be51f914-6ff4-4815-8c83-5d2c650492a1",
+      "id": "bc613514-4499-4c51-9816-48eff0d2c37e",
       "name": "Single Theme Placeholder"
     },
     {
@@ -311,10 +311,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12224,
-        3712
+        1376,
+        224
       ],
-      "id": "1eec98fc-1b89-433a-ae0e-4b2eae89f3a0",
+      "id": "28bab4cf-8ea6-4c9e-8d1f-8169f26cae42",
       "name": "WF01 Single Theme Logger Prep"
     },
     {
@@ -351,10 +351,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        12400,
-        3712
+        1552,
+        224
       ],
-      "id": "94743377-7cbf-4350-a0ec-d797ba279e7e",
+      "id": "59421d68-da20-4994-a503-6f84b3b73db2",
       "name": "WF01 Log Validation Result (Single)",
       "onError": "continueRegularOutput"
     },
@@ -392,10 +392,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        12864,
-        3712
+        2016,
+        224
       ],
-      "id": "748f8d69-1fca-4bc4-b9e1-ab3c852ae410",
+      "id": "f1ce8760-2af4-4ac4-af2e-36bba977cba7",
       "name": "WF01 Log Issue Diagnosis (Single",
       "onError": "continueRegularOutput"
     },
@@ -406,10 +406,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12608,
-        3712
+        1760,
+        224
       ],
-      "id": "8af4e021-7627-438d-a510-19f95399cc4e",
+      "id": "4a40e387-eb65-4bd0-9207-ecab4d7789a4",
       "name": "WF01 Restore After Validation Log (Single)"
     },
     {
@@ -419,10 +419,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11744,
-        4320
+        896,
+        832
       ],
-      "id": "917b3e99-0555-4840-b537-9498cb85725d",
+      "id": "3b8cb01e-a62d-4d2d-b6d9-1079016a4236",
       "name": "Matrix Builder"
     },
     {
@@ -432,10 +432,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11888,
-        4320
+        1040,
+        832
       ],
-      "id": "54d26ff1-a999-4cbd-93ed-3717f30b0970",
+      "id": "7e0c8526-959b-406d-bd5e-e6c8303789a1",
       "name": "SKU Assignment"
     },
     {
@@ -445,10 +445,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12064,
-        4320
+        1216,
+        832
       ],
-      "id": "bf3a1e6c-347c-4455-b6d0-cda712255077",
+      "id": "72630529-87e2-4be0-9f90-8b3493565d9a",
       "name": "Matrix Validator"
     },
     {
@@ -458,10 +458,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12256,
-        4320
+        1408,
+        832
       ],
-      "id": "7e470451-7ac9-4944-9cfb-fc230c26a397",
+      "id": "29158d18-dcae-4e79-acef-74622aedfd61",
       "name": "Matrix Logger Prep"
     },
     {
@@ -498,10 +498,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        12448,
-        4320
+        1600,
+        832
       ],
-      "id": "47b5ed75-2528-4729-a47b-19009a59711f",
+      "id": "68d740e7-f422-4751-8a5d-4753310a9599",
       "name": "Matrix Logger — variation_matrices",
       "onError": "continueRegularOutput"
     },
@@ -512,10 +512,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12624,
-        4320
+        1776,
+        832
       ],
-      "id": "ba8f02b1-9e7b-4905-839b-772b51b4f991",
+      "id": "23a58074-552b-4a19-9f63-eed41d280cc7",
       "name": "WF01 Double Theme Logger Prep"
     },
     {
@@ -552,10 +552,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        12816,
-        4320
+        1968,
+        832
       ],
-      "id": "104b9b72-3ae6-49a6-8164-c883fd077036",
+      "id": "b7e0c83f-1262-435e-a84f-c553420bb03c",
       "name": "WF01 Log Validation Result (Double)",
       "onError": "continueRegularOutput"
     },
@@ -566,10 +566,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12992,
-        4320
+        2144,
+        832
       ],
-      "id": "01ed6c78-7ecb-48e7-9d65-db4036186ced",
+      "id": "b6e275dd-ac9f-4e2d-9316-ea7c66754a1d",
       "name": "WF01 Restore After Validation Log (Double)"
     },
     {
@@ -606,10 +606,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        13168,
-        4320
+        2320,
+        832
       ],
-      "id": "7ce6ad2b-2792-4ca2-8e32-0b418fa00ddb",
+      "id": "cac514c9-4e88-494e-89aa-abd5ca8c4ad6",
       "name": "WF01 Log Issue Diagnosis (Double)",
       "onError": "continueRegularOutput"
     },
@@ -620,10 +620,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12192,
-        4560
+        1344,
+        1072
       ],
-      "id": "56168af4-5322-434d-b330-4fc87a37833c",
+      "id": "5370f536-b712-49b6-90c7-628e547573f4",
       "name": "Not Sure Theme Placeholder"
     },
     {
@@ -633,10 +633,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12432,
-        4560
+        1584,
+        1072
       ],
-      "id": "4907c448-b21c-443b-ba3e-ba78b3647e50",
+      "id": "d822ae41-f743-4f5e-8387-5d87557595ad",
       "name": "WF01 Not Sure Logger Prep"
     },
     {
@@ -673,10 +673,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        12624,
-        4560
+        1776,
+        1072
       ],
-      "id": "f5dd6561-8176-4a47-8cca-5c6fbd81d59c",
+      "id": "b9cec4f2-8675-48ca-b586-847aab298141",
       "name": "WF01 Log Validation Result (Not Sure)",
       "onError": "continueRegularOutput"
     },
@@ -687,10 +687,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12816,
-        4560
+        1968,
+        1072
       ],
-      "id": "2f64cd4f-cef2-415f-960b-1701c854c381",
+      "id": "88789cf5-612a-4e3c-bc36-e491f808d52c",
       "name": "WF01 Restore After Validation Log (Not Sure)"
     },
     {
@@ -727,10 +727,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        13072,
-        4560
+        2224,
+        1072
       ],
-      "id": "47188252-ca90-42fb-9bd9-54d6e8093f68",
+      "id": "f7a24c11-e195-4814-b56e-8694a6d2607b",
       "name": "WF01 Log Issue Diagnosis (Not Sure)",
       "onError": "continueRegularOutput"
     },
@@ -741,10 +741,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        14144,
-        4048
+        3296,
+        560
       ],
-      "id": "84af057a-2a2e-4c3a-b7ae-d973e9be8bc6",
+      "id": "e1975fb2-2cb2-4f0c-b225-e868666a6227",
       "name": "Respond to Webhook"
     },
     {
@@ -785,10 +785,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        11536,
-        4096
+        688,
+        608
       ],
-      "id": "5df89ea5-83fc-422e-8c46-2e9a40467127",
+      "id": "adb9492b-7b14-413b-8ab1-92aa6536746d",
       "name": "Pass Through Blocked"
     },
     {
@@ -798,10 +798,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        13072,
-        3712
+        2224,
+        224
       ],
-      "id": "6762851f-dcee-450d-ba3a-4fa8c5a8c2fe",
+      "id": "75e33c23-4bde-44a9-ac7c-300d651df06b",
       "name": "Restore After Log (Single)"
     },
     {
@@ -811,10 +811,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        13376,
-        4320
+        2528,
+        832
       ],
-      "id": "7ae1a1e9-03cc-4189-9cf8-2e78151c1f35",
+      "id": "8c1803b8-43d8-4a10-9f62-ad5b23705c01",
       "name": "Restore After Log (Double)"
     },
     {
@@ -824,10 +824,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        13280,
-        4560
+        2432,
+        1072
       ],
-      "id": "2ad81633-b5e2-4859-bfba-8e8a45622d8a",
+      "id": "280a9308-18b7-4bea-aabc-db59b114b952",
       "name": "Restore After Log (Not Sure)"
     },
     {
@@ -837,10 +837,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12192,
-        4096
+        1344,
+        608
       ],
-      "id": "20dad86e-ff6e-4a86-b275-dbd5020d83d7",
+      "id": "ee4a371e-f3f8-47de-8760-976b17d58d34",
       "name": "Early Block Logger Prep"
     },
     {
@@ -877,10 +877,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        12368,
-        4096
+        1520,
+        608
       ],
-      "id": "82f482af-049d-4e58-8f6a-f03cf6505ba2",
+      "id": "6b95c781-6163-4977-ae18-5d090c0fbbd9",
       "name": "Log Validation Result (Early Block)",
       "onError": "continueRegularOutput"
     },
@@ -891,10 +891,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12544,
-        4096
+        1696,
+        608
       ],
-      "id": "6822fd6e-bd4a-4905-a986-6698b2f41906",
+      "id": "693a5ab0-508b-42e4-8092-33de4255220e",
       "name": "Restore After Validation Log (Early Block)"
     },
     {
@@ -931,10 +931,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        12720,
-        4096
+        1872,
+        608
       ],
-      "id": "7760ce0d-013c-464f-bf5c-1d9d42981b62",
+      "id": "4ecc0f84-d692-48a1-b356-9e7b0551cb3b",
       "name": "Log Issue Diagnosis (Early Block)",
       "onError": "continueRegularOutput"
     },
@@ -945,10 +945,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        12896,
-        4096
+        2048,
+        608
       ],
-      "id": "b34a9d3b-d84f-4088-9379-f74d6f8b5775",
+      "id": "c732555f-693c-4526-b5fc-b5a62e413032",
       "name": "Restore After Log (Early Block)"
     },
     {
@@ -979,10 +979,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        10128,
-        3776
+        -720,
+        288
       ],
-      "id": "011880fa-0a55-441d-a81b-d4a73f3953cf",
+      "id": "51076cec-65d5-4edc-9a67-6dc2093693cc",
       "name": "Input Validation Guard"
     },
     {
@@ -992,10 +992,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11376,
-        3488
+        528,
+        0
       ],
-      "id": "45141039-cc3d-41d5-8551-cda77412e38f",
+      "id": "e1d1334d-038a-4180-be3f-1a70320f5312",
       "name": "Determine Common Product Type"
     },
     {
@@ -1005,10 +1005,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10848,
-        3488
+        0,
+        0
       ],
-      "id": "be5f3c73-dc2e-41ec-8ac3-7fd553228840",
+      "id": "38b52ca7-925a-49b6-8a0b-1aa2eb7bf2f6",
       "name": "Split Items For Real Fetch"
     },
     {
@@ -1018,10 +1018,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10768,
-        4096
+        -80,
+        608
       ],
-      "id": "f6d157d1-f74a-4dba-b529-4e137d1f25b7",
+      "id": "b9b0ffc8-0604-4838-9acf-742e5f49fb82",
       "name": "Insert Items to Supabase"
     }
   ],
@@ -1540,17 +1540,17 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "3617f7af-6a45-4aa5-8674-17f694ce9e75",
+  "versionId": "b296003c-32f4-4b52-bb8c-d00dd2928578",
   "meta": {
-    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "6VSmR829MBLwgzd0",
+  "id": "ydTeCB2TbopygJGV",
   "tags": []
 }

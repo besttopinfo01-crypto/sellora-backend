@@ -1,0 +1,245 @@
+{
+  "name": "25 - Get Submission Status",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b8f3d6a1-4c7e-4a92-9d18-6e3f7b2c5a84",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "9b02e6dd-9fd9-4703-85b6-2162a59e44d8",
+      "name": "Webhook",
+      "webhookId": "b8f3d6a1-4c7e-4a92-9d18-6e3f7b2c5a84"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "2d83693e-a11f-429e-95dd-d353a66a8746",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0ab1a15e-1083-4eb1-abcb-f30419c6f382",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "340ea7a5-0423-47ff-a819-ca91336a1cac",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/submission_logs?request_id=eq.{{ $('Validate Input').first().json.request_id }}&order=id.desc&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "952d292f-26f9-41a6-80c8-946c6b59d21d",
+      "name": "Fetch Submission Log",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/post_submission_verification?request_id=eq.{{ $('Validate Input').first().json.request_id }}&order=id.desc&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "46d6a6e0-1639-4f85-b0f2-f5d63dd0a447",
+      "name": "Fetch Verification",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const subInput = $('Fetch Submission Log').first().json;\nconst subRow = Array.isArray(subInput) ? subInput[0] : subInput;\n\nif (!subRow) {\n  return [{ json: {\n    decision: 'NOT_SUBMITTED',\n    request_id: $('Validate Input').first().json.request_id,\n    message: 'No submission found for this request yet.'\n  }}];\n}\n\nconst verInput = $('Fetch Verification').all();\nlet verRows;\nif (verInput.length === 1 && Array.isArray(verInput[0].json)) {\n  verRows = verInput[0].json;\n} else {\n  verRows = verInput.map(function(i) { return i.json; });\n}\nconst verRow = (verRows && verRows.length > 0) ? verRows[0] : null;\n\n// Maps the real values wf07/wf08 actually write into the GUI spec's\n// timeline stages. DONE alone is deliberately never a final state - the\n// spec is explicit that processing-done isn't shown as success until\n// verification actually confirms the relationship in the real catalog.\nlet stage = 'submitted';\nif (subRow.submission_status === 'FATAL') {\n  stage = 'failed';\n} else if (subRow.submission_status === 'DONE') {\n  if (!verRow) stage = 'verifying';\n  else stage = verRow.verification_status === 'verified_success' ? 'verified' : 'needs_review';\n} else if (subRow.submission_status && subRow.submission_status !== 'submitted') {\n  stage = 'processing';\n}\n\nreturn [{ json: {\n  decision: 'STATUS_READY',\n  request_id: subRow.request_id,\n  feed_id: subRow.feed_id,\n  stage: stage,\n  submission_status: subRow.submission_status,\n  processing_report: subRow.processing_report_json || null,\n  verification_status: verRow ? verRow.verification_status : null,\n  verification_errors: verRow ? verRow.errors_json : null,\n  submitted_at: subRow.submitted_at,\n  completed_at: subRow.completed_at\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "feb3b4a0-82d2-4338-8411-d483dace565b",
+      "name": "Combine Status"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        0
+      ],
+      "id": "f0bc1f90-5a7c-40f0-8172-de6669fec095",
+      "name": "Respond With Status"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        224
+      ],
+      "id": "a420ff78-3d21-4eaa-be9b-8556ca31b68a",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Submission Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Submission Log": {
+      "main": [
+        [
+          {
+            "node": "Fetch Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Verification": {
+      "main": [
+        [
+          {
+            "node": "Combine Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Status": {
+      "main": [
+        [
+          {
+            "node": "Respond With Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "baea5ac7-6350-46b2-b85e-f3d50ea3237a",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "cuPWsGkiEetyYK5d",
+  "tags": []
+}

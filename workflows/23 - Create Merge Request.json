@@ -1,0 +1,351 @@
+{
+  "name": "23 - Create Merge Request",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "d4f8b2a6-9c31-4e75-b0a8-3f6d9c2e5b17",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "415ab92d-6f85-45ce-ae4d-bd9666416001",
+      "name": "Webhook",
+      "webhookId": "d4f8b2a6-9c31-4e75-b0a8-3f6d9c2e5b17"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\nif (!body.dimension1_theme || !body.dimension1_attribute) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUIRED_FIELDS', message: 'dimension1_theme and dimension1_attribute are both required.' } }];\n}\nif (!Array.isArray(body.items) || body.items.length === 0) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_ITEMS', message: 'items must be a non-empty array.' } }];\n}\nconst itemErrors = [];\nbody.items.forEach(function(item, i) {\n  if (!item.asin) itemErrors.push('items[' + i + '].asin');\n  if (!item.sku) itemErrors.push('items[' + i + '].sku');\n  if (!item.dimension1_value) itemErrors.push('items[' + i + '].dimension1_value');\n});\nif (itemErrors.length > 0) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_ITEMS', message: 'Missing or invalid: ' + itemErrors.join(', ') + '.' } }];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  marketplace_id: body.marketplace_id || null,\n  merge_type: body.dimension2_theme ? 'matrix' : 'single',\n  dimension1_theme: body.dimension1_theme,\n  dimension1_attribute: body.dimension1_attribute,\n  dimension2_theme: body.dimension2_theme || null,\n  dimension2_attribute: body.dimension2_attribute || null,\n  items: body.items\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "fcdac424-bd75-4b30-b805-1b04aca1b5f7",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "da4d79cf-7a51-4931-a8ab-0aa93ebfe3cb",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "0ca83fe3-b05a-4492-8509-2e3bf1dedf29",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"seller_id\": \"{{ $json.seller_id }}\",\n  \"marketplace_id\": \"{{ $json.marketplace_id }}\",\n  \"dimension1_theme\": \"{{ $json.dimension1_theme }}\",\n  \"dimension1_attribute\": \"{{ $json.dimension1_attribute }}\",\n  \"dimension2_theme\": {{ $json.dimension2_theme ? JSON.stringify($json.dimension2_theme) : 'null' }},\n  \"dimension2_attribute\": {{ $json.dimension2_attribute ? JSON.stringify($json.dimension2_attribute) : 'null' }},\n  \"merge_type\": \"{{ $json.merge_type }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "546a6d4a-966b-4272-9f91-e25745635c94",
+      "name": "Insert Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inserted = $input.first().json;\nconst mergeRequestRow = Array.isArray(inserted) ? inserted[0] : inserted;\n\nif (!mergeRequestRow || !mergeRequestRow.request_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MERGE_REQUEST_INSERT_FAILED',\n    message: 'The merge_requests insert did not return a request_id.',\n    upstream_raw: inserted\n  }}];\n}\n\nconst ctx = $('Validate Input').first().json;\nconst requestId = mergeRequestRow.request_id;\n\nconst itemRows = ctx.items.map(function(item) {\n  return {\n    request_id: requestId,\n    seller_id: ctx.seller_id,\n    asin: item.asin,\n    sku: item.sku,\n    parent_sku: item.parent_sku || null,\n    dimension1_value: item.dimension1_value,\n    dimension2_value: item.dimension2_value || null,\n    normalized_brand: item.normalized_brand || null,\n    normalized_product_type: item.normalized_product_type || null,\n    normalized_category: item.normalized_category || null\n  };\n});\n\nreturn [{ json: {\n  decision: 'VALID',\n  request_id: requestId,\n  item_rows: itemRows\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "658be246-91eb-4b9f-9eee-56d45d5c404b",
+      "name": "Prepare Items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "57703e04-97e9-4fd3-a594-bd84b2bb4715",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "196ea35d-20be-493b-a0df-6bcab35712eb",
+      "name": "Is Insert Valid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_request_items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.item_rows) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "9d83b87e-2caf-4598-bae6-9cc9d9037170",
+      "name": "Insert Items",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const itemsInserted = $input.first().json;\nconst prep = $('Prepare Items').first().json;\nreturn [{ json: {\n  decision: 'CREATED',\n  request_id: prep.request_id,\n  item_count: Array.isArray(itemsInserted) ? itemsInserted.length : (prep.item_rows ? prep.item_rows.length : 0)\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "a7fc8ca2-edc7-4d1e-9809-71b11d5231ce",
+      "name": "Finalize Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "0eec4faf-cd33-4a9e-8498-90817010e374",
+      "name": "Respond With Request"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        224
+      ],
+      "id": "09bfa0c8-fdc6-4a1a-a09b-487c0717d12d",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Insert Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Prepare Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Items": {
+      "main": [
+        [
+          {
+            "node": "Is Insert Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Insert Valid": {
+      "main": [
+        [
+          {
+            "node": "Insert Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Items": {
+      "main": [
+        [
+          {
+            "node": "Finalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Response": {
+      "main": [
+        [
+          {
+            "node": "Respond With Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5a3bd5c2-e925-4f87-917e-85e4a0200eb3",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "VzKmqx0cI7VJaoVj",
+  "tags": []
+}

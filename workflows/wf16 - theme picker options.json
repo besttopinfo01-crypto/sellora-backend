@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.product_type || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'product_type and marketplace_id are both required.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  product_type: body.product_type,\n  marketplace_id: body.marketplace_id\n}}];"
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\nif (!body.product_type || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'product_type and marketplace_id are both required.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  product_type: body.product_type,\n  marketplace_id: body.marketplace_id\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -80,7 +80,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"product_type\": \"{{ $('Validate Input').first().json.product_type }}\",\n  \"marketplace_id\": \"{{ $('Validate Input').first().json.marketplace_id }}\"\n}",
+        "jsonBody": "={\n  \"seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\",\n  \"product_type\": \"{{ $('Validate Input').first().json.product_type }}\",\n  \"marketplace_id\": \"{{ $('Validate Input').first().json.marketplace_id }}\"\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -202,9 +202,10 @@
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "availableInMCP": false
   },
-  "versionId": "eea61352-ecf7-4f45-9851-f992426ef4f9",
+  "versionId": "f9d71006-d5aa-431a-b622-4a5a15634f9c",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

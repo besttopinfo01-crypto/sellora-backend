@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1152,
-        272
+        -896,
+        288
       ],
-      "id": "b4330cb7-9843-4b73-9b3d-60342ca33d7d",
+      "id": "07d72274-112b-426b-b006-8505d5c2f63e",
       "name": "Webhook",
       "webhookId": "1aa18f1f-9da6-47de-ad57-acbb00157221"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -944,
-        272
+        -688,
+        288
       ],
-      "id": "8d200612-d83f-461c-a5b2-3ae53d494f2f",
+      "id": "70a0b452-6b57-4445-86f5-21850f71a0dd",
       "name": "Submission Gate"
     },
     {
@@ -38,10 +38,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        800,
-        336
+        1056,
+        352
       ],
-      "id": "a889d54f-157b-436a-b8fe-9a44d3d36697",
+      "id": "f0edce83-29a8-4951-87fe-bfd837ebb507",
       "name": "Respond to Webhook"
     },
     {
@@ -69,10 +69,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -720,
-        0
+        -464,
+        16
       ],
-      "id": "1163801a-3aa2-458a-a4c6-2e2d4410e268",
+      "id": "2b145ca1-1206-4318-b627-58b2b76c80ad",
       "name": "Fetch Approval Status",
       "alwaysOutputData": true
     },
@@ -83,10 +83,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -512,
-        0
+        -256,
+        16
       ],
-      "id": "c36fc844-2ea6-445f-94a8-2c0d95dc5de1",
+      "id": "f9b7660d-8fda-4566-95d6-f1a54aa8f22b",
       "name": "Approval Gate"
     },
     {
@@ -114,10 +114,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -32,
-        432
+        224,
+        448
       ],
-      "id": "79ea06ee-edc8-4841-9ef1-4d6ae2cd3c6f",
+      "id": "3ac7e953-c48b-421e-8a04-4f6b7538b49e",
       "name": "Fetch Payload Preview",
       "alwaysOutputData": true
     },
@@ -128,10 +128,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -576,
-        832
+        -320,
+        848
       ],
-      "id": "82691e54-6e20-4088-b35e-88403b71e7c5",
+      "id": "f0f4e214-84f2-4a01-94f8-537044109596",
       "name": "Payload Gate"
     },
     {
@@ -172,10 +172,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -736,
-        256
+        -480,
+        272
       ],
-      "id": "83956db7-9d21-4d90-b9fc-fc83d892ea25",
+      "id": "d32e9e74-9075-4b21-9dfa-79ebec7ec848",
       "name": "Submission Gate Check"
     },
     {
@@ -200,10 +200,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -256,
-        720
+        0,
+        736
       ],
-      "id": "8028af2e-9c6e-4b5d-85ce-e9219206f69c",
+      "id": "12635c83-eb6c-4bea-91dd-97db8709d73f",
       "name": "Create Feed Document",
       "alwaysOutputData": true
     },
@@ -220,10 +220,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -96,
-        720
+        160,
+        736
       ],
-      "id": "3aef81fe-e4b6-4bda-80e1-ff0721f4ddb4",
+      "id": "962ac630-6c48-40c1-99c2-60b03650a07c",
       "name": "Upload to S3",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -250,10 +250,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        96,
-        720
+        352,
+        736
       ],
-      "id": "4b4d7a7a-30c8-46e7-ac01-7601aab90937",
+      "id": "eba21220-1eee-485c-8850-d14e7ad71d69",
       "name": "Submit Feed"
     },
     {
@@ -290,10 +290,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        480,
-        720
+        736,
+        736
       ],
-      "id": "0101d842-6746-4822-addf-b921677174d3",
+      "id": "29ffe09c-d33a-45cc-9de5-6de6e9c35f06",
       "name": "Log Submission"
     },
     {
@@ -321,10 +321,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        80,
-        128
+        336,
+        144
       ],
-      "id": "2575d65d-adeb-434e-84b4-2764d925d431",
+      "id": "f9c6724a-a520-461c-b164-967f3bfe2252",
       "name": "Fetch Validation Result",
       "alwaysOutputData": true
     },
@@ -335,10 +335,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -496,
-        464
+        -240,
+        480
       ],
-      "id": "729c9a26-535c-4a58-a2ce-ce1981c63f64",
+      "id": "627a9ac1-320e-4101-bd7e-c0e409c0d70f",
       "name": "Validation Gate"
     },
     {
@@ -348,10 +348,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        304,
-        720
+        560,
+        736
       ],
-      "id": "b8ff9ee4-a0ea-46d3-b763-1a7df93ee756",
+      "id": "9328d31a-cc40-47ab-bb65-92014db7276a",
       "name": "Submission Logger Prep"
     },
     {
@@ -361,10 +361,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        672,
-        720
+        928,
+        736
       ],
-      "id": "8075e8cc-313f-4b9f-9de4-3693f68598c0",
+      "id": "068fd50c-9cfe-4283-b089-c41f76e11d16",
       "name": "Restore After Submission Log"
     },
     {
@@ -395,10 +395,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -256,
-        -16
+        0,
+        0
       ],
-      "id": "3019443b-fde3-4e0e-8f4b-47c9648b5f09",
+      "id": "711ea8fd-5636-4cad-a1f2-b41e5af5d5a4",
       "name": "Approval Gate Check"
     },
     {
@@ -429,10 +429,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -304,
-        464
+        -48,
+        480
       ],
-      "id": "c4022232-b46d-426f-8c7e-a4206d2fd99f",
+      "id": "d15e60f3-d648-4089-ac89-46709ded9ce0",
       "name": "Validation Gate Check"
     },
     {
@@ -463,10 +463,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -432,
-        1008
+        -176,
+        1024
       ],
-      "id": "c6eae756-3c7a-4c26-a09e-7637e8f9aaad",
+      "id": "80cf6208-eb2f-49e8-9f6d-e698c59a1ec0",
       "name": "Payload Gate Check"
     }
   ],
@@ -699,17 +699,17 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "656cb65a-ea42-46a2-8b5e-dbfc69d57302",
+  "versionId": "4b7b1cf7-afb9-42c2-9b59-0ff2b7f4a682",
   "meta": {
-    "instanceId": "00791663ea9f6b21b6e6f6693c5a2d232883a7e15ac9baa50c28e7671f280f6a"
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "ug7GHwcdVtMsfCWl",
+  "id": "Ay1pzT1QgETxd5PA",
   "tags": []
 }
