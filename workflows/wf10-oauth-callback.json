@@ -185,7 +185,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Ready for Day 9: seller_id, selling_partner_id, and spapi_oauth_code\n// are all we need to actually exchange the code for a refresh token.\n// Not built yet on purpose - the exchange is tomorrow's piece, and the\n// spapi_oauth_code expires in 5 minutes, so whatever runs next needs\n// to fire immediately once this is wired up, not sit queued.\nconst validated = $('Validate State').first().json;\nreturn [{ json: {\n  seller_id: validated.seller_id,\n  selling_partner_id: validated.selling_partner_id,\n  spapi_oauth_code: validated.spapi_oauth_code,\n  ready_for_token_exchange: true\n}}];"
+        "jsCode": "// Repackages what Validate State confirmed into the flat shape the\n// token-exchange chain below reads from. Named/dated from when the\n// exchange itself was still a next-session stub; it's since been wired\n// in directly below (spapi_oauth_code expires in 5 minutes, so it fires\n// immediately - nothing here queues or delays that).\nconst validated = $('Validate State').first().json;\nreturn [{ json: {\n  seller_id: validated.seller_id,\n  selling_partner_id: validated.selling_partner_id,\n  spapi_oauth_code: validated.spapi_oauth_code,\n  ready_for_token_exchange: true\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -199,7 +199,7 @@
     {
       "parameters": {
         "respondWith": "redirect",
-        "redirectURL": "http://localhost:5173/connect-amazon?connected=true",
+        "redirectURL": "https://catalove.ai/?connected=true",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -256,6 +256,10 @@
             {
               "name": "code",
               "value": "={{ $json.spapi_oauth_code }}"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://n8n.catalove.ai/webhook/aa0212f6-d1b9-4f04-b80b-fc5ef527a3aa"
             }
           ]
         },
@@ -313,7 +317,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst message = data.message || 'Something went wrong. Please start over from Connect Amazon Account.';\n\nconst html = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>Connection unsuccessful</title>\n<style>\nbody { font-family: -apple-system, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; color: #1a1a1a; text-align: center; }\nh1 { font-size: 20px; }\np { color: #555; line-height: 1.5; }\na.button { display: inline-block; margin-top: 24px; padding: 12px 24px; background: #232f3e; color: white; text-decoration: none; border-radius: 4px; }\n</style>\n</head>\n<body>\n<h1>We couldn't connect your Amazon account</h1>\n<p>${message}</p>\n<a class=\"button\" href=\"http://localhost:5173/connect-amazon?connected=false\">Try again</a>\n</body>\n</html>`;\n\nreturn [{ json: { html } }];"
+        "jsCode": "const data = $input.first().json;\nconst message = data.message || 'Something went wrong. Please start over from Connect Amazon Account.';\n\nconst html = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>Connection unsuccessful</title>\n<style>\nbody { font-family: -apple-system, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; color: #1a1a1a; text-align: center; }\nh1 { font-size: 20px; }\np { color: #555; line-height: 1.5; }\na.button { display: inline-block; margin-top: 24px; padding: 12px 24px; background: #232f3e; color: white; text-decoration: none; border-radius: 4px; }\n</style>\n</head>\n<body>\n<h1>We couldn't connect your Amazon account</h1>\n<p>${message}</p>\n<a class=\"button\" href=\"https://catalove.ai/?connected=false\">Try again</a>\n</body>\n</html>`;\n\nreturn [{ json: { html } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
