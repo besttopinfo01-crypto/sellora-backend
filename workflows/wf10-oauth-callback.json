@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1824,
-        32
+        -912,
+        512
       ],
-      "id": "f3db61e7-29eb-475e-97f7-21d06f6fe26a",
+      "id": "e64c2f9c-ab86-4248-8662-4521bb25892a",
       "name": "Webhook",
       "webhookId": "aa0212f6-d1b9-4f04-b80b-fc5ef527a3aa"
     },
@@ -24,10 +24,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1632,
-        -112
+        -720,
+        368
       ],
-      "id": "68872d93-b56d-4bbe-82d9-44d1b9106491",
+      "id": "0c0fa24c-820d-4209-8c8a-51731f0701eb",
       "name": "Extract Query Params"
     },
     {
@@ -57,10 +57,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1488,
-        16
+        -576,
+        496
       ],
-      "id": "6b978931-6393-4bf6-a345-e98bb6ce639c",
+      "id": "ca301d3a-7d0a-49c0-9bd7-b40bd32a713a",
       "name": "Has Required Params"
     },
     {
@@ -82,10 +82,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1280,
-        -320
+        -368,
+        160
       ],
-      "id": "8997b1ea-1f5f-41c9-bc75-3f924576d44d",
+      "id": "50eba438-2e1b-42bb-89e7-a05a897a596b",
       "name": "Fetch OAuth State",
       "alwaysOutputData": true,
       "credentials": {
@@ -103,10 +103,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1088,
-        -320
+        -176,
+        160
       ],
-      "id": "a8da9c50-5107-4630-b0dc-43ca0fe25c34",
+      "id": "1b2cc424-b8d9-4be3-a858-f91cc5814073",
       "name": "Validate State"
     },
     {
@@ -136,10 +136,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -912,
-        -320
+        0,
+        160
       ],
-      "id": "5bddd33e-6225-4cf2-88e8-751ee6e2753f",
+      "id": "e6c81145-98cf-4d94-ad57-4d3c26e2757a",
       "name": "State Is Valid"
     },
     {
@@ -170,10 +170,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -656,
-        -160
+        256,
+        320
       ],
-      "id": "2ac1c820-dd26-4e3e-90b2-809702b4b734",
+      "id": "0d92b685-f47a-4f4a-b33f-1675c079c3d4",
       "name": "Mark State Used",
       "credentials": {
         "httpCustomAuth": {
@@ -190,10 +190,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -480,
-        -160
+        432,
+        320
       ],
-      "id": "8b4d6d0c-360a-445c-abac-c4618cda7a7b",
+      "id": "06140f82-4dc4-45c5-9cff-21eadd337964",
       "name": "Prepare Handoff (Day 9)"
     },
     {
@@ -205,10 +205,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        240,
-        -160
+        1152,
+        320
       ],
-      "id": "5e4e464d-e634-4b3e-9b47-96f7933af9ba",
+      "id": "f7e4163c-682e-4848-9b7a-b953244791a7",
       "name": "Respond Success (placeholder)"
     },
     {
@@ -220,10 +220,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -912,
-        -64
+        0,
+        416
       ],
-      "id": "33ab24e4-940f-46b1-b75b-f39b5c3b7047",
+      "id": "a35a577b-2680-4890-b1f7-7f7f7fdcc56e",
       "name": "Respond Rejected"
     },
     {
@@ -233,10 +233,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1488,
-        224
+        -576,
+        704
       ],
-      "id": "265032fc-3278-4a01-8e08-3bd143f74a38",
+      "id": "cb3c481f-ba92-4c9d-93bf-3bf98ed63db9",
       "name": "Respond Missing Params"
     },
     {
@@ -268,10 +268,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -320,
-        -160
+        592,
+        320
       ],
-      "id": "8d70600e-dc88-40fb-baf0-8edec97a694a",
+      "id": "33e117f4-e3f7-48e4-b141-35977a90b635",
       "name": "Exchange Code for Tokens",
       "credentials": {
         "httpBasicAuth": {
@@ -298,15 +298,21 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"p_seller_id\": \"{{ $('Prepare Handoff (Day 9)').first().json.seller_id }}\",\n  \"p_refresh_token\": \"{{ $('Exchange Code for Tokens').first().json.refresh_token }}\"\n}",
-        "options": {}
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -144,
-        -160
+        768,
+        320
       ],
-      "id": "a2bc3d34-3293-4755-b059-b8d604bc3146",
+      "id": "2d0f0654-5942-40bb-8479-dba59cb5d29e",
       "name": "Store Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -322,10 +328,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1104,
-        -64
+        -192,
+        416
       ],
-      "id": "2f474cc7-416c-4500-aaa0-211ed0639c90",
+      "id": "79e38afd-8b77-42a7-8bfd-9c6874f95f4c",
       "name": "Build Rejection Page"
     },
     {
@@ -351,10 +357,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        64,
-        -160
+        976,
+        320
       ],
-      "id": "d2a1472b-34d0-4182-b490-4a7132b94b6f",
+      "id": "1abf8c91-d4a1-4c83-b29c-f17ee0535a19",
       "name": "Store Selling Partner ID",
       "credentials": {
         "httpCustomAuth": {
@@ -520,7 +526,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "d897c504-e655-4657-ac9c-e0dc7ba26088",
+  "versionId": "52eeae98-2834-4f4e-9541-4ba4b481fc57",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

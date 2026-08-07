@@ -1,0 +1,516 @@
+{
+  "name": "27 - Build New-Parent Payload",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ca7713c4-cbcf-46cf-bea9-d5134aeaddb6",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "278f7467-3baa-49bc-879e-f03b1c98fc2b",
+      "name": "Webhook",
+      "webhookId": "3385fc94-0447-419c-98ec-34f18a66cf5c"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "be91bfe0-e1d9-4fe4-96cb-a5dfe3d01335",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "891bbc3c-f70c-4f3e-9a0e-039f70cf6657",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "4b8b3a45-baa2-4420-817b-58abb4c63af7",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "24cb9bb3-76c9-4de9-a741-b42cc4ee047b",
+      "name": "Fetch Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_request_items?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=sku,asin,parent_sku,dimension1_value,dimension2_value,normalized_product_type",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "708e9f45-1482-4205-8443-03f79bd337d9",
+      "name": "Fetch Items",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Fetch Merge Request').first().json.seller_id }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "a7bca098-3314-465a-88a5-c2f13bd9bcf9",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "e0e0ae79-5a25-465e-bebf-e19fe586918d",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?seller_id=eq.{{ $('Fetch Merge Request').first().json.seller_id }}&select=selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        784,
+        -432
+      ],
+      "id": "055a6ccb-8c35-4569-8dc3-a5160782cf32",
+      "name": "Get Seller Selling Partner ID",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/{{ $('Get Seller Selling Partner ID').first().json.selling_partner_id }}/{{ $('Fetch Merge Request').first().json.anchor_sku }}?marketplaceIds={{ $('Fetch Merge Request').first().json.marketplace_id }}&includedData=summaries,attributes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        992,
+        -432
+      ],
+      "id": "711f5dd9-a0d6-428e-b213-0d689348aed3",
+      "name": "Fetch Anchor Listing"
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/definitions/2020-09-01/productTypes/{{ $('Fetch Anchor Listing').first().json.productType }}?marketplaceIds={{ $('Fetch Merge Request').first().json.marketplace_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1200,
+        -432
+      ],
+      "id": "2867508c-f3a8-4877-904e-011290b655c9",
+      "name": "Get Product Type Definition"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.schema.link.resource }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -432
+      ],
+      "id": "3cad3f4a-a8cc-4b02-a043-ce669a17c9b5",
+      "name": "Fetch Schema"
+    },
+    {
+      "parameters": {
+        "jsCode": "const merge = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(merge) ? merge[0] : merge;\n\nif (!mergeRow) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MERGE_REQUEST_NOT_FOUND',\n    message: 'No merge_requests row found for this request_id.'\n  }}];\n}\n\nif (!mergeRow.anchor_sku) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_ANCHOR_SKU',\n    request_id: mergeRow.request_id,\n    message: 'This merge request has no anchor_sku stored - cannot build a new parent without knowing which listing to copy required content from.'\n  }}];\n}\n\nif (!mergeRow.new_parent_sku) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_NEW_PARENT_SKU',\n    request_id: mergeRow.request_id,\n    message: 'This merge request has no new_parent_sku stored - the seller has not yet chosen a SKU for the brand-new parent record.'\n  }}];\n}\n\nconst itemsInput = $('Fetch Items').all();\nlet items;\nif (itemsInput.length === 1 && Array.isArray(itemsInput[0].json)) {\n  items = itemsInput[0].json;\n} else {\n  items = itemsInput.map(function(i) { return i.json; });\n}\n\nconst missingParentSku = items.filter(function(i) { return !i.parent_sku; });\nif (missingParentSku.length > 0) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_PARENT_SKU',\n    request_id: mergeRow.request_id,\n    message: 'One or more children have no parent_sku stored (should reference the new parent SKU). Cannot build a real feed without it.',\n    affected_skus: missingParentSku.map(function(i) { return i.sku; })\n  }}];\n}\n\nconst anchorItem = $('Fetch Anchor Listing').first().json;\nif (!anchorItem || anchorItem.errors) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'ANCHOR_FETCH_FAILED',\n    request_id: mergeRow.request_id,\n    message: 'Could not fetch the anchor listing\\'s own attributes from Amazon.',\n    upstream_raw: anchorItem\n  }}];\n}\n\nconst schema = $('Fetch Schema').first().json;\nconst requiredAttrs = Array.isArray(schema.required) ? schema.required : [];\nif (requiredAttrs.length === 0) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SCHEMA_REQUIRED_LIST_EMPTY',\n    request_id: mergeRow.request_id,\n    message: 'Amazon\\'s schema for this product type returned no required-attribute list. Cannot safely build a parent payload without knowing what is mandatory.'\n  }}];\n}\n\nconst mkId = mergeRow.marketplace_id;\n\n// These get set explicitly below, not copied from the anchor's raw\n// attributes, even though Amazon's own required list includes them.\nconst THEME_MANAGED_ATTRS = ['parentage_level', 'child_parent_sku_relationship', 'variation_theme'];\n\n// Amazon's real theme-name format is already underscore/uppercase (COLOR,\n// SIZE, ITEM_LENGTH, ...) straight from the live PTD API.\nconst themeName = mergeRow.dimension2_theme\n  ? mergeRow.dimension1_theme + '/' + mergeRow.dimension2_theme\n  : mergeRow.dimension1_theme;\n\nconst dimensionAttrs = [mergeRow.dimension1_attribute];\nif (mergeRow.dimension2_attribute) dimensionAttrs.push(mergeRow.dimension2_attribute);\n\n// Pull each schema-required attribute's real value straight off the\n// anchor's own live Amazon record - never invented, never a placeholder.\n// Attributes that are actually the variation dimension itself are skipped\n// here, since the parent record doesn't carry a value for those (only\n// children, and the anchor once it becomes a child, do).\nconst parentAttributes = {};\nconst missingFromAnchor = [];\n\nrequiredAttrs.forEach(function(attrName) {\n  if (THEME_MANAGED_ATTRS.indexOf(attrName) !== -1) return;\n  if (dimensionAttrs.indexOf(attrName) !== -1) return;\n\n  const raw = anchorItem.attributes ? anchorItem.attributes[attrName] : undefined;\n  if (!raw || !Array.isArray(raw) || raw.length === 0) {\n    missingFromAnchor.push(attrName);\n    return;\n  }\n  const entry = raw.find(function(e) { return e.marketplace_id === mkId; }) || raw[0];\n  parentAttributes[attrName] = [entry];\n});\n\nif (missingFromAnchor.length > 0) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'ANCHOR_MISSING_REQUIRED_ATTRIBUTES',\n    request_id: mergeRow.request_id,\n    message: 'The anchor listing itself is missing a real value for ' + missingFromAnchor.join(', ') + ' - Amazon requires this for this product type, parent or not, and there is no honest way to fill it in without one.',\n    missing_attributes: missingFromAnchor\n  }}];\n}\n\n// The parent record itself: brand-new SKU, no price/inventory/images -\n// just the identity fields Amazon requires, sourced from the real listing\n// being promoted, plus whatever else this specific product type requires.\nparentAttributes.parentage_level = [{ value: 'parent', marketplace_id: mkId }];\nparentAttributes.variation_theme = [{ name: themeName, marketplace_id: mkId }];\n\nconst parentPatches = Object.keys(parentAttributes).map(function(attrName) {\n  return { op: 'add', path: '/attributes/' + attrName, value: parentAttributes[attrName] };\n});\n\nconst parentListing = {\n  sku: mergeRow.new_parent_sku,\n  productType: anchorItem.productType || items[0].normalized_product_type || 'PRODUCT',\n  patches: parentPatches\n};\n\n// The anchor becomes a full child too - same shape as every other child,\n// just sourced from a captured value on the merge_requests row instead of\n// a merge_request_items row, since it was never \"added\" the way the others\n// were - it's the listing the whole promotion started from.\nconst anchorOwnValues = mergeRow.anchor_own_values || {};\nconst anchorPatches = [\n  { op: 'add', path: '/attributes/parentage_level', value: [{ value: 'child', marketplace_id: mkId }] },\n  { op: 'add', path: '/attributes/child_parent_sku_relationship', value: [{ child_relationship_type: 'variation', parent_sku: mergeRow.new_parent_sku, marketplace_id: mkId }] },\n  { op: 'add', path: '/attributes/variation_theme', value: [{ name: themeName, marketplace_id: mkId }] },\n  { op: 'add', path: '/attributes/' + mergeRow.dimension1_attribute, value: [{ value: anchorOwnValues[mergeRow.dimension1_attribute], marketplace_id: mkId }] }\n];\nif (mergeRow.dimension2_attribute && anchorOwnValues[mergeRow.dimension2_attribute]) {\n  anchorPatches.push({ op: 'add', path: '/attributes/' + mergeRow.dimension2_attribute, value: [{ value: anchorOwnValues[mergeRow.dimension2_attribute], marketplace_id: mkId }] });\n}\n\nconst anchorListing = {\n  sku: mergeRow.anchor_sku,\n  productType: anchorItem.productType || items[0].normalized_product_type || 'PRODUCT',\n  patches: anchorPatches\n};\n\n// The rest of the children - identical shape to the existing-parent flow,\n// just referencing the newly-minted parent SKU instead of an existing one.\nconst childListings = items.map(function(item) {\n  const patches = [\n    { op: 'add', path: '/attributes/parentage_level', value: [{ value: 'child', marketplace_id: mkId }] },\n    { op: 'add', path: '/attributes/child_parent_sku_relationship', value: [{ child_relationship_type: 'variation', parent_sku: item.parent_sku, marketplace_id: mkId }] },\n    { op: 'add', path: '/attributes/variation_theme', value: [{ name: themeName, marketplace_id: mkId }] },\n    { op: 'add', path: '/attributes/' + mergeRow.dimension1_attribute, value: [{ value: item.dimension1_value, marketplace_id: mkId }] }\n  ];\n  if (mergeRow.dimension2_attribute && item.dimension2_value) {\n    patches.push({ op: 'add', path: '/attributes/' + mergeRow.dimension2_attribute, value: [{ value: item.dimension2_value, marketplace_id: mkId }] });\n  }\n  return { sku: item.sku, productType: item.normalized_product_type || 'PRODUCT', patches: patches };\n});\n\nconst jsonPayload = {\n  header: { sellerId: mergeRow.seller_id, version: '2.0', issueLocale: 'en_US' },\n  body: { operationType: 'PATCH', listings: [parentListing, anchorListing].concat(childListings) }\n};\n\nreturn [{ json: {\n  decision: 'PAYLOAD_READY',\n  request_id: mergeRow.request_id,\n  new_parent_sku: mergeRow.new_parent_sku,\n  anchor_sku: mergeRow.anchor_sku,\n  child_count: childListings.length + 1,\n  parent_attributes_sourced_from_anchor: Object.keys(parentAttributes).filter(function(k) { return THEME_MANAGED_ATTRS.indexOf(k) === -1; }),\n  json_payload: jsonPayload\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        -432
+      ],
+      "id": "b5cd2868-a66f-4d4e-aacc-d13a383e4ad8",
+      "name": "Build Payload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e896525d-7958-4dcc-969f-e436d2a01579",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "PAYLOAD_READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        64
+      ],
+      "id": "ca12194c-c25c-47eb-b1eb-ff8dbed176b7",
+      "name": "Is Payload Ready"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1392,
+        64
+      ],
+      "id": "3f07ac74-25a0-4304-abd7-dcfcde2840f5",
+      "name": "Respond With Payload"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        224
+      ],
+      "id": "31965a3c-005e-49fc-9c4c-8774551a8b18",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Fetch Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Items": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Selling Partner ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Selling Partner ID": {
+      "main": [
+        [
+          {
+            "node": "Fetch Anchor Listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Anchor Listing": {
+      "main": [
+        [
+          {
+            "node": "Get Product Type Definition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Product Type Definition": {
+      "main": [
+        [
+          {
+            "node": "Fetch Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Schema": {
+      "main": [
+        [
+          {
+            "node": "Build Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Payload": {
+      "main": [
+        [
+          {
+            "node": "Is Payload Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Payload Ready": {
+      "main": [
+        [
+          {
+            "node": "Respond With Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f305120b-d433-4cd7-8258-6857cb23e5ed",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "pRUnSdu140vZyFlm",
+  "tags": []
+}
