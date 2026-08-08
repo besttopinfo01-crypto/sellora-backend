@@ -1,0 +1,461 @@
+{
+  "name": "28 - Log Approval",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "d89b858f-f860-4882-b1a3-bed0dad3e4e2",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "02a191db-0d26-486f-97b3-6e4e04c54efb",
+      "name": "Webhook",
+      "webhookId": "d89b858f-f860-4882-b1a3-bed0dad3e4e2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nif (!Array.isArray(body.confirmations) || body.confirmations.length !== 5) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_CONFIRMATIONS', message: 'confirmations must be an array of exactly 5 items - the same 5 shown on the Approval screen.' } }];\n}\n\n// Re-checked here, not just trusted from the disabled button on the\n// frontend - same belt-and-suspenders principle Approval's own submit\n// button already follows (see its own code comment), just enforced\n// server-side too, since a disabled button is a UI convenience, not a\n// security boundary.\nconst uncheckedIndices = body.confirmations\n  .map(function(c, i) { return { index: i, checked: !!(c && c.checked) }; })\n  .filter(function(c) { return !c.checked; })\n  .map(function(c) { return c.index; });\n\nif (uncheckedIndices.length > 0) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'CONFIRMATIONS_INCOMPLETE',\n    message: 'All 5 confirmations must be checked before an approval can be logged.',\n    unchecked_indices: uncheckedIndices\n  }}];\n}\n\nif (!body.json_payload || typeof body.json_payload !== 'object') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_PAYLOAD',\n    message: 'json_payload is required - build it via wf24 (existing-parent) or wf27 (new-parent) before calling this.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  request_id: body.request_id,\n  approved_by: body.approved_by || 'seller',\n  confirmations: body.confirmations,\n  parent_content: body.parent_content || null,\n  json_payload: body.json_payload\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "15e7b4b6-131b-4d36-990e-8fb41c801957",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b5e6f2a1-4c8d-4e91-9a7b-1f3d8c6e0a52",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "9bff0d0e-1b49-4e24-bf9e-7221db7eae5c",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,seller_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c5e6ca43-32b3-49e0-b4c0-77c95594b6b7",
+      "name": "Fetch Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const validated = $('Validate Input').first().json;\nconst fetched = $input.first().json;\nconst row = Array.isArray(fetched) ? fetched[0] : fetched;\n\nif (!row || !row.request_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MERGE_REQUEST_NOT_FOUND',\n    request_id: validated.request_id,\n    message: 'No merge_requests row found for this request_id - approval cannot be logged against a request that was never created.'\n  }}];\n}\n\n// approval_logs already existed in this Supabase project - built during\n// the original rebuild plan, before any Gen-2 workflow ever wrote to it,\n// and before this screen's confirmations grew from 4 checks to 5. Its 4\n// named boolean columns predate that growth. Items 1 and 2 here are both\n// about review manipulation/consolidation specifically, so both map onto\n// the single confirm_no_review_manipulation column; the other three map\n// through 1:1. is_new_parent and the new-parent content aren't stored\n// separately - is_new_parent is one join away via request_id, and the\n// generated title/bullets/description are already inside json_payload's\n// own parent listing patches, so duplicating them here would just be\n// storing the same data twice.\nconst c = validated.confirmations;\nconst notes = c.map(function(item, i) { return '(' + (i + 1) + ') ' + item.text; }).join(' ');\n\nreturn [{ json: {\n  decision: 'FOUND',\n  request_id: row.request_id,\n  seller_id: row.seller_id,\n  approved_by: validated.approved_by,\n  confirm_same_product_family: !!(c[0] && c[0].checked),\n  confirm_no_review_manipulation: !!(c[1] && c[1].checked) && !!(c[2] && c[2].checked),\n  confirm_matrix_correct: !!(c[3] && c[3].checked),\n  confirm_understands_risk: !!(c[4] && c[4].checked),\n  notes: notes,\n  json_payload: validated.json_payload\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6ac0f5e1-fecd-4441-9a62-309bf7cf0fb0",
+      "name": "Check Merge Request Found"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f4a8e1c3-7b6d-4a92-8e5f-2c9d1b7a4e63",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "FOUND",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "d2b10f19-97c5-441e-b4f3-1f4bc906e542",
+      "name": "Is Found"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/approval_logs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"request_id\": \"{{ $json.request_id }}\",\n  \"seller_id\": \"{{ $json.seller_id }}\",\n  \"approval_status\": \"approved\",\n  \"approved_by\": {{ JSON.stringify($json.approved_by) }},\n  \"confirm_same_product_family\": {{ $json.confirm_same_product_family }},\n  \"confirm_no_review_manipulation\": {{ $json.confirm_no_review_manipulation }},\n  \"confirm_matrix_correct\": {{ $json.confirm_matrix_correct }},\n  \"confirm_understands_risk\": {{ $json.confirm_understands_risk }},\n  \"notes\": {{ JSON.stringify($json.notes) }},\n  \"staged_payload_json\": {{ JSON.stringify($json.json_payload) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "c5980a7b-8c81-44e4-a6cc-58aa88e86737",
+      "name": "Log Approval",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inserted = $input.first().json;\nconst row = Array.isArray(inserted) ? inserted[0] : inserted;\n\nif (!row || !row.id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'APPROVAL_LOG_INSERT_FAILED',\n    message: 'The approval_logs insert did not return a row.',\n    upstream_raw: inserted\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'APPROVED_AND_LOGGED',\n  request_id: row.request_id,\n  approval_log_id: row.id,\n  // Real column is created_at, not approved_at - this table predates\n  // this workflow. Read the real column, still expose it as approved_at\n  // here so the frontend's existing contract doesn't need to change too.\n  approved_at: row.created_at,\n  message: 'Approval logged and the final payload staged. Nothing was sent to Amazon - live submission is still on hold pending Amazon app review.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "ea335c69-0ced-49aa-9cf9-ade87227df63",
+      "name": "Finalize Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a7c3e9d1-4f68-4b2a-9d15-e6c8f3a1b7d4",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "APPROVED_AND_LOGGED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "6db8309f-c8f6-44ca-a217-6b16993b1bbd",
+      "name": "Is Logged"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "a2fc330a-8e79-401f-88ad-4fd2c53bc823",
+      "name": "Respond With Confirmation"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        224
+      ],
+      "id": "d4c8b6a2-9e1f-4a73-8c5d-2b7f9e3a6d18",
+      "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Finalize Response').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"status\": \"approved\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1040,
+        176
+      ],
+      "id": "b3f7e2a9-5c81-4d6e-9a2f-7e3b8c1d4f96",
+      "name": "Update Merge Request Status",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Finalize Response').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        176
+      ],
+      "id": "c7a1d5e3-8f42-4b96-b3e7-1a9c6d2f5e84",
+      "name": "Restore After Status Update"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Check Merge Request Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Merge Request Found": {
+      "main": [
+        [
+          {
+            "node": "Is Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Found": {
+      "main": [
+        [
+          {
+            "node": "Log Approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Approval": {
+      "main": [
+        [
+          {
+            "node": "Finalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Response": {
+      "main": [
+        [
+          {
+            "node": "Is Logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Logged": {
+      "main": [
+        [
+          {
+            "node": "Update Merge Request Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Merge Request Status": {
+      "main": [
+        [
+          {
+            "node": "Restore After Status Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Status Update": {
+      "main": [
+        [
+          {
+            "node": "Respond With Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e1f4a7c2-3b9d-4e6a-8c1f-5d2b9a7e4c60",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "n28LogApprova1XyZw",
+  "tags": []
+}

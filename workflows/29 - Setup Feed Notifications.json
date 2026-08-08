@@ -1,0 +1,248 @@
+{
+  "name": "29 - Setup Feed Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "68cca135-8358-41fe-9980-ca1730ba456b",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-624, 96],
+      "id": "578643b4-4c5d-4011-9781-93bc523f4e00",
+      "name": "Webhook",
+      "webhookId": "68cca135-8358-41fe-9980-ca1730ba456b"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\n// Run this once, manually, not from the app - it registers one\n// application-wide destination/subscription, not something tied to a\n// single seller_id. FEED_PROCESSING_FINISHED notifications carry their\n// own sellerId in the payload, which is how the consuming side (wf07)\n// will know which seller's submission_logs row to update.\nif (!body.sqs_queue_arn) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_QUEUE_ARN', message: 'sqs_queue_arn is required - create the SQS queue in AWS first, grant SP-API (AWS account 437568002678) sqs:SendMessage and sqs:GetQueueAttributes on it, then pass its ARN here.' } }];\n}\nif (!/^arn:aws:sqs:[a-z0-9-]+:\\d{12}:\\S+$/.test(body.sqs_queue_arn)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_QUEUE_ARN', message: 'sqs_queue_arn does not look like a real SQS ARN (expected arn:aws:sqs:{region}:{account-id}:{queue-name}).' } }];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  sqs_queue_arn: body.sqs_queue_arn,\n  destination_name: body.destination_name || 'catalove-feed-notifications'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-416, 96],
+      "id": "703ea9f0-2f3f-46a7-9cc4-9d87704bd57c",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d1c4e8a2-6f93-4b7a-9c1e-2a8d5f6b3c71",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-208, 96],
+      "id": "4215730f-1880-4c85-b5a6-c35a54b1a448",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/x-www-form-urlencoded" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "grant_type", "value": "client_credentials" },
+            { "name": "scope", "value": "sellingpartnerapi::notifications" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [0, 0],
+      "id": "f93412ff-5880-4724-b401-c61836a80bb9",
+      "name": "Get Grantless Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sellingpartnerapi-na.amazon.com/notifications/v1/destinations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "x-amz-access-token", "value": "={{ $('Get Grantless Access Token').first().json.access_token }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": {{ JSON.stringify($('Validate Input').first().json.destination_name) }},\n  \"resourceSpecification\": {\n    \"sqs\": {\n      \"arn\": {{ JSON.stringify($('Validate Input').first().json.sqs_queue_arn) }}\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [208, 0],
+      "id": "c5fd6f76-8acc-43de-a121-c2275537b2af",
+      "name": "Create Destination",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\n\n// createDestination fails with a real error if a destination pointing\n// at this same SQS ARN already exists - surfaced directly rather than\n// guessed at, since the exact shape of that specific error hasn't been\n// confirmed against a real call yet. If this happens and it really is\n// a duplicate, use GET /notifications/v1/destinations to find the\n// existing destinationId instead of creating a new one.\nconst destinationId = upstream.payload && upstream.payload.destinationId;\n\nif (!destinationId) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'DESTINATION_CREATE_FAILED',\n    message: 'createDestination did not return a destinationId. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'DESTINATION_READY',\n  destination_id: destinationId\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [416, 0],
+      "id": "e1df6603-e93e-404c-9430-292a70e8b27f",
+      "name": "Parse Destination"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a4c1d8e2-3f97-4b6a-9d5c-7e2b1a8f6d94",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "DESTINATION_READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [624, 0],
+      "id": "9201ea7d-0f64-4a7e-8fd5-7d8e911eade3",
+      "name": "Is Destination Ready"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sellingpartnerapi-na.amazon.com/notifications/v1/subscriptions/FEED_PROCESSING_FINISHED",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "x-amz-access-token", "value": "={{ $('Get Grantless Access Token').first().json.access_token }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"payloadVersion\": \"1.0\",\n  \"destinationId\": {{ JSON.stringify($json.destination_id) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [832, 0],
+      "id": "3cfc2a7b-a6fb-408e-a8f6-e41031860af6",
+      "name": "Create Subscription",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const destination = $('Parse Destination').first().json;\nconst upstream = $input.first().json;\nconst subscriptionId = upstream.payload && upstream.payload.subscriptionId;\n\nif (!subscriptionId) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SUBSCRIPTION_CREATE_FAILED',\n    destination_id: destination.destination_id,\n    message: 'createSubscription did not return a subscriptionId - the destination was created successfully, but the subscription was not. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'SUBSCRIBED',\n  destination_id: destination.destination_id,\n  subscription_id: subscriptionId,\n  notification_type: 'FEED_PROCESSING_FINISHED',\n  message: 'Destination and subscription created. Feed-processing notifications will now be pushed to the SQS queue instead of requiring wf07 to poll Amazon for each pending feed.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 0],
+      "id": "4004c479-1e7c-4f4c-aa5f-7cc01bf01655",
+      "name": "Parse Subscription"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1248, 0],
+      "id": "7ad28296-12e8-4a4f-95b6-fd4e34176dd5",
+      "name": "Respond With Result"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [208, 224],
+      "id": "b8e3f1a7-4c92-4d6e-8a5f-1c9d2b7e6f83",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]] },
+    "Validate Input": { "main": [[{ "node": "Is Valid", "type": "main", "index": 0 }]] },
+    "Is Valid": {
+      "main": [
+        [{ "node": "Get Grantless Access Token", "type": "main", "index": 0 }],
+        [{ "node": "Respond Rejected", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Grantless Access Token": { "main": [[{ "node": "Create Destination", "type": "main", "index": 0 }]] },
+    "Create Destination": { "main": [[{ "node": "Parse Destination", "type": "main", "index": 0 }]] },
+    "Parse Destination": { "main": [[{ "node": "Is Destination Ready", "type": "main", "index": 0 }]] },
+    "Is Destination Ready": {
+      "main": [
+        [{ "node": "Create Subscription", "type": "main", "index": 0 }],
+        [{ "node": "Respond Rejected", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Subscription": { "main": [[{ "node": "Parse Subscription", "type": "main", "index": 0 }]] },
+    "Parse Subscription": { "main": [[{ "node": "Respond With Result", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f2a5b8d1-6c94-4e7a-9b3f-8d1c6a2e5f70",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "n29SetupNotif2AbCd",
+  "tags": []
+}
