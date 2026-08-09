@@ -1,0 +1,1060 @@
+{
+  "name": "30 - Submit Feed to Amazon",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "632f2406-e9f3-4a3a-ae7d-5f06b6cff074",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1600,
+        -32
+      ],
+      "id": "52155cce-20fe-4f8c-b18d-adafa8b842b9",
+      "name": "Webhook",
+      "webhookId": "632f2406-e9f3-4a3a-ae7d-5f06b6cff074"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1392,
+        -32
+      ],
+      "id": "11dd7a1a-bf43-4047-987b-86241f9e6a51",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3885e16f-e22d-4839-853b-8eece3026472",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1184,
+        -32
+      ],
+      "id": "3885e16f-e22d-4839-853b-8eece3026472",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $('Validate Input').first().json.request_id }}&order=id.desc&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -976,
+        -32
+      ],
+      "id": "5c1dcdbb-50f6-4896-8b37-9a0728b2f4c1",
+      "name": "Fetch Approval Log",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,seller_id,marketplace_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -768,
+        -32
+      ],
+      "id": "7cd97e21-fbff-48cb-a8c7-c0ab5099aa53",
+      "name": "Fetch Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const validated = $('Validate Input').first().json;\n\nconst approvalRaw = $('Fetch Approval Log').first().json;\nconst approvalRow = Array.isArray(approvalRaw) ? approvalRaw[0] : approvalRaw;\n\nconst mergeRaw = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(mergeRaw) ? mergeRaw[0] : mergeRaw;\n\nif (!approvalRow || !approvalRow.id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'NOT_APPROVED',\n    request_id: validated.request_id,\n    message: 'No approval_logs row found for this request_id - Approval must be completed before this can run.'\n  }}];\n}\n\nif (approvalRow.approval_status !== 'approved') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'APPROVAL_NOT_CONFIRMED',\n    request_id: validated.request_id,\n    message: 'The most recent approval_logs row has approval_status=' + approvalRow.approval_status + ', not approved.'\n  }}];\n}\n\nif (!approvalRow.staged_payload_json) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'NO_STAGED_PAYLOAD',\n    request_id: validated.request_id,\n    message: 'The approval_logs row exists but has no staged_payload_json - nothing to submit.'\n  }}];\n}\n\nif (!mergeRow || !mergeRow.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MERGE_REQUEST_NOT_FOUND',\n    request_id: validated.request_id,\n    message: 'No merge_requests row found (or it is missing marketplace_id) for this request_id.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'READY',\n  request_id: validated.request_id,\n  seller_id: approvalRow.seller_id,\n  marketplace_id: mergeRow.marketplace_id,\n  staged_payload_json: approvalRow.staged_payload_json\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        -32
+      ],
+      "id": "66575114-958f-4b96-8f29-c17d6923a522",
+      "name": "Check Ready To Submit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d46eb26d-82ef-4d4b-96ed-509acf5b3015",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -560,
+        -32
+      ],
+      "id": "d46eb26d-82ef-4d4b-96ed-509acf5b3015",
+      "name": "Is Ready"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/submission_logs?request_id=eq.{{ $('Check Ready To Submit').first().json.request_id }}&select=id&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -352,
+        -32
+      ],
+      "id": "f31038cf-a019-401d-bd0c-157d0fceeec5",
+      "name": "Fetch Existing Submission",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const ready = $('Check Ready To Submit').first().json;\nconst existingRaw = $input.first().json;\nconst existingRows = Array.isArray(existingRaw) ? existingRaw : (existingRaw && existingRaw.id ? [existingRaw] : []);\n\nif (existingRows.length > 0) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'ALREADY_SUBMITTED',\n    request_id: ready.request_id,\n    message: 'A submission_logs row already exists for this request_id - refusing to submit the same merge twice. Check Tracking for its current status.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'NO_DUPLICATE',\n  request_id: ready.request_id,\n  seller_id: ready.seller_id,\n  marketplace_id: ready.marketplace_id,\n  staged_payload_json: ready.staged_payload_json\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -32
+      ],
+      "id": "41762301-3eba-4ce2-b4ad-8ceecda514fa",
+      "name": "Confirm No Duplicate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1fe29f6-4735-4792-b825-827a60325c4c",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "NO_DUPLICATE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        64,
+        -32
+      ],
+      "id": "c1fe29f6-4735-4792-b825-827a60325c4c",
+      "name": "Is No Duplicate"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Confirm No Duplicate').first().json.seller_id }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        272,
+        -32
+      ],
+      "id": "b12e8162-3636-4624-bb97-24e695020b81",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        -32
+      ],
+      "id": "d27f63a1-37e6-4b3a-a50b-c648040dd77b",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sellingpartnerapi-na.amazon.com/feeds/2021-06-30/documents",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contentType\": \"application/json; charset=UTF-8\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        688,
+        -32
+      ],
+      "id": "d5526142-95a9-4ae7-8dd1-07db48d0d161",
+      "name": "Create Feed Document",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst feedDocumentId = upstream.feedDocumentId;\nconst uploadUrl = upstream.url;\n\nif (!feedDocumentId || !uploadUrl) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'FEED_DOCUMENT_CREATE_FAILED',\n    message: 'createFeedDocument did not return a feedDocumentId and upload url. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'DOCUMENT_CREATED',\n  feed_document_id: feedDocumentId,\n  upload_url: uploadUrl\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -32
+      ],
+      "id": "383a2383-a020-46b0-beb4-cb5817752404",
+      "name": "Parse Feed Document"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7f105acb-bfc8-4d9b-b833-fd634e5189a8",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "DOCUMENT_CREATED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1104,
+        -32
+      ],
+      "id": "7f105acb-bfc8-4d9b-b833-fd634e5189a8",
+      "name": "Is Document Created"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Parse Feed Document').first().json.upload_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=UTF-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json; charset=UTF-8",
+        "body": "={{ JSON.stringify($('Confirm No Duplicate').first().json.staged_payload_json) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1312,
+        -32
+      ],
+      "id": "49b73119-3db3-4ed4-8b71-85c747b863fb",
+      "name": "Upload Feed Content",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst statusCode = response.statusCode;\n\nif (!statusCode || statusCode < 200 || statusCode >= 300) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'UPLOAD_FAILED',\n    message: 'Uploading the feed content to the presigned S3 URL failed (status ' + (statusCode || 'unknown') + '). The feed document was created but never received its content - it will simply expire unused.',\n    upstream_raw: response\n  }}];\n}\n\nreturn [{ json: { decision: 'UPLOAD_OK' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        -32
+      ],
+      "id": "3e6ba2ee-b682-4a40-9fd6-6a6d387431c4",
+      "name": "Check Upload Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "39aa21f5-42c7-4350-a434-b02bdf9c94d1",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "UPLOAD_OK",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1728,
+        -32
+      ],
+      "id": "39aa21f5-42c7-4350-a434-b02bdf9c94d1",
+      "name": "Is Upload Successful"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sellingpartnerapi-na.amazon.com/feeds/2021-06-30/feeds",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"feedType\": \"JSON_LISTINGS_FEED\",\n  \"marketplaceIds\": [{{ JSON.stringify($('Confirm No Duplicate').first().json.marketplace_id) }}],\n  \"inputFeedDocumentId\": {{ JSON.stringify($('Parse Feed Document').first().json.feed_document_id) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1936,
+        -32
+      ],
+      "id": "c4738412-8024-4526-8ff8-71f038796ca1",
+      "name": "Submit Feed",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst feedId = upstream.feedId;\n\nif (!feedId) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'FEED_SUBMIT_FAILED',\n    message: 'createFeed did not return a feedId. The feed content was uploaded successfully but never actually submitted. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'FEED_SUBMITTED',\n  feed_id: feedId,\n  request_id: $('Confirm No Duplicate').first().json.request_id\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        -32
+      ],
+      "id": "34a86afe-8671-4043-acc3-92964424e378",
+      "name": "Parse Feed Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "455c6e58-4d6f-4d04-95ad-ad36b6a42d6b",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "FEED_SUBMITTED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2352,
+        -32
+      ],
+      "id": "455c6e58-4d6f-4d04-95ad-ad36b6a42d6b",
+      "name": "Is Feed Submitted"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/submission_logs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"request_id\": {{ JSON.stringify($json.request_id) }},\n  \"feed_id\": {{ JSON.stringify($json.feed_id) }},\n  \"seller_id\": {{ JSON.stringify($('Confirm No Duplicate').first().json.seller_id) }},\n  \"submission_status\": \"submitted\",\n  \"submitted_at\": {{ JSON.stringify($now.toISO()) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2560,
+        -32
+      ],
+      "id": "907a2e35-2a84-4ddd-a69b-3260a1caeb87",
+      "name": "Log Submission",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inserted = $input.first().json;\nconst row = Array.isArray(inserted) ? inserted[0] : inserted;\nconst submitted = $('Parse Feed Result').first().json;\n\nif (!row || !row.id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SUBMISSION_LOG_INSERT_FAILED',\n    message: 'The feed was genuinely submitted to Amazon (feed_id below) but logging it to submission_logs failed - wf07/wf25 will not know to track it until this is fixed manually.',\n    feed_id: submitted.feed_id,\n    request_id: submitted.request_id,\n    upstream_raw: inserted\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'SUBMITTED_AND_LOGGED',\n  request_id: row.request_id,\n  feed_id: row.feed_id,\n  submitted_at: row.submitted_at,\n  message: 'Feed submitted to Amazon and logged. Tracking (wf25) and the existing feed poller/verification (wf07/wf08) take over from here automatically.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2768,
+        -32
+      ],
+      "id": "461d3e23-e4b9-4d36-b80f-b5ece0e54e5f",
+      "name": "Finalize Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0407cba4-d89e-4f2b-afbf-e964dcd5328f",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "SUBMITTED_AND_LOGGED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2976,
+        -32
+      ],
+      "id": "0407cba4-d89e-4f2b-afbf-e964dcd5328f",
+      "name": "Is Logged"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Finalize Response').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"status\": \"submitted\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3184,
+        -32
+      ],
+      "id": "d46eb26d-1234-4d6e-8a5f-1c9d2b7e6f83",
+      "name": "Update Merge Request Status",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Finalize Response').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3392,
+        -32
+      ],
+      "id": "c7a1d5e3-1111-4b96-b3e7-1a9c6d2f5e84",
+      "name": "Restore After Status Update"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3600,
+        -32
+      ],
+      "id": "8f804a16-5c66-4333-b101-ec36b632cce4",
+      "name": "Respond With Confirmation"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        64,
+        224
+      ],
+      "id": "f1a4c8d2-2222-4b7a-9c1d-2b8e5f3a7d61",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Approval Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Approval Log": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Check Ready To Submit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Ready To Submit": {
+      "main": [
+        [
+          {
+            "node": "Is Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Ready": {
+      "main": [
+        [
+          {
+            "node": "Fetch Existing Submission",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Existing Submission": {
+      "main": [
+        [
+          {
+            "node": "Confirm No Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm No Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Is No Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is No Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Create Feed Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Feed Document": {
+      "main": [
+        [
+          {
+            "node": "Parse Feed Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Feed Document": {
+      "main": [
+        [
+          {
+            "node": "Is Document Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Document Created": {
+      "main": [
+        [
+          {
+            "node": "Upload Feed Content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Feed Content": {
+      "main": [
+        [
+          {
+            "node": "Check Upload Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Upload Result": {
+      "main": [
+        [
+          {
+            "node": "Is Upload Successful",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Upload Successful": {
+      "main": [
+        [
+          {
+            "node": "Submit Feed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit Feed": {
+      "main": [
+        [
+          {
+            "node": "Parse Feed Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Feed Result": {
+      "main": [
+        [
+          {
+            "node": "Is Feed Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Feed Submitted": {
+      "main": [
+        [
+          {
+            "node": "Log Submission",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Submission": {
+      "main": [
+        [
+          {
+            "node": "Finalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Response": {
+      "main": [
+        [
+          {
+            "node": "Is Logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Logged": {
+      "main": [
+        [
+          {
+            "node": "Update Merge Request Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Merge Request Status": {
+      "main": [
+        [
+          {
+            "node": "Restore After Status Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Status Update": {
+      "main": [
+        [
+          {
+            "node": "Respond With Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a1b2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "n30SubmitFeed3CdEf",
+  "tags": []
+}

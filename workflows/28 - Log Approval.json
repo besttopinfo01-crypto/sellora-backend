@@ -85,7 +85,8 @@
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -245,59 +246,6 @@
       ],
       "id": "d4c8b6a2-9e1f-4a73-8c5d-2b7f9e3a6d18",
       "name": "Respond Rejected"
-    },
-    {
-      "parameters": {
-        "method": "PATCH",
-        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Finalize Response').first().json.request_id }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpCustomAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=minimal"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\"status\": \"approved\"}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        1040,
-        176
-      ],
-      "id": "b3f7e2a9-5c81-4d6e-9a2f-7e3b8c1d4f96",
-      "name": "Update Merge Request Status",
-      "credentials": {
-        "httpCustomAuth": {
-          "id": "9z3veFG8YzFzmpRa",
-          "name": "Supabase Service Role"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "const original = $('Finalize Response').first().json;\nreturn [{ json: original }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1248,
-        176
-      ],
-      "id": "c7a1d5e3-8f42-4b96-b3e7-1a9c6d2f5e84",
-      "name": "Restore After Status Update"
     }
   ],
   "pinData": {},
@@ -408,7 +356,7 @@
       "main": [
         [
           {
-            "node": "Update Merge Request Status",
+            "node": "Respond With Confirmation",
             "type": "main",
             "index": 0
           }
@@ -416,28 +364,6 @@
         [
           {
             "node": "Respond Rejected",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update Merge Request Status": {
-      "main": [
-        [
-          {
-            "node": "Restore After Status Update",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Restore After Status Update": {
-      "main": [
-        [
-          {
-            "node": "Respond With Confirmation",
             "type": "main",
             "index": 0
           }
