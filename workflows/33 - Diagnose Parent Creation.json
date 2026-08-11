@@ -1,0 +1,656 @@
+{
+  "name": "33 - Diagnose Parent Creation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "69981a39-c004-4330-87ec-7374e317ada5",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2000,
+        -32
+      ],
+      "id": "wh-node-id",
+      "name": "Webhook",
+      "webhookId": "69981a39-c004-4330-87ec-7374e317ada5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\nif (body.action !== 'create' && body.action !== 'verify') {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_ACTION', message: 'action must be \"create\" or \"verify\".' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id, action: body.action } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1792,
+        -32
+      ],
+      "id": "407a564e-d8bf-45df-ba79-3c7fc2f979f7",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a64d09fa-6d97-4673-b1e7-988b2629154d",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1584,
+        -32
+      ],
+      "id": "a64d09fa-6d97-4673-b1e7-988b2629154d",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $('Validate Input').first().json.request_id }}&order=id.desc&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1376,
+        -32
+      ],
+      "id": "e5a4312c-05b4-47be-8278-76b1deb2efb4",
+      "name": "Fetch Approval Log",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=seller_id,marketplace_id,new_parent_sku,is_new_parent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1168,
+        -32
+      ],
+      "id": "8e447968-7000-4591-a909-2a01715d801b",
+      "name": "Fetch Merge Request",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const validated = $('Validate Input').first().json;\n\nconst approvalRaw = $('Fetch Approval Log').first().json;\nconst approvalRow = Array.isArray(approvalRaw) ? approvalRaw[0] : approvalRaw;\n\nconst mergeRaw = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(mergeRaw) ? mergeRaw[0] : mergeRaw;\n\nif (!approvalRow || approvalRow.approval_status !== 'approved' || !approvalRow.staged_payload_json) {\n  return [{ json: { decision: 'REJECTED', reason: 'NOT_APPROVED', request_id: validated.request_id,\n    message: 'No approved, staged payload found for this request_id.' } }];\n}\nif (!mergeRow || !mergeRow.is_new_parent || !mergeRow.new_parent_sku) {\n  return [{ json: { decision: 'REJECTED', reason: 'WRONG_MODE', request_id: validated.request_id,\n    message: 'This request is not a new-parent merge (or has no new_parent_sku) - this diagnostic only applies to that mode.' } }];\n}\n\nconst parentMessage = (approvalRow.staged_payload_json.messages || []).find(function(m) { return m.sku === mergeRow.new_parent_sku; });\nif (!parentMessage) {\n  return [{ json: { decision: 'REJECTED', reason: 'PARENT_MESSAGE_NOT_FOUND', request_id: validated.request_id,\n    message: 'No message for the parent sku \"' + mergeRow.new_parent_sku + '\" found in the staged payload.' } }];\n}\n\nreturn [{ json: {\n  decision: 'READY',\n  request_id: validated.request_id,\n  action: validated.action,\n  seller_id: mergeRow.seller_id,\n  marketplace_id: mergeRow.marketplace_id,\n  parent_sku: mergeRow.new_parent_sku,\n  product_type: parentMessage.productType,\n  patches: parentMessage.patches\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -32
+      ],
+      "id": "fd4ecada-3626-43f4-b94d-3e96689af9a8",
+      "name": "Check Ready"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1f86bac-c02b-40f8-9034-6d5ad5267f6e",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -752,
+        -32
+      ],
+      "id": "a1f86bac-c02b-40f8-9034-6d5ad5267f6e",
+      "name": "Is Ready"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?seller_id=eq.{{ $('Check Ready').first().json.seller_id }}&select=selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -544,
+        -32
+      ],
+      "id": "ff2b8c76-074a-4597-b7b5-c9114c3bf563",
+      "name": "Get Seller Selling Partner ID",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Check Ready').first().json.seller_id }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -336,
+        -32
+      ],
+      "id": "e1da542e-addc-4532-9121-b499b8b8a609",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -128,
+        -32
+      ],
+      "id": "9b6427cc-0951-44de-b6b2-db2bdd194b11",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "84f8c647-9942-40c3-abf0-a397201a5b32",
+              "leftValue": "={{ $('Check Ready').first().json.action }}",
+              "rightValue": "create",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        80,
+        -32
+      ],
+      "id": "84f8c647-9942-40c3-abf0-a397201a5b32",
+      "name": "Is Create"
+    },
+    {
+      "parameters": {
+        "jsCode": "// putListingsItem needs a flat attributes object, not the patches\n// array patchListingsItem uses - same attribute values either way,\n// different envelope. Converting rather than building fresh, so this\n// is exactly the content already staged and reviewed, not a\n// reconstruction that could drift from it.\nconst ready = $('Check Ready').first().json;\nconst attributes = {};\n\nfor (const patch of ready.patches) {\n  const attrName = patch.path.replace('/attributes/', '');\n  attributes[attrName] = patch.value;\n}\n\nreturn [{ json: {\n  request_id: ready.request_id,\n  seller_id: ready.seller_id,\n  marketplace_id: ready.marketplace_id,\n  parent_sku: ready.parent_sku,\n  product_type: ready.product_type,\n  attributes: attributes\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        -152
+      ],
+      "id": "1c77e80e-85d3-4fc3-8ae2-ccc42842f6c2",
+      "name": "Extract Parent Attributes"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/{{ $('Get Seller Selling Partner ID').first().json.selling_partner_id }}/{{ $('Extract Parent Attributes').first().json.parent_sku }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "marketplaceIds",
+              "value": "={{ $('Extract Parent Attributes').first().json.marketplace_id }}"
+            },
+            {
+              "name": "issueLocale",
+              "value": "en_US"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"productType\": {{ JSON.stringify($('Extract Parent Attributes').first().json.product_type) }},\n  \"requirements\": \"LISTING\",\n  \"attributes\": {{ JSON.stringify($('Extract Parent Attributes').first().json.attributes) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        496,
+        -152
+      ],
+      "id": "f923234d-b4ab-454b-9a2a-9fab3da3b65e",
+      "name": "Put New Parent Listing",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst context = $('Extract Parent Attributes').first().json;\n\nreturn [{ json: {\n  decision: 'CHECKED',\n  mode: 'create',\n  request_id: context.request_id,\n  parent_sku: context.parent_sku,\n  attributes_sent: context.attributes,\n  amazon_response: upstream,\n  reminder: 'A clean ACCEPTED response here does NOT confirm the parent was actually created - a documented, if old (2023), report describes exactly this operation returning ACCEPTED while creating nothing. Call this same workflow again with action=verify, a few minutes from now, to check what is actually true.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        -152
+      ],
+      "id": "455c9b2d-f277-432a-842f-48e2414e99f1",
+      "name": "Parse Put Result"
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/{{ $('Get Seller Selling Partner ID').first().json.selling_partner_id }}/{{ $('Check Ready').first().json.parent_sku }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "marketplaceIds",
+              "value": "={{ $('Check Ready').first().json.marketplace_id }}"
+            },
+            {
+              "name": "includedData",
+              "value": "summaries,attributes,issues"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        288,
+        88
+      ],
+      "id": "1e4b43a0-3821-4869-b6ec-2e3b2f19f5a9",
+      "name": "Fetch Real Parent State",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst ready = $('Check Ready').first().json;\n\nconst summaries = upstream.summaries || [];\nconst attrs = upstream.attributes || {};\nconst hasAsin = summaries.length > 0 && !!summaries[0].asin;\nconst parentageValue = attrs.parentage_level && attrs.parentage_level[0] && attrs.parentage_level[0].value;\n\nreturn [{ json: {\n  decision: 'CHECKED',\n  mode: 'verify',\n  request_id: ready.request_id,\n  parent_sku: ready.parent_sku,\n  really_exists: hasAsin,\n  asin: hasAsin ? summaries[0].asin : null,\n  parentage_level_value: parentageValue || null,\n  genuinely_a_parent: parentageValue === 'parent',\n  issues: upstream.issues || [],\n  raw_response: upstream\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        88
+      ],
+      "id": "186093d4-fceb-4788-9271-e2e3f23cabef",
+      "name": "Parse Verify Result"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        912,
+        -32
+      ],
+      "id": "eef3e078-8ed4-450f-aa3e-686bedba4e69",
+      "name": "Respond With Result"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -960,
+        224
+      ],
+      "id": "73e73788-d432-47de-9912-d4be20bfcb36",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Approval Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Approval Log": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Check Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Ready": {
+      "main": [
+        [
+          {
+            "node": "Is Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Ready": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Selling Partner ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Selling Partner ID": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Is Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Create": {
+      "main": [
+        [
+          {
+            "node": "Extract Parent Attributes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Real Parent State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Parent Attributes": {
+      "main": [
+        [
+          {
+            "node": "Put New Parent Listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Put New Parent Listing": {
+      "main": [
+        [
+          {
+            "node": "Parse Put Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Put Result": {
+      "main": [
+        [
+          {
+            "node": "Respond With Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Real Parent State": {
+      "main": [
+        [
+          {
+            "node": "Parse Verify Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Verify Result": {
+      "main": [
+        [
+          {
+            "node": "Respond With Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d5e8f1c4-9a6b-4d3e-8f1a-4b7c9d2e8f96",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "n33ParentCreate6GhIj",
+  "tags": []
+}

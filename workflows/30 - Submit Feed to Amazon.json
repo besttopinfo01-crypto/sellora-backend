@@ -248,7 +248,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        272,
+        896,
         -32
       ],
       "id": "b12e8162-3636-4624-bb97-24e695020b81",
@@ -285,7 +285,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        480,
+        1104,
         -32
       ],
       "id": "d27f63a1-37e6-4b3a-a50b-c648040dd77b",
@@ -322,7 +322,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        688,
+        1312,
         -32
       ],
       "id": "d5526142-95a9-4ae7-8dd1-07db48d0d161",
@@ -332,12 +332,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const upstream = $input.first().json;\nconst feedDocumentId = upstream.feedDocumentId;\nconst uploadUrl = upstream.url;\n\nif (!feedDocumentId || !uploadUrl) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'FEED_DOCUMENT_CREATE_FAILED',\n    message: 'createFeedDocument did not return a feedDocumentId and upload url. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'DOCUMENT_CREATED',\n  feed_document_id: feedDocumentId,\n  upload_url: uploadUrl\n}}];"
+        "jsCode": "const upstream = $input.first().json;\nconst feedDocumentId = upstream.feedDocumentId;\nconst uploadUrl = upstream.url;\n\nif (!feedDocumentId || !uploadUrl) {\n  // Our own rate-limit reservation just confirmed this seller was under\n  // 5 submissions in the last 5 minutes - but that only counts attempts\n  // made through Catalove. If this seller (or another tool on the same\n  // account) has used up their real Amazon-side quota some other way,\n  // Amazon can still return a genuine 429 here regardless of what our\n  // own counter says. Worth telling apart from an unrelated failure.\n  const isRateLimited = upstream && (upstream.statusCode === 429 ||\n    (Array.isArray(upstream.errors) && upstream.errors.some(function(e) { return e.code === 'QuotaExceeded' || e.code === 'Throttled'; })));\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: isRateLimited ? 'AMAZON_RATE_LIMITED' : 'FEED_DOCUMENT_CREATE_FAILED',\n    message: isRateLimited\n      ? 'Amazon rejected this as rate-limited even though our own seller-level counter showed room - likely another tool on this seller\\'s account also submitting feeds. Try again shortly.'\n      : 'createFeedDocument did not return a feedDocumentId and upload url. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'DOCUMENT_CREATED',\n  feed_document_id: feedDocumentId,\n  upload_url: uploadUrl\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        896,
+        1520,
         -32
       ],
       "id": "383a2383-a020-46b0-beb4-cb5817752404",
@@ -371,7 +371,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1104,
+        1728,
         -32
       ],
       "id": "7f105acb-bfc8-4d9b-b833-fd634e5189a8",
@@ -405,7 +405,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1312,
+        1936,
         -32
       ],
       "id": "49b73119-3db3-4ed4-8b71-85c747b863fb",
@@ -420,7 +420,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1520,
+        2144,
         -32
       ],
       "id": "3e6ba2ee-b682-4a40-9fd6-6a6d387431c4",
@@ -454,7 +454,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1728,
+        2352,
         -32
       ],
       "id": "39aa21f5-42c7-4350-a434-b02bdf9c94d1",
@@ -485,7 +485,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1936,
+        2560,
         -32
       ],
       "id": "c4738412-8024-4526-8ff8-71f038796ca1",
@@ -495,12 +495,12 @@
     },
     {
       "parameters": {
-        "jsCode": "const upstream = $input.first().json;\nconst feedId = upstream.feedId;\n\nif (!feedId) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'FEED_SUBMIT_FAILED',\n    message: 'createFeed did not return a feedId. The feed content was uploaded successfully but never actually submitted. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'FEED_SUBMITTED',\n  feed_id: feedId,\n  request_id: $('Confirm No Duplicate').first().json.request_id\n}}];"
+        "jsCode": "const upstream = $input.first().json;\nconst feedId = upstream.feedId;\n\nif (!feedId) {\n  const isRateLimited = upstream && (upstream.statusCode === 429 ||\n    (Array.isArray(upstream.errors) && upstream.errors.some(function(e) { return e.code === 'QuotaExceeded' || e.code === 'Throttled'; })));\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: isRateLimited ? 'AMAZON_RATE_LIMITED' : 'FEED_SUBMIT_FAILED',\n    message: isRateLimited\n      ? 'Amazon rejected the submission itself as rate-limited even though our own seller-level counter showed room - the feed content was uploaded but never actually submitted. Try again shortly.'\n      : 'createFeed did not return a feedId. The feed content was uploaded successfully but never actually submitted. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'FEED_SUBMITTED',\n  feed_id: feedId,\n  request_id: $('Confirm No Duplicate').first().json.request_id\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2144,
+        2768,
         -32
       ],
       "id": "34a86afe-8671-4043-acc3-92964424e378",
@@ -534,7 +534,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2352,
+        2976,
         -32
       ],
       "id": "455c6e58-4d6f-4d04-95ad-ad36b6a42d6b",
@@ -567,7 +567,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2560,
+        3184,
         -32
       ],
       "id": "907a2e35-2a84-4ddd-a69b-3260a1caeb87",
@@ -586,7 +586,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2768,
+        3392,
         -32
       ],
       "id": "461d3e23-e4b9-4d36-b80f-b5ece0e54e5f",
@@ -620,7 +620,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2976,
+        3600,
         -32
       ],
       "id": "0407cba4-d89e-4f2b-afbf-e964dcd5328f",
@@ -653,7 +653,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3184,
+        3808,
         -32
       ],
       "id": "d46eb26d-1234-4d6e-8a5f-1c9d2b7e6f83",
@@ -673,7 +673,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3392,
+        4016,
         -32
       ],
       "id": "c7a1d5e3-1111-4b96-b3e7-1a9c6d2f5e84",
@@ -686,7 +686,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        3600,
+        4224,
         -32
       ],
       "id": "8f804a16-5c66-4333-b101-ec36b632cce4",
@@ -704,6 +704,80 @@
       ],
       "id": "f1a4c8d2-2222-4b7a-9c1d-2b8e5f3a7d61",
       "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/try_reserve_feed_submission_slot",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_seller_id\": \"{{ $('Confirm No Duplicate').first().json.seller_id }}\",\n  \"p_request_id\": \"{{ $('Confirm No Duplicate').first().json.request_id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        272,
+        -32
+      ],
+      "id": "a3c8e1f4-6d92-4b7a-8c5e-1f9d3a6b2e74",
+      "name": "Reserve Submission Slot",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst row = Array.isArray(upstream) ? upstream[0] : upstream;\n\nif (!row || typeof row.allowed !== 'boolean') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'RATE_LIMIT_CHECK_FAILED',\n    request_id: $('Confirm No Duplicate').first().json.request_id,\n    message: 'Could not check the seller\\'s submission rate limit - refusing to submit rather than risk exceeding it. See upstream_raw for the real error.',\n    upstream_raw: upstream\n  }}];\n}\n\nif (!row.allowed) {\n  const retryMinutes = Math.ceil((row.retry_after_seconds || 0) / 60) || 1;\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_RATE_LIMIT_REACHED',\n    request_id: $('Confirm No Duplicate').first().json.request_id,\n    message: 'This seller has already submitted ' + row.current_count + ' feeds in the last 5 minutes - Amazon\\'s own limit for JSON_LISTINGS_FEED. Try again in about ' + retryMinutes + ' minute' + (retryMinutes === 1 ? '' : 's') + '.',\n    retry_after_seconds: row.retry_after_seconds\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'SLOT_RESERVED',\n  seller_id: $('Confirm No Duplicate').first().json.seller_id,\n  marketplace_id: $('Confirm No Duplicate').first().json.marketplace_id,\n  request_id: $('Confirm No Duplicate').first().json.request_id,\n  staged_payload_json: $('Confirm No Duplicate').first().json.staged_payload_json\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -32
+      ],
+      "id": "b7d2f9a1-4c83-4e96-a5f7-2d8c1b6e9a35",
+      "name": "Parse Reservation Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e5c9a2f8-3d76-4b1a-9e4c-7f8b2d5a1c96",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "SLOT_RESERVED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        688,
+        -32
+      ],
+      "id": "c1e8b4d6-9a72-4f3e-8c1a-5b6d9e2f7a48",
+      "name": "Is Slot Reserved"
     }
   ],
   "pinData": {},
@@ -825,7 +899,7 @@
       "main": [
         [
           {
-            "node": "Get Refresh Token",
+            "node": "Reserve Submission Slot",
             "type": "main",
             "index": 0
           }
@@ -1037,6 +1111,46 @@
         [
           {
             "node": "Respond With Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Submission Slot": {
+      "main": [
+        [
+          {
+            "node": "Parse Reservation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Reservation Result": {
+      "main": [
+        [
+          {
+            "node": "Is Slot Reserved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Slot Reserved": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
             "type": "main",
             "index": 0
           }

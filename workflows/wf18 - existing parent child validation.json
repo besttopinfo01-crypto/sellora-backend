@@ -161,7 +161,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const upstream = $input.first().json;\nconst req = $('Validate Input').first().json;\n\nif (!upstream || upstream.error || !upstream.asin) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'PARENT_NOT_FOUND',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    message: 'Amazon Catalog Items API did not return this parent ASIN for this marketplace.',\n    upstream_raw: upstream\n  }}];\n}\n\nfunction forMarketplace(list) {\n  if (!Array.isArray(list)) return {};\n  return list.find(function(e) { return e.marketplaceId === req.marketplace_id; }) || list[0] || {};\n}\n\nconst summary = forMarketplace(upstream.summaries);\nconst ptEntry = forMarketplace(upstream.productTypes);\nconst relEntry = forMarketplace(upstream.relationships);\nconst groups = Array.isArray(relEntry.relationships) ? relEntry.relationships : [];\nconst variationGroup = groups.find(function(g) { return g.type === 'VARIATION'; }) || null;\nconst childAsins = (variationGroup && Array.isArray(variationGroup.childAsins)) ? variationGroup.childAsins : [];\nconst variationTheme = (variationGroup && variationGroup.variationTheme) ? variationGroup.variationTheme : null;\n\nif (childAsins.length === 0) {\n  const parentAsinsOfIt = (variationGroup && Array.isArray(variationGroup.parentAsins)) ? variationGroup.parentAsins : [];\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: parentAsinsOfIt.length > 0 ? 'PARENT_ASIN_IS_A_CHILD' : 'PARENT_HAS_NO_FAMILY',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    is_child_of: parentAsinsOfIt,\n    message: parentAsinsOfIt.length > 0\n      ? 'The given parent ASIN is itself a child in another variation family. Enter its real parent instead.'\n      : 'The given parent ASIN has no variation family in the catalog - it is a standalone listing.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'PARENT_CONFIRMED',\n  parent_asin: req.parent_asin,\n  child_asin: req.child_asin,\n  marketplace_id: req.marketplace_id,\n  proposed_values: req.proposed_values,\n  proposed_theme: req.proposed_theme,\n  parent: {\n    brand: summary.brand || null,\n    normalized_brand: (summary.brand || '').toLowerCase().trim(),\n    item_name: summary.itemName || null,\n    product_type: (ptEntry.productType || '').toUpperCase().trim() || null,\n    category: (summary.browseClassification && summary.browseClassification.displayName) || null,\n    variation_theme: variationTheme ? (variationTheme.theme || null) : null,\n    theme_attributes: variationTheme ? (variationTheme.attributes || []) : [],\n    child_asins: childAsins,\n    child_count: childAsins.length\n  }\n}}];"
+        "jsCode": "const upstream = $input.first().json;\nconst req = $('Validate Input').first().json;\n\nif (!upstream || upstream.error || !upstream.asin) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'PARENT_NOT_FOUND',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    message: 'Amazon Catalog Items API did not return this parent ASIN for this marketplace.',\n    upstream_raw: upstream\n  }}];\n}\n\nfunction forMarketplace(list) {\n  if (!Array.isArray(list)) return {};\n  return list.find(function(e) { return e.marketplaceId === req.marketplace_id; }) || list[0] || {};\n}\n\nconst summary = forMarketplace(upstream.summaries);\nconst ptEntry = forMarketplace(upstream.productTypes);\nconst relEntry = forMarketplace(upstream.relationships);\nconst groups = Array.isArray(relEntry.relationships) ? relEntry.relationships : [];\nconst variationGroup = groups.find(function(g) { return g.type === 'VARIATION'; }) || null;\nconst childAsins = (variationGroup && Array.isArray(variationGroup.childAsins)) ? variationGroup.childAsins : [];\nconst variationTheme = (variationGroup && variationGroup.variationTheme) ? variationGroup.variationTheme : null;\n\nif (childAsins.length === 0) {\n  const parentAsinsOfIt = (variationGroup && Array.isArray(variationGroup.parentAsins)) ? variationGroup.parentAsins : [];\n  // Only the genuinely-no-family case gets a fallback check - being a\n  // CHILD of some other real parent is a different, still-correct\n  // rejection, not something a self-declared parentage_level would\n  // ever override.\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: parentAsinsOfIt.length > 0 ? 'PARENT_ASIN_IS_A_CHILD' : 'PARENT_HAS_NO_FAMILY',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    is_child_of: parentAsinsOfIt,\n    message: parentAsinsOfIt.length > 0\n      ? 'The given parent ASIN is itself a child in another variation family. Enter its real parent instead.'\n      : 'The given parent ASIN has no variation family in the catalog - it is a standalone listing.',\n    needs_fallback_check: parentAsinsOfIt.length > 0 ? 'false' : 'true'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'PARENT_CONFIRMED',\n  parent_asin: req.parent_asin,\n  child_asin: req.child_asin,\n  marketplace_id: req.marketplace_id,\n  proposed_values: req.proposed_values,\n  proposed_theme: req.proposed_theme,\n  parent: {\n    brand: summary.brand || null,\n    normalized_brand: (summary.brand || '').toLowerCase().trim(),\n    item_name: summary.itemName || null,\n    product_type: (ptEntry.productType || '').toUpperCase().trim() || null,\n    category: (summary.browseClassification && summary.browseClassification.displayName) || null,\n    variation_theme: variationTheme ? (variationTheme.theme || null) : null,\n    theme_attributes: variationTheme ? (variationTheme.attributes || []) : [],\n    child_asins: childAsins,\n    child_count: childAsins.length\n  }\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -452,6 +452,210 @@
       ],
       "id": "216fe621-e93f-4aba-b5f4-344e2ce5e4bf",
       "name": "Respond Seller Ineligible"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a2d5e8b1-4c73-4f9a-8e6d-1b7c3a9e5f28",
+              "leftValue": "={{ $json.needs_fallback_check }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        704,
+        320
+      ],
+      "id": "b6e9f2a4-5d81-4c3e-9f7b-2a6d8c1e4f93",
+      "name": "Needs Fallback Check"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?seller_id=eq.{{ $('Validate Input').first().json.seller_id }}&select=selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        912,
+        240
+      ],
+      "id": "c3f7a5d9-6e82-4b1f-8c4a-3d9e6b2f7a15",
+      "name": "Get Seller Selling Partner ID (Fallback)",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/{{ $('Get Seller Selling Partner ID (Fallback)').first().json.selling_partner_id }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "marketplaceIds",
+              "value": "={{ $('Validate Input').first().json.marketplace_id }}"
+            },
+            {
+              "name": "identifiers",
+              "value": "={{ $('Validate Input').first().json.parent_asin }}"
+            },
+            {
+              "name": "identifiersType",
+              "value": "ASIN"
+            },
+            {
+              "name": "includedData",
+              "value": "summaries,attributes"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        240
+      ],
+      "id": "d8a2c6e4-7f93-4b5a-9d1c-6e3f8a2b5c97",
+      "name": "Search Listings By ASIN",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst originalRejection = $('Parent Gate').first().json;\nconst req = $('Validate Input').first().json;\n\nconst items = Array.isArray(upstream.items) ? upstream.items : [];\nconst match = items[0];\n\nif (!match || !match.attributes) {\n  return [{ json: originalRejection }];\n}\n\nconst parentageEntry = match.attributes.parentage_level && match.attributes.parentage_level[0];\nif (!parentageEntry || parentageEntry.value !== 'parent') {\n  return [{ json: originalRejection }];\n}\n\nconst summary = (match.summaries && match.summaries[0]) || {};\nconst brandEntry = match.attributes.brand && match.attributes.brand[0];\nconst themeEntry = match.attributes.variation_theme && match.attributes.variation_theme[0];\n\n// Same gap found in wf17: theme_attributes can't come from a populated\n// catalog relationship here, since there isn't one yet. Passing what a\n// real schema lookup needs forward, rather than leaving it empty.\nreturn [{ json: {\n  decision: 'NEEDS_SCHEMA_LOOKUP',\n  parent_asin: req.parent_asin,\n  child_asin: req.child_asin,\n  marketplace_id: req.marketplace_id,\n  proposed_values: req.proposed_values,\n  proposed_theme: req.proposed_theme,\n  brand: brandEntry ? brandEntry.value : null,\n  item_name: summary.itemName || null,\n  product_type: (summary.productType || '').toUpperCase().trim() || null,\n  variation_theme: themeEntry ? themeEntry.name : null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        240
+      ],
+      "id": "e1b4d7f2-8c95-4a3e-9b6d-1f5a8c3e7d94",
+      "name": "Parse Fallback Check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e2c5a8f4-7d61-4b9e-8c3a-5f7d1a9e6c48",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "NEEDS_SCHEMA_LOOKUP",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1536,
+        240
+      ],
+      "id": "f7b3d6a9-8e42-4c5f-9a1b-3d6e8c2f5a97",
+      "name": "Is Schema Lookup Needed"
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/definitions/2020-09-01/productTypes/{{ $('Parse Fallback Check').first().json.product_type }}?marketplaceIds={{ $('Parse Fallback Check').first().json.marketplace_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Exchange for Access Token').first().json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1744,
+        160
+      ],
+      "id": "a5c8e2f6-9b73-4d1a-8e4c-2f9b6d3a7e58",
+      "name": "Get Product Type Definition (Fallback)",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.schema.link.resource }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1952,
+        160
+      ],
+      "id": "b8d1f4a7-6c92-4e3b-9f5d-1a8c6e2b9f43",
+      "name": "Fetch Schema (Fallback)",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Same defensive, pattern-based schema read as wf17's identical fix -\n// not verified against a real schema response, falls back to an empty\n// array rather than guessing if it can't find a confident match.\nfunction findRealAttribute(schema, dimensionName) {\n  const allOfEntries = Array.isArray(schema.allOf) ? schema.allOf : [];\n  const dimLower = dimensionName.toLowerCase();\n\n  for (const entry of allOfEntries) {\n    const ifBlock = entry.if;\n    const thenBlock = entry.then;\n    if (!ifBlock || !thenBlock) continue;\n\n    const ifStr = JSON.stringify(ifBlock).toLowerCase();\n    if (ifStr.indexOf(dimLower) === -1) continue;\n\n    const required = Array.isArray(thenBlock.required)\n      ? thenBlock.required\n      : (thenBlock.properties ? Object.keys(thenBlock.properties) : []);\n    if (!required.length) continue;\n\n    const plausible = required.find(function(name) {\n      return name.toLowerCase().indexOf(dimLower) !== -1;\n    });\n    if (plausible) return plausible;\n    if (required.length === 1) return required[0];\n  }\n  return null;\n}\n\nconst schema = $input.first().json;\nconst context = $('Parse Fallback Check').first().json;\nconst themeName = context.variation_theme || '';\nconst dimensions = themeName.split('/').filter(Boolean);\n\nconst themeAttributes = dimensions.map(function(d) { return findRealAttribute(schema, d); });\nconst allFound = dimensions.length > 0 && themeAttributes.every(function(a) { return !!a; });\n\nreturn [{ json: {\n  decision: 'PARENT_CONFIRMED',\n  parent_asin: context.parent_asin,\n  child_asin: context.child_asin,\n  marketplace_id: context.marketplace_id,\n  proposed_values: context.proposed_values,\n  proposed_theme: context.proposed_theme,\n  parent: {\n    brand: context.brand,\n    normalized_brand: String(context.brand || '').toLowerCase().trim(),\n    item_name: context.item_name,\n    product_type: context.product_type,\n    category: null,\n    variation_theme: themeName,\n    theme_attributes: allFound ? themeAttributes : [],\n    child_asins: [],\n    child_count: 0\n  }\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        160
+      ],
+      "id": "c3e6a9d2-7f84-4b5c-8e1a-4d7c9b3e6f85",
+      "name": "Determine Real Attribute Names"
     }
   ],
   "pinData": {},
@@ -533,7 +737,7 @@
       "main": [
         [
           {
-            "node": "Parent OK",
+            "node": "Needs Fallback Check",
             "type": "main",
             "index": 0
           }
@@ -665,6 +869,108 @@
         [
           {
             "node": "Format Rate Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Fallback Check": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Selling Partner ID (Fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parent OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Selling Partner ID (Fallback)": {
+      "main": [
+        [
+          {
+            "node": "Search Listings By ASIN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Listings By ASIN": {
+      "main": [
+        [
+          {
+            "node": "Parse Fallback Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Fallback Check": {
+      "main": [
+        [
+          {
+            "node": "Is Schema Lookup Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Schema Lookup Needed": {
+      "main": [
+        [
+          {
+            "node": "Get Product Type Definition (Fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Parent OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Product Type Definition (Fallback)": {
+      "main": [
+        [
+          {
+            "node": "Fetch Schema (Fallback)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Schema (Fallback)": {
+      "main": [
+        [
+          {
+            "node": "Determine Real Attribute Names",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Real Attribute Names": {
+      "main": [
+        [
+          {
+            "node": "Parent OK",
             "type": "main",
             "index": 0
           }

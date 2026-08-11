@@ -1,0 +1,732 @@
+{
+  "name": "32 - Submit Existing-Parent Directly",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "3ecb64d6-d6b4-4148-a202-277b43be6217",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2000,
+        -32
+      ],
+      "id": "webhook-node-id-001",
+      "name": "Webhook",
+      "webhookId": "3ecb64d6-d6b4-4148-a202-277b43be6217"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1792,
+        -32
+      ],
+      "id": "5e3cc846-0be5-4cf6-b50e-a6735b7d3b61",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c3fb8ec8-f93c-41ad-9187-66ff3b88e2c6",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1584,
+        -32
+      ],
+      "id": "c3fb8ec8-f93c-41ad-9187-66ff3b88e2c6",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $('Validate Input').first().json.request_id }}&order=id.desc&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1376,
+        -32
+      ],
+      "id": "d07e1539-5255-4d28-b97e-d8ce9c559554",
+      "name": "Fetch Approval Log",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,seller_id,marketplace_id,is_new_parent,status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1168,
+        -32
+      ],
+      "id": "07df00be-8f36-449d-a0c1-3b95f9da45a8",
+      "name": "Fetch Merge Request",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const validated = $('Validate Input').first().json;\n\nconst approvalRaw = $('Fetch Approval Log').first().json;\nconst approvalRow = Array.isArray(approvalRaw) ? approvalRaw[0] : approvalRaw;\n\nconst mergeRaw = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(mergeRaw) ? mergeRaw[0] : mergeRaw;\n\nif (!approvalRow || approvalRow.approval_status !== 'approved' || !approvalRow.staged_payload_json) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'NOT_APPROVED', request_id: validated.request_id,\n    message: 'No approved, staged payload found for this request_id.'\n  }}];\n}\n\nif (!mergeRow) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'MERGE_REQUEST_NOT_FOUND', request_id: validated.request_id,\n    message: 'No merge_requests row found for this request_id.'\n  }}];\n}\n\n// This path is only for existing-parent merges - it patches each child\n// independently, which only makes sense when the parent already exists.\n// A brand-new parent and its children need to come into existence\n// together as one operation, which this deliberately cannot do -\n// wf30 (the Feeds pipeline) is still the only path for that mode.\nif (mergeRow.is_new_parent) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'WRONG_MODE', request_id: validated.request_id,\n    message: 'This is a new-parent merge - the direct API path only supports existing-parent merges. Use wf30 instead.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'READY',\n  request_id: validated.request_id,\n  seller_id: mergeRow.seller_id,\n  marketplace_id: mergeRow.marketplace_id,\n  messages: approvalRow.staged_payload_json.messages || []\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -32
+      ],
+      "id": "7a675c36-7d25-49f3-974c-522d02c21092",
+      "name": "Check Ready To Submit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "56a85137-9160-4d86-9361-2e00ba819f14",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -752,
+        -32
+      ],
+      "id": "56a85137-9160-4d86-9361-2e00ba819f14",
+      "name": "Is Ready"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Check Ready To Submit').first().json.request_id }}&status=not.in.(submitting,verified,failed,partially_failed)",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"status\": \"submitting\"}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -544,
+        -32
+      ],
+      "id": "fe9460e4-01bf-47d1-9de9-2140a3d3e6a1",
+      "name": "Claim Submission",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ready = $('Check Ready To Submit').first().json;\nconst upstream = $input.first().json;\nconst rows = Array.isArray(upstream) ? upstream : (upstream && upstream.request_id ? [upstream] : []);\n\nif (rows.length === 0) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'CLAIM_LOST', request_id: ready.request_id,\n    message: 'Could not claim this submission - another request may have already claimed it between the ready-check and now. Refusing rather than risk a duplicate.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'CLAIMED',\n  request_id: ready.request_id,\n  seller_id: ready.seller_id,\n  marketplace_id: ready.marketplace_id,\n  messages: ready.messages\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        -32
+      ],
+      "id": "e154cadc-a3ff-4bbf-878b-4d1ececc4600",
+      "name": "Check Claim Succeeded"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "540343f8-7799-46e6-8269-b134a189f8d1",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "CLAIMED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -128,
+        -32
+      ],
+      "id": "540343f8-7799-46e6-8269-b134a189f8d1",
+      "name": "Is Claimed"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?seller_id=eq.{{ $('Check Claim Succeeded').first().json.seller_id }}&select=selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        80,
+        -32
+      ],
+      "id": "ee7ce840-6459-4b98-8000-0fc18b37646b",
+      "name": "Get Seller Selling Partner ID",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Check Claim Succeeded').first().json.seller_id }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        288,
+        -32
+      ],
+      "id": "c6ee521a-c606-4463-92ac-88fe085be902",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        496,
+        -32
+      ],
+      "id": "8a92b181-79a9-465d-b24a-80b205d1351a",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const claimed = $('Check Claim Succeeded').first().json;\nconst sellingPartnerRaw = $('Get Seller Selling Partner ID').first().json;\nconst sellingPartnerRow = Array.isArray(sellingPartnerRaw) ? sellingPartnerRaw[0] : sellingPartnerRaw;\nconst sellingPartnerId = sellingPartnerRow && sellingPartnerRow.selling_partner_id;\nconst accessToken = $('Exchange for Access Token').first().json.access_token;\n\nif (!sellingPartnerId || !accessToken) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'MISSING_CREDENTIALS', request_id: claimed.request_id,\n    message: 'Could not resolve a selling_partner_id or access_token before submitting - refusing to attempt any real calls without both.'\n  }}];\n}\n\nconst results = [];\n\n// Phase 1: patch every child first, without verifying yet. Separated\n// from verification on purpose - see phase 2's comment for why.\nfor (const msg of claimed.messages) {\n  const entry = { sku: msg.sku, patch_status: null, patch_issues: [], verified_child: false, verify_issues: [], verify_attempts: 0, error: null };\n\n  try {\n    const patchResponse = await this.helpers.httpRequest({\n      method: 'PATCH',\n      url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId + '/' + encodeURIComponent(msg.sku),\n      qs: { marketplaceIds: claimed.marketplace_id, issueLocale: 'en_US' },\n      headers: { 'Content-Type': 'application/json', 'x-amz-access-token': accessToken },\n      body: { productType: msg.productType, patches: msg.patches },\n      json: true\n    });\n    entry.patch_status = patchResponse.status || null;\n    entry.patch_issues = patchResponse.issues || [];\n  } catch (err) {\n    entry.error = 'patch call failed: ' + (err.message || String(err));\n  }\n\n  results.push(entry);\n}\n\n// Phase 2: verify every child, with a shared wait-and-retry schedule -\n// found necessary from a real run today, not a hypothetical: a genuine\n// merge showed verified_child=false on the very first check right after\n// patching, then true a few minutes later once Amazon's own downstream\n// processing had actually caught up. One immediate check isn't\n// reliable. Waiting together, once per round, rather than each child\n// running its own full retry sequence independently, keeps the total\n// added time roughly constant regardless of how many children there are.\n// Stops early the moment everything's confirmed or every remaining\n// entry has hit a real error - no point waiting out the full schedule\n// once there's nothing left to check.\nconst verifyDelaysMs = [3000, 5000, 7000, 10000, 15000]; // ~40s max total extra wait, shared\nfor (let attempt = 0; attempt <= verifyDelaysMs.length; attempt++) {\n  if (attempt > 0) {\n    await new Promise(function(resolve) { setTimeout(resolve, verifyDelaysMs[attempt - 1]); });\n  }\n\n  const stillPending = results.filter(function(r) { return !r.verified_child && !r.error; });\n  if (stillPending.length === 0) break;\n\n  for (const entry of stillPending) {\n    entry.verify_attempts++;\n    try {\n      const stateResponse = await this.helpers.httpRequest({\n        method: 'GET',\n        url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId + '/' + encodeURIComponent(entry.sku),\n        qs: { marketplaceIds: claimed.marketplace_id, includedData: 'attributes,issues' },\n        headers: { 'x-amz-access-token': accessToken },\n        json: true\n      });\n      const attrs = stateResponse.attributes || {};\n      entry.verified_child = !!(attrs.parentage_level && attrs.parentage_level.some(function(e) { return e.value === 'child'; }));\n      entry.verify_issues = stateResponse.issues || [];\n    } catch (err) {\n      entry.error = 'verify call failed: ' + (err.message || String(err));\n    }\n  }\n}\n\nreturn [{ json: {\n  decision: 'SUBMITTED',\n  request_id: claimed.request_id,\n  results: results\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        -32
+      ],
+      "id": "5fd32729-3b08-4309-a201-354a2f0b1721",
+      "name": "Submit All Children Directly"
+    },
+    {
+      "parameters": {
+        "jsCode": "const submitted = $input.first().json;\nconst results = submitted.results || [];\n\nconst allVerified = results.length > 0 && results.every(function(r) { return r.verified_child; });\nconst noneVerified = results.every(function(r) { return !r.verified_child; });\n\n// Matches dashboard.jsx's existing status vocabulary on purpose - the\n// same words this app already shows for the Feeds pipeline's outcome,\n// so the user sees consistent language regardless of which mechanism\n// actually ran underneath.\nconst finalStatus = allVerified ? 'verified' : (noneVerified ? 'failed' : 'partially_failed');\n\nreturn [{ json: {\n  decision: 'SUMMARIZED',\n  request_id: submitted.request_id,\n  final_status: finalStatus,\n  child_count: results.length,\n  verified_count: results.filter(function(r) { return r.verified_child; }).length,\n  results: results\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -32
+      ],
+      "id": "3ab4736e-5d13-4e2a-be7f-50b8833889f2",
+      "name": "Summarize Results"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": {{ JSON.stringify($json.final_status) }},\n  \"direct_submission_report\": {{ JSON.stringify($json.results) }}\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1328,
+        -32
+      ],
+      "id": "f3619c44-e158-4c99-a39c-2da7e87e2cf6",
+      "name": "Update Merge Request Report",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Summarize Results').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        -32
+      ],
+      "id": "25a2a24c-1cf5-4a02-846e-9bbb8cd24b92",
+      "name": "Restore After Report Update"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1744,
+        -32
+      ],
+      "id": "83535c84-864e-4449-aab7-40bbcea31240",
+      "name": "Respond With Result"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -544,
+        224
+      ],
+      "id": "acbada45-a8a5-400f-9b0e-f309ffe81b2f",
+      "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b8e1a3c5-4d92-4b7f-8e6a-2c9d5f1a7b34",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "SUBMITTED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        808,
+        -32
+      ],
+      "id": "d9f2b6e4-7a83-4c1e-9b5f-3d8a6c2e9f47",
+      "name": "Is Submitted"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Approval Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Approval Log": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Check Ready To Submit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Ready To Submit": {
+      "main": [
+        [
+          {
+            "node": "Is Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Ready": {
+      "main": [
+        [
+          {
+            "node": "Claim Submission",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Submission": {
+      "main": [
+        [
+          {
+            "node": "Check Claim Succeeded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Claim Succeeded": {
+      "main": [
+        [
+          {
+            "node": "Is Claimed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Claimed": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Selling Partner ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Selling Partner ID": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Submit All Children Directly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit All Children Directly": {
+      "main": [
+        [
+          {
+            "node": "Is Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Results": {
+      "main": [
+        [
+          {
+            "node": "Update Merge Request Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Merge Request Report": {
+      "main": [
+        [
+          {
+            "node": "Restore After Report Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Report Update": {
+      "main": [
+        [
+          {
+            "node": "Respond With Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Submitted": {
+      "main": [
+        [
+          {
+            "node": "Summarize Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c4d7e0b3-8f5a-4c2b-9d0e-3a7b6c9d1e85",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "n32DirectSubmit5FgHi",
+  "tags": []
+}

@@ -1,0 +1,832 @@
+{
+  "name": "34 - Submit New-Parent Directly",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "f2a9d4e7-9557-4c43-9e0f-654ff988a10a",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2400,
+        -32
+      ],
+      "id": "webhook-node-34",
+      "name": "Webhook",
+      "webhookId": "f2a9d4e7-9557-4c43-9e0f-654ff988a10a"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\nif (body.action !== 'create' && body.action !== 'verify_and_attach') {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_ACTION', message: 'action must be \"create\" or \"verify_and_attach\".' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id, action: body.action } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2192,
+        -32
+      ],
+      "id": "384f0216-3594-4e79-9dda-27f756608563",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f9535575-f8b4-49f3-8d79-e3c7ece4faea",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1984,
+        -32
+      ],
+      "id": "f9535575-f8b4-49f3-8d79-e3c7ece4faea",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $('Validate Input').first().json.request_id }}&order=id.desc&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1776,
+        -32
+      ],
+      "id": "5a5d2dff-0ccd-4d03-a883-e2f6c2b5abe3",
+      "name": "Fetch Approval Log",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,seller_id,marketplace_id,is_new_parent,new_parent_sku,status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1568,
+        -32
+      ],
+      "id": "cb06aa28-131b-468a-9193-e8abac92f4a0",
+      "name": "Fetch Merge Request",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// approval_logs.approval_status is set once, at approval time, and\n// never changes afterward - it's a record of that event, not a live\n// status. So this check passes the same way for \"create\" and for\n// \"verify_and_attach\" on an already-attempted request; what actually\n// gates a fresh attempt is the atomic claim below, not this.\nconst validated = $('Validate Input').first().json;\n\nconst approvalRaw = $('Fetch Approval Log').first().json;\nconst approvalRow = Array.isArray(approvalRaw) ? approvalRaw[0] : approvalRaw;\n\nconst mergeRaw = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(mergeRaw) ? mergeRaw[0] : mergeRaw;\n\nif (!approvalRow || approvalRow.approval_status !== 'approved' || !approvalRow.staged_payload_json) {\n  return [{ json: { decision: 'REJECTED', reason: 'NOT_APPROVED', request_id: validated.request_id,\n    message: 'No approved, staged payload found for this request_id.' } }];\n}\n\nif (!mergeRow) {\n  return [{ json: { decision: 'REJECTED', reason: 'MERGE_REQUEST_NOT_FOUND', request_id: validated.request_id,\n    message: 'No merge_requests row found for this request_id.' } }];\n}\n\nif (!mergeRow.is_new_parent) {\n  return [{ json: { decision: 'REJECTED', reason: 'WRONG_MODE', request_id: validated.request_id,\n    message: 'This is an existing-parent merge - this workflow only handles new-parent merges. Use wf32 instead.' } }];\n}\n\nif (!mergeRow.new_parent_sku) {\n  return [{ json: { decision: 'REJECTED', reason: 'NO_PARENT_SKU', request_id: validated.request_id,\n    message: 'This merge_requests row has no new_parent_sku set.' } }];\n}\n\nreturn [{ json: {\n  decision: 'READY',\n  action: validated.action,\n  request_id: validated.request_id,\n  seller_id: mergeRow.seller_id,\n  marketplace_id: mergeRow.marketplace_id,\n  new_parent_sku: mergeRow.new_parent_sku,\n  messages: approvalRow.staged_payload_json.messages || []\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        -32
+      ],
+      "id": "18b000f7-489f-4413-a9c8-7a05052ad499",
+      "name": "Check Ready To Submit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2b7e69f2-5875-468d-8631-e2ba9873dd8f",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1152,
+        -32
+      ],
+      "id": "2b7e69f2-5875-468d-8631-e2ba9873dd8f",
+      "name": "Is Ready"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d381d654-5197-46c1-ab3e-cb61fc9a90eb",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "create",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -944,
+        -32
+      ],
+      "id": "d381d654-5197-46c1-ab3e-cb61fc9a90eb",
+      "name": "Is Create Action"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Check Ready To Submit').first().json.request_id }}&status=not.in.(submitting,verified,failed,partially_failed)",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"status\": \"submitting\"}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -736,
+        -152
+      ],
+      "id": "c2b30059-031c-42e4-a49f-0680648f5304",
+      "name": "Claim Submission",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ready = $('Check Ready To Submit').first().json;\nconst upstream = $input.first().json;\nconst rows = Array.isArray(upstream) ? upstream : (upstream && upstream.request_id ? [upstream] : []);\n\nif (rows.length === 0) {\n  return [{ json: { decision: 'REJECTED', reason: 'CLAIM_LOST', request_id: ready.request_id,\n    message: 'Could not claim this submission - it may already be in progress or completed. If you meant to check on an already-attempted request, use action=verify_and_attach instead, which does not need to claim anything.' } }];\n}\n\nreturn [{ json: {\n  decision: 'CLAIMED',\n  action: ready.action,\n  request_id: ready.request_id,\n  seller_id: ready.seller_id,\n  marketplace_id: ready.marketplace_id,\n  new_parent_sku: ready.new_parent_sku,\n  messages: ready.messages\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        -152
+      ],
+      "id": "36989139-b222-4398-bfa5-7fef8b5cf9e8",
+      "name": "Check Claim Succeeded"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8ca0012b-7857-48c6-93f1-7521798e2df5",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "CLAIMED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -320,
+        -152
+      ],
+      "id": "8ca0012b-7857-48c6-93f1-7521798e2df5",
+      "name": "Is Claimed"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ready = $('Check Ready To Submit').first().json;\nreturn [{ json: {\n  decision: 'CLAIMED',\n  action: ready.action,\n  request_id: ready.request_id,\n  seller_id: ready.seller_id,\n  marketplace_id: ready.marketplace_id,\n  new_parent_sku: ready.new_parent_sku,\n  messages: ready.messages\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        88
+      ],
+      "id": "cefc6573-f69b-42c4-a23d-3b01adcf7611",
+      "name": "Prepare Verify Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        -32
+      ],
+      "id": "e473d735-2f08-4e56-bf84-9f56433f8b0a",
+      "name": "Resolve Submission Context"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?seller_id=eq.{{ $('Resolve Submission Context').first().json.seller_id }}&select=selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        96,
+        -32
+      ],
+      "id": "b163a4da-ed4b-4871-950b-9b068d53aa6a",
+      "name": "Get Seller Selling Partner ID",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Resolve Submission Context').first().json.seller_id }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        304,
+        -32
+      ],
+      "id": "8a77f478-0c42-4a42-905e-0921397a77eb",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        512,
+        -32
+      ],
+      "id": "5f91d999-dd00-4d4d-8067-f25a9e2acded",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Resolve Submission Context').first().json;\nconst sellingPartnerRaw = $('Get Seller Selling Partner ID').first().json;\nconst sellingPartnerRow = Array.isArray(sellingPartnerRaw) ? sellingPartnerRaw[0] : sellingPartnerRaw;\nconst sellingPartnerId = sellingPartnerRow && sellingPartnerRow.selling_partner_id;\nconst accessToken = $('Exchange for Access Token').first().json.access_token;\n\nif (!sellingPartnerId || !accessToken) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'MISSING_CREDENTIALS', request_id: context.request_id,\n    message: 'Could not resolve a selling_partner_id or access_token - refusing to attempt any real calls without both.'\n  }}];\n}\n\nconst parentMessage = context.messages.find(function(m) { return m.sku === context.new_parent_sku; });\nconst childMessages = context.messages.filter(function(m) { return m.sku !== context.new_parent_sku; });\n\nif (!parentMessage) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'PARENT_MESSAGE_NOT_FOUND', request_id: context.request_id,\n    message: 'No message for the parent sku \"' + context.new_parent_sku + '\" found in the staged payload.'\n  }}];\n}\n\nconst parentResult = { sku: parentMessage.sku, patch_status: null, patch_issues: [], verified_parent: false, verify_issues: [], verify_attempts: 0, error: null };\n\nif (context.action === 'create') {\n  // putListingsItem needs a flat attributes object, not the patches\n  // array patchListingsItem uses - same conversion wf33 proved.\n  const parentAttributes = {};\n  for (const patch of parentMessage.patches) {\n    const attrName = patch.path.replace('/attributes/', '');\n    parentAttributes[attrName] = patch.value;\n  }\n  try {\n    const putResponse = await this.helpers.httpRequest({\n      method: 'PUT',\n      url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId + '/' + encodeURIComponent(parentMessage.sku),\n      qs: { marketplaceIds: context.marketplace_id, issueLocale: 'en_US' },\n      headers: { 'Content-Type': 'application/json', 'x-amz-access-token': accessToken },\n      body: { productType: parentMessage.productType, requirements: 'LISTING', attributes: parentAttributes },\n      json: true\n    });\n    parentResult.patch_status = putResponse.status || null;\n    parentResult.patch_issues = putResponse.issues || [];\n  } catch (err) {\n    parentResult.error = 'parent create call failed: ' + (err.message || String(err));\n  }\n}\n// For verify_and_attach, the real PUT already happened in an earlier\n// create call - skip straight to checking what's actually true now.\n\nasync function checkParentState() {\n  const stateResponse = await this.helpers.httpRequest({\n    method: 'GET',\n    url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId + '/' + encodeURIComponent(parentMessage.sku),\n    qs: { marketplaceIds: context.marketplace_id, includedData: 'summaries,attributes,issues' },\n    headers: { 'x-amz-access-token': accessToken },\n    json: true\n  });\n  const attrs = stateResponse.attributes || {};\n  const hasAsin = Array.isArray(stateResponse.summaries) && stateResponse.summaries.length > 0 && !!stateResponse.summaries[0].asin;\n  const parentageEntry = attrs.parentage_level && attrs.parentage_level[0];\n  return { verified: hasAsin && !!parentageEntry && parentageEntry.value === 'parent', issues: stateResponse.issues || [] };\n}\n\nif (!parentResult.error) {\n  // \"create\" gets a short check - Parent_AJ75 confirmed within this\n  // kind of window before. \"verify_and_attach\" gets a genuinely longer\n  // one, since its whole purpose is giving Amazon's own processing more\n  // time - proven necessary today: Parent_SR12 wasn't confirmed within\n  // create's short window, but was real and confirmed a few minutes\n  // later. Still not an unlimited wait - if even this isn't enough,\n  // verify_and_attach is safe to call again, since it never repeats\n  // the actual write.\n  const delaysMs = context.action === 'create'\n    ? [3000, 5000, 8000]\n    : [5000, 10000, 15000, 20000, 30000];\n\n  for (let i = 0; i <= delaysMs.length; i++) {\n    if (i > 0) {\n      await new Promise(function(resolve) { setTimeout(resolve, delaysMs[i - 1]); });\n    }\n    parentResult.verify_attempts++;\n    try {\n      const state = await checkParentState.call(this);\n      parentResult.verified_parent = state.verified;\n      parentResult.verify_issues = state.issues;\n      if (parentResult.verified_parent) break;\n    } catch (err) {\n      parentResult.error = 'parent verify call failed: ' + (err.message || String(err));\n      break;\n    }\n  }\n}\n\nconst results = [parentResult];\n\nif (parentResult.verified_parent) {\n  for (const msg of childMessages) {\n    const entry = { sku: msg.sku, patch_status: null, patch_issues: [], verified_child: false, verify_issues: [], verify_attempts: 0, error: null };\n    try {\n      const patchResponse = await this.helpers.httpRequest({\n        method: 'PATCH',\n        url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId + '/' + encodeURIComponent(msg.sku),\n        qs: { marketplaceIds: context.marketplace_id, issueLocale: 'en_US' },\n        headers: { 'Content-Type': 'application/json', 'x-amz-access-token': accessToken },\n        body: { productType: msg.productType, patches: msg.patches },\n        json: true\n      });\n      entry.patch_status = patchResponse.status || null;\n      entry.patch_issues = patchResponse.issues || [];\n    } catch (err) {\n      entry.error = 'patch call failed: ' + (err.message || String(err));\n    }\n    results.push(entry);\n  }\n\n  // Extended to match the parent's own window - real evidence today\n  // suggests a genuinely new family may need as much time to settle as\n  // the parent creation itself did, not the shorter window a simple\n  // attribute patch to an already-established family needed.\n  const childVerifyDelaysMs = [5000, 10000, 15000, 20000, 30000];\n  for (let attempt = 0; attempt <= childVerifyDelaysMs.length; attempt++) {\n    if (attempt > 0) {\n      await new Promise(function(resolve) { setTimeout(resolve, childVerifyDelaysMs[attempt - 1]); });\n    }\n    const stillPending = results.slice(1).filter(function(r) { return !r.verified_child && !r.error; });\n    if (stillPending.length === 0) break;\n    for (const entry of stillPending) {\n      entry.verify_attempts++;\n      try {\n        const stateResponse = await this.helpers.httpRequest({\n          method: 'GET',\n          url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId + '/' + encodeURIComponent(entry.sku),\n          qs: { marketplaceIds: context.marketplace_id, includedData: 'attributes,issues' },\n          headers: { 'x-amz-access-token': accessToken },\n          json: true\n        });\n        const attrs = stateResponse.attributes || {};\n        entry.verified_child = !!(attrs.parentage_level && attrs.parentage_level.some(function(e) { return e.value === 'child'; }));\n        entry.verify_issues = stateResponse.issues || [];\n      } catch (err) {\n        entry.error = 'verify call failed: ' + (err.message || String(err));\n      }\n    }\n  }\n} else {\n  const skipReason = context.action === 'create'\n    ? 'skipped - parent not yet confirmed; call verify_and_attach to keep checking and attach children once it is'\n    : 'skipped - parent still not confirmed after this check; safe to call verify_and_attach again';\n  for (const msg of childMessages) {\n    results.push({ sku: msg.sku, patch_status: null, patch_issues: [], verified_child: false, verify_issues: [], verify_attempts: 0, error: skipReason });\n  }\n}\n\nreturn [{ json: {\n  decision: 'SUBMITTED',\n  action: context.action,\n  request_id: context.request_id,\n  parent_still_pending: !parentResult.verified_parent && !parentResult.error,\n  results: results\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -32
+      ],
+      "id": "ac465fb3-1ba0-4b2b-9e8e-ba9bebbafea1",
+      "name": "Create Or Verify Parent Then Attach Children"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3e10de3c-f3c2-4084-a69f-2452221a1ca6",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "SUBMITTED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        928,
+        -32
+      ],
+      "id": "3e10de3c-f3c2-4084-a69f-2452221a1ca6",
+      "name": "Is Submitted"
+    },
+    {
+      "parameters": {
+        "jsCode": "const submitted = $input.first().json;\nconst results = submitted.results || [];\nconst parentResult = results[0];\nconst childResults = results.slice(1);\n\nconst parentOk = !!(parentResult && parentResult.verified_parent);\nconst allChildrenOk = childResults.length > 0 && childResults.every(function(r) { return r.verified_child; });\nconst noChildrenOk = childResults.length === 0 || childResults.every(function(r) { return !r.verified_child; });\n\nlet finalStatus;\nif (submitted.parent_still_pending) {\n  // Not a failure - genuinely still processing. Left as 'submitting' so\n  // a later verify_and_attach call can still pick this request up; a\n  // status of 'failed' would incorrectly block that via the atomic claim.\n  finalStatus = 'submitting';\n} else if (!parentOk) {\n  finalStatus = 'failed';\n} else if (allChildrenOk) {\n  finalStatus = 'verified';\n} else if (noChildrenOk) {\n  finalStatus = 'failed';\n} else {\n  finalStatus = 'partially_failed';\n}\n\nreturn [{ json: {\n  decision: 'SUMMARIZED',\n  request_id: submitted.request_id,\n  final_status: finalStatus,\n  parent_verified: parentOk,\n  parent_still_pending: !!submitted.parent_still_pending,\n  child_count: childResults.length,\n  verified_child_count: childResults.filter(function(r) { return r.verified_child; }).length,\n  results: results\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        -32
+      ],
+      "id": "d1b65b1b-0591-436f-ba5b-d979715399d2",
+      "name": "Summarize Results"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": {{ JSON.stringify($json.final_status) }},\n  \"direct_submission_report\": {{ JSON.stringify($json.results) }}\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1344,
+        -32
+      ],
+      "id": "0adb847c-d329-405a-92c9-9072495c968d",
+      "name": "Update Merge Request Report",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Summarize Results').first().json;\nreturn [{ json: original }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        -32
+      ],
+      "id": "b677b2a7-053d-4b8c-a5bd-7814e9652776",
+      "name": "Restore After Report Update"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1760,
+        -32
+      ],
+      "id": "dd24c383-14b0-41d9-950d-8896122e27ae",
+      "name": "Respond With Result"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -944,
+        320
+      ],
+      "id": "981a7b26-cd5e-446d-add3-9fbc141800aa",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Approval Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Approval Log": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Check Ready To Submit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Ready To Submit": {
+      "main": [
+        [
+          {
+            "node": "Is Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Ready": {
+      "main": [
+        [
+          {
+            "node": "Is Create Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Create Action": {
+      "main": [
+        [
+          {
+            "node": "Claim Submission",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Verify Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Submission": {
+      "main": [
+        [
+          {
+            "node": "Check Claim Succeeded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Claim Succeeded": {
+      "main": [
+        [
+          {
+            "node": "Is Claimed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Claimed": {
+      "main": [
+        [
+          {
+            "node": "Resolve Submission Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Verify Context": {
+      "main": [
+        [
+          {
+            "node": "Resolve Submission Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Submission Context": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Selling Partner ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Selling Partner ID": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Create Or Verify Parent Then Attach Children",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Or Verify Parent Then Attach Children": {
+      "main": [
+        [
+          {
+            "node": "Is Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Submitted": {
+      "main": [
+        [
+          {
+            "node": "Summarize Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Results": {
+      "main": [
+        [
+          {
+            "node": "Update Merge Request Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Merge Request Report": {
+      "main": [
+        [
+          {
+            "node": "Restore After Report Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore After Report Update": {
+      "main": [
+        [
+          {
+            "node": "Respond With Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f7a0b3d6-9e84-4c2f-8a5b-3d9e7f4a0f68",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "n34NewParentDirect7HiJk",
+  "tags": []
+}
