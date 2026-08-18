@@ -1,0 +1,545 @@
+{
+  "name": "35 - Update Listing Attribute Directly",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a4d6b9a8-a236-4503-8124-24e181162550",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2560,
+        800
+      ],
+      "id": "6aedd19d-fe83-4cf6-87b2-2cb67b9c5761",
+      "name": "Webhook",
+      "webhookId": "a4d6b9a8-a236-4503-8124-24e181162550"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\nif (!body.sku || !body.marketplace_id || !body.product_type || !body.attribute_name) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'sku, marketplace_id, product_type, and attribute_name are all required.'\n  }}];\n}\n\n// value can now be a plain string (the original simple-attribute case,\n// e.g. color) or an object of sub-fields (structured attributes, e.g.\n// shirt_size's size_class/size_system/neck_size/neck_size_to) - detected\n// by shape, not by a separate flag, so a caller never has to declare\n// which kind it's sending.\nconst isStructuredInput = body.value !== null && typeof body.value === 'object' && !Array.isArray(body.value);\n\nif (body.value === undefined || body.value === null) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'MISSING_VALUE',\n    message: 'value is required and cannot be empty - this endpoint sets a value, it does not clear one.'\n  }}];\n}\n\nif (isStructuredInput) {\n  const hasAnyRealValue = Object.values(body.value).some(function(v) {\n    return v !== undefined && v !== null && String(v).trim() !== '';\n  });\n  if (!hasAnyRealValue) {\n    return [{ json: {\n      decision: 'REJECTED', reason: 'MISSING_VALUE',\n      message: 'value is a structured object but every field in it is empty - at least one real sub-field value is required.'\n    }}];\n  }\n} else if (String(body.value).trim() === '') {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'MISSING_VALUE',\n    message: 'value is required and cannot be empty - this endpoint sets a value, it does not clear one.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  sku: String(body.sku).trim(),\n  marketplace_id: body.marketplace_id,\n  product_type: body.product_type,\n  attribute_name: body.attribute_name,\n  value: isStructuredInput ? body.value : String(body.value).trim()\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2352,
+        800
+      ],
+      "id": "71b000fc-6c15-4a80-9f3c-5d67f2fe8504",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d5319ff6-4c61-47ad-8749-b430b00fd836",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2144,
+        800
+      ],
+      "id": "a37b8c7f-27db-453e-8338-60152872957b",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1936,
+        992
+      ],
+      "id": "0c916a08-7695-4dc4-af7f-23d435cfb653",
+      "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $('Validate Input').first().json.seller_id }}&select=status,contact_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1936,
+        720
+      ],
+      "id": "0ca8ae80-33bd-401b-8e01-9179ecdb7bd8",
+      "name": "Get Seller Status",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\nconst ctx = $('Validate Input').first().json;\n\nif (!sellerRow) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_FOUND',\n    seller_id: ctx.seller_id,\n    message: 'No seller record exists for this seller_id.'\n  }}];\n}\n\nif (sellerRow.status !== 'active') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_ACTIVE',\n    seller_id: ctx.seller_id,\n    seller_status: sellerRow.status,\n    message: 'This seller account is not active (status: ' + sellerRow.status + '). Access is not permitted.'\n  }}];\n}\n\nreturn [{ json: { decision: 'ELIGIBLE' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        720
+      ],
+      "id": "c2b26f1d-8672-4da3-9293-99986e428cda",
+      "name": "Seller Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c7d4bf7b-afa4-454f-b723-aec8ba59d267",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "ELIGIBLE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1520,
+        720
+      ],
+      "id": "979a78dd-ea8d-4e34-835f-2071964221ed",
+      "name": "Is Eligible"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1312,
+        864
+      ],
+      "id": "18f7c03b-beb1-4a2e-afda-3e9dddeb5a97",
+      "name": "Respond Seller Ineligible"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/check_and_increment_rate_limit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\", \"p_action_type\": \"update_listing_attribute\", \"p_max_per_window\": 5 }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1312,
+        640
+      ],
+      "id": "7c0ed3ba-8a72-4cd8-a5d1-685d8e5d0aea",
+      "name": "Rate Limit Gate",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a7b165fc-bfea-4f1f-a682-a92d143e89d7",
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1104,
+        640
+      ],
+      "id": "4a7f7f49-72ad-40ea-aed1-c425db62a635",
+      "name": "Check Rate Limit"
+    },
+    {
+      "parameters": {
+        "jsCode": "const status = $input.first().json;\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'RATE_LIMITED',\n    current_count: status.current_count,\n    window_start: status.window_start,\n    message: 'This seller has made too many attribute-update requests in the current window. Please retry shortly.'\n  }}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        800
+      ],
+      "id": "3a75d7fb-9466-48a0-b916-37637452e2b9",
+      "name": "Format Rate Limit Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -688,
+        800
+      ],
+      "id": "3bbc9cf1-daca-42b1-a66a-ab3813709686",
+      "name": "Respond Rate Limited"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?seller_id=eq.{{ $('Validate Input').first().json.seller_id }}&select=selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -896,
+        560
+      ],
+      "id": "c6950027-eebe-49d7-8341-55c47ef96d71",
+      "name": "Get Seller Selling Partner ID",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -688,
+        560
+      ],
+      "id": "458f7b6a-3e30-4661-8676-9117ea72a68f",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -480,
+        560
+      ],
+      "id": "789bc852-658b-4fd3-8a34-8b6b6c33b689",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Validate Input').first().json;\nconst sellingPartnerRaw = $('Get Seller Selling Partner ID').first().json;\nconst sellingPartnerRow = Array.isArray(sellingPartnerRaw) ? sellingPartnerRaw[0] : sellingPartnerRaw;\nconst sellingPartnerId = sellingPartnerRow && sellingPartnerRow.selling_partner_id;\nconst accessToken = $('Exchange for Access Token').first().json.access_token;\n\nif (!sellingPartnerId || !accessToken) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'MISSING_CREDENTIALS', sku: ctx.sku,\n    message: 'Could not resolve a selling_partner_id or access_token - refusing to attempt any real calls without both.'\n  }}];\n}\n\nfunction isRetryableStatus(err) {\n  let status = null;\n  if (err && err.response && typeof err.response.status === 'number') status = err.response.status;\n  else if (err && err.response && typeof err.response.statusCode === 'number') status = err.response.statusCode;\n  else if (err && typeof err.statusCode === 'number') status = err.statusCode;\n  else {\n    const match = /status code (\\d{3})/i.exec((err && err.message) || '');\n    if (match) status = parseInt(match[1], 10);\n  }\n  if (status === 404) return true;\n  if (status >= 500 && status < 600) return true;\n  if (!status) return true;\n  return false;\n}\n\nconst isStructured = ctx.value !== null && typeof ctx.value === 'object' && !Array.isArray(ctx.value);\n\nconst result = {\n  sku: ctx.sku,\n  attribute_name: ctx.attribute_name,\n  patch_status: null,\n  patch_issues: [],\n  verified: false,\n  verify_issues: [],\n  verify_attempts: 0,\n  real_value: null,\n  error: null\n};\n\ntry {\n  // Structured: send the sub-fields directly, matching the real shape\n  // confirmed on live listings (shirt_size's own entries have\n  // size_class/size_system/etc. as direct keys, not wrapped in a\n  // `value` field). Simple: unchanged from before.\n  const attributeValue = isStructured\n    ? Object.assign({}, ctx.value, { marketplace_id: ctx.marketplace_id })\n    : { value: ctx.value, marketplace_id: ctx.marketplace_id };\n\n  const patchResponse = await this.helpers.httpRequest({\n    method: 'PATCH',\n    url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId + '/' + encodeURIComponent(ctx.sku),\n    qs: { marketplaceIds: ctx.marketplace_id, issueLocale: 'en_US' },\n    headers: { 'Content-Type': 'application/json', 'x-amz-access-token': accessToken },\n    body: {\n      productType: ctx.product_type,\n      patches: [{ op: 'replace', path: '/attributes/' + ctx.attribute_name, value: [attributeValue] }]\n    },\n    json: true\n  });\n  result.patch_status = patchResponse.status || null;\n  result.patch_issues = patchResponse.issues || [];\n} catch (err) {\n  result.error = 'patch call failed: ' + (err.message || String(err));\n  return [{ json: { decision: 'SUMMARIZED', result: result } }];\n}\n\nconst hasHardError = result.patch_status === 'INVALID'\n  || result.patch_issues.some(function(i) { return i.severity === 'ERROR'; });\n\nif (hasHardError) {\n  return [{ json: { decision: 'SUMMARIZED', result: result } }];\n}\n\nconst verifyDelaysMs = [5000, 10000, 15000, 20000, 30000];\n\nfor (let i = 0; i <= verifyDelaysMs.length; i++) {\n  if (i > 0) {\n    await new Promise(function(resolve) { setTimeout(resolve, verifyDelaysMs[i - 1]); });\n  }\n  result.verify_attempts++;\n  try {\n    const stateResponse = await this.helpers.httpRequest({\n      method: 'GET',\n      url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId + '/' + encodeURIComponent(ctx.sku),\n      qs: { marketplaceIds: ctx.marketplace_id, includedData: 'attributes,issues' },\n      headers: { 'x-amz-access-token': accessToken },\n      json: true\n    });\n    const attrs = stateResponse.attributes || {};\n    const entries = attrs[ctx.attribute_name];\n    const currentEntry = (Array.isArray(entries) && entries[0]) ? entries[0] : null;\n    result.verify_issues = stateResponse.issues || [];\n\n    if (isStructured) {\n      result.real_value = currentEntry;\n      if (currentEntry) {\n        // Verified once every field actually sent matches what Amazon\n        // now reports - case-insensitive, trimmed, same deliberately\n        // lenient comparison as the simple case, for the same reason\n        // (a real success shouldn't read as a false failure over\n        // casing or whitespace). A field the caller didn't send at all\n        // is never checked - only what was actually part of this update.\n        const allSentFieldsMatch = Object.keys(ctx.value).every(function(key) {\n          const sentVal = ctx.value[key];\n          if (sentVal === undefined || sentVal === null || String(sentVal).trim() === '') return true;\n          const realVal = currentEntry[key];\n          return realVal !== undefined && realVal !== null\n            && String(realVal).trim().toLowerCase() === String(sentVal).trim().toLowerCase();\n        });\n        if (allSentFieldsMatch) {\n          result.verified = true;\n          result.error = null;\n          break;\n        }\n      }\n    } else {\n      const currentValue = (currentEntry && currentEntry.value !== undefined) ? String(currentEntry.value) : null;\n      result.real_value = currentValue;\n      if (currentValue !== null && currentValue.trim().toLowerCase() === String(ctx.value).trim().toLowerCase()) {\n        result.verified = true;\n        result.error = null;\n        break;\n      }\n    }\n  } catch (err) {\n    const message = 'verify call failed: ' + (err.message || String(err));\n    result.error = message;\n    if (isRetryableStatus(err) && i < verifyDelaysMs.length) {\n      continue;\n    }\n    break;\n  }\n}\n\nreturn [{ json: {\n  decision: 'SUMMARIZED',\n  result: result\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        560
+      ],
+      "id": "9a7abace-ea52-479f-9a6c-d7a3ceac6cbb",
+      "name": "Patch And Verify Attribute"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -64,
+        560
+      ],
+      "id": "365aecbb-aa91-4981-89ee-339786764a06",
+      "name": "Respond With Result"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Status": {
+      "main": [
+        [
+          {
+            "node": "Seller Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seller Gate": {
+      "main": [
+        [
+          {
+            "node": "Is Eligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Eligible": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Seller Ineligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Selling Partner ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Rate Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Rate Limit Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Rate Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Selling Partner ID": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Patch And Verify Attribute",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Patch And Verify Attribute": {
+      "main": [
+        [
+          {
+            "node": "Respond With Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  }
+}
