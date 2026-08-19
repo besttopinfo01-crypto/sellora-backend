@@ -6,15 +6,24 @@
         "httpMethod": "POST",
         "path": "a4d6b9a8-a236-4503-8124-24e181162550",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2560,
+        -3168,
         800
       ],
-      "id": "6aedd19d-fe83-4cf6-87b2-2cb67b9c5761",
+      "id": "38df4d57-0d37-4d6d-8ee4-0a197e05bc66",
       "name": "Webhook",
       "webhookId": "a4d6b9a8-a236-4503-8124-24e181162550"
     },
@@ -25,10 +34,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2352,
+        -2960,
         800
       ],
-      "id": "71b000fc-6c15-4a80-9f3c-5d67f2fe8504",
+      "id": "0147cd07-28ad-42ff-a640-4d86dcb2f908",
       "name": "Validate Input"
     },
     {
@@ -59,10 +68,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -2144,
+        -2752,
         800
       ],
-      "id": "a37b8c7f-27db-453e-8338-60152872957b",
+      "id": "c3673333-798d-4279-8907-47669b77952c",
       "name": "Is Valid"
     },
     {
@@ -72,10 +81,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1936,
+        -2544,
         992
       ],
-      "id": "0c916a08-7695-4dc4-af7f-23d435cfb653",
+      "id": "ecd79a8a-4261-47ca-8d47-e4dbacebf940",
       "name": "Respond Rejected"
     },
     {
@@ -88,10 +97,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1936,
+        -2544,
         720
       ],
-      "id": "0ca8ae80-33bd-401b-8e01-9179ecdb7bd8",
+      "id": "034508de-b41a-47ce-86b7-a6c1d93a0c4e",
       "name": "Get Seller Status",
       "alwaysOutputData": true,
       "credentials": {
@@ -109,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1728,
+        -2336,
         720
       ],
-      "id": "c2b26f1d-8672-4da3-9293-99986e428cda",
+      "id": "7ebf4ccc-8fce-4f5a-a8fe-bad4ad2eabf2",
       "name": "Seller Gate"
     },
     {
@@ -143,10 +152,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1520,
+        -2128,
         720
       ],
-      "id": "979a78dd-ea8d-4e34-835f-2071964221ed",
+      "id": "2fffb69d-c7ca-44f5-876e-9d44edaa6de0",
       "name": "Is Eligible"
     },
     {
@@ -156,10 +165,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1312,
+        -1920,
         864
       ],
-      "id": "18f7c03b-beb1-4a2e-afda-3e9dddeb5a97",
+      "id": "add20c58-4a22-409a-9565-59cc2ad8a1b2",
       "name": "Respond Seller Ineligible"
     },
     {
@@ -176,10 +185,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1312,
+        -1920,
         640
       ],
-      "id": "7c0ed3ba-8a72-4cd8-a5d1-685d8e5d0aea",
+      "id": "91f72eb1-bf57-4e2c-be72-6cdfbb5fa5a5",
       "name": "Rate Limit Gate",
       "credentials": {
         "httpCustomAuth": {
@@ -215,10 +224,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1104,
+        -1712,
         640
       ],
-      "id": "4a7f7f49-72ad-40ea-aed1-c425db62a635",
+      "id": "eef3c20a-ff23-448a-833d-ef3faaecabc8",
       "name": "Check Rate Limit"
     },
     {
@@ -228,10 +237,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -896,
+        -1504,
         800
       ],
-      "id": "3a75d7fb-9466-48a0-b916-37637452e2b9",
+      "id": "faefad02-00f5-486b-b9f1-80869df8d6c9",
       "name": "Format Rate Limit Response"
     },
     {
@@ -241,10 +250,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -688,
+        -1296,
         800
       ],
-      "id": "3bbc9cf1-daca-42b1-a66a-ab3813709686",
+      "id": "60b2ebb6-d80a-46d3-a9b8-f578baa3d396",
       "name": "Respond Rate Limited"
     },
     {
@@ -257,10 +266,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -896,
+        -1504,
         560
       ],
-      "id": "c6950027-eebe-49d7-8341-55c47ef96d71",
+      "id": "a14df15a-ad14-4ca4-883f-3fc6deac657d",
       "name": "Get Seller Selling Partner ID",
       "alwaysOutputData": true,
       "credentials": {
@@ -290,10 +299,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -688,
+        -1296,
         560
       ],
-      "id": "458f7b6a-3e30-4661-8676-9117ea72a68f",
+      "id": "10ea4368-6b08-40db-b354-d9db3886ba8e",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -333,10 +342,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -480,
+        -1088,
         560
       ],
-      "id": "789bc852-658b-4fd3-8a34-8b6b6c33b689",
+      "id": "3502013a-509a-49f8-a38a-dbdfe410fc4b",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -352,10 +361,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -272,
+        -880,
         560
       ],
-      "id": "9a7abace-ea52-479f-9a6c-d7a3ceac6cbb",
+      "id": "23d20664-d2cb-4418-9b00-a5eba38a8f03",
       "name": "Patch And Verify Attribute"
     },
     {
@@ -365,13 +374,14 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -64,
+        -672,
         560
       ],
-      "id": "365aecbb-aa91-4981-89ee-339786764a06",
+      "id": "816a9fc4-6af6-460e-891a-7296d18fce87",
       "name": "Respond With Result"
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook": {
       "main": [
@@ -538,8 +548,17 @@
       ]
     }
   },
-  "pinData": {},
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "05dd75af-4683-493d-9adc-408c9255c187",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
-  }
+  },
+  "nodeGroups": [],
+  "id": "Sc8xDr5oWKUbFO3w",
+  "tags": []
 }
