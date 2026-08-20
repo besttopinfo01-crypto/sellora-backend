@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -624,
-        96
+        -2624,
+        256
       ],
-      "id": "d5be59e2-043f-49df-9dfa-0ce91c2aec5c",
+      "id": "bfe84959-b9f9-4c5d-b563-200588aef0d3",
       "name": "Webhook",
       "webhookId": "7e1c9a4f-2d68-4b93-a5f0-8c6d1e4b9a72"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        96
+        -2416,
+        256
       ],
-      "id": "c423e318-c26b-47fb-83e6-b7433894d3a0",
+      "id": "1b9a2910-c5da-4c9e-820b-6316f3e1f335",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        96
+        -2208,
+        256
       ],
-      "id": "6ed6fca3-ad2b-4308-95bf-090875d60d78",
+      "id": "c7d66d27-ffb0-497b-8817-dc0da9ac2246",
       "name": "Is Valid"
     },
     {
@@ -75,18 +75,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -2000,
+        160
       ],
-      "id": "80e577b7-17a8-49b4-8427-21111adea9fc",
+      "id": "b3b4dd47-abe0-42fc-8f6a-9a0a81889a26",
       "name": "Fetch Merge Request",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -98,18 +98,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        208,
-        0
+        -1792,
+        160
       ],
-      "id": "43abb689-eb7d-4a4f-8b2e-ed6a37829bca",
+      "id": "10f8ee25-115b-4b55-86be-64b67355ada4",
       "name": "Fetch Items",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -118,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        416,
-        0
+        -1584,
+        160
       ],
-      "id": "462d5c86-c71c-4638-8f8c-b4488864ca4d",
+      "id": "9c2c0775-7b9d-426e-871a-4014f5e5b1e1",
       "name": "Build Payload"
     },
     {
@@ -152,10 +152,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        624,
-        0
+        -1376,
+        160
       ],
-      "id": "48aeec50-0caf-43c1-ab2b-1c700a57a760",
+      "id": "0126638e-d339-4769-a1e3-86433dab079f",
       "name": "Is Payload Ready"
     },
     {
@@ -165,10 +165,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        832,
-        0
+        -1168,
+        160
       ],
-      "id": "8eafda57-4b0b-440d-83d6-2144fb429df0",
+      "id": "ff0d2a95-1333-4d4e-9474-8a1bb3432a3c",
       "name": "Respond With Payload"
     },
     {
@@ -178,10 +178,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        208,
-        224
+        -1792,
+        384
       ],
-      "id": "7b496ba1-6cc0-4552-b156-cc9b1ab64a7f",
+      "id": "4941c1be-d780-402c-b09c-9595fb95ed89",
       "name": "Respond Rejected"
     }
   ],
@@ -293,7 +293,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "aca70897-0483-4f7d-be26-388fa0d83258",
+  "versionId": "0b2d887c-1b9b-482c-b230-35f6a0cfd30e",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

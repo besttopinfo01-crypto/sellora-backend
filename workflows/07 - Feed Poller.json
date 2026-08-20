@@ -14,10 +14,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        -1456,
-        176
+        -2832,
+        432
       ],
-      "id": "9c6448c8-dc88-4611-ad18-5577b47d330c",
+      "id": "b03b22bb-68bb-43a7-9cd8-1a633e4bc033",
       "name": "Schedule Trigger"
     },
     {
@@ -30,10 +30,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1248,
-        176
+        -2624,
+        432
       ],
-      "id": "5a1e8c47-92d6-4b3f-a781-6c9e2d4f8b13",
+      "id": "523e86d7-32ac-45bd-a4b3-6ed9a5506b9c",
       "name": "Fetch Pending Submissions",
       "alwaysOutputData": true,
       "credentials": {
@@ -71,10 +71,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -976,
-        176
+        -2352,
+        432
       ],
-      "id": "b32e720f-f2f1-4e1e-94a1-cc7d31aa78d4",
+      "id": "98d598f7-92ba-437d-b70b-a71eeef69d33",
       "name": "Check If Any Pending"
     },
     {
@@ -99,25 +99,25 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -688,
-        96
+        -2064,
+        352
       ],
-      "id": "b1f4274d-1bae-4013-943a-ffa8188c87b4",
+      "id": "b0882bb9-58cc-4e6a-bdc1-5408a32fddbc",
       "name": "Fetch Feed Status",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const feedStatus = $input.first().json;\nconst submissionLog = $('Fetch Pending Submissions').item.json;\n\nconst processingReport = feedStatus.processing_report || {};\nconst errors = processingReport.errors || [];\n\nconst ERROR_EXPLANATIONS = {\n  'DUPLICATE_VARIATION_ATTRIBUTE': {\n    what_rejected: 'Two or more child listings share the same variation value.',\n    why: 'Amazon requires each child in a variation family to have a unique value. For example, two items cannot both be listed as Red.',\n    what_to_fix: 'Check your child listings and ensure each one has a different color, size, or other variation value. Remove or reassign the duplicate.',\n    needs_seller_support: false,\n    estimated_time: '1-2 hours'\n  },\n  'UNSUPPORTED_VARIATION_THEME': {\n    what_rejected: 'The variation theme you used is not supported for this product type.',\n    why: 'Amazon only allows specific variation themes per product category. For example, FOOTWEAR does not support ColorSize.',\n    what_to_fix: 'Check the Product Type Definitions for your category and use a supported theme. Common supported themes are Color, Size, or ColorSize for clothing.',\n    needs_seller_support: false,\n    estimated_time: '2-4 hours'\n  },\n  'MISSING_REQUIRED_ATTRIBUTE': {\n    what_rejected: 'A required field is missing from one of your listings.',\n    why: 'Amazon requires certain attributes to be present before a variation merge can be processed. Missing attributes prevent the listing from being catalogued correctly.',\n    what_to_fix: 'Open the affected listing in Seller Central and fill in all required attributes for your product type. Then resubmit.',\n    needs_seller_support: false,\n    estimated_time: '1-3 hours'\n  },\n  'PARENT_SKU_NOT_FOUND': {\n    what_rejected: 'The parent SKU you specified was not found in your Amazon account.',\n    why: 'Either the parent SKU does not exist, was recently deleted, or was never created as a parent listing.',\n    what_to_fix: 'Verify the parent SKU exists in Seller Central under Manage Inventory. If it was deleted, you may need to recreate it or contact Seller Support.',\n    needs_seller_support: true,\n    estimated_time: '1-3 business days if Seller Support needed'\n  },\n  'INVALID_ATTRIBUTE_VALUE': {\n    what_rejected: 'One or more attribute values are not valid for this product type.',\n    why: 'Amazon validates attribute values against its product type schema. Values that do not match the allowed format or enum are rejected.',\n    what_to_fix: 'Check the rejected attribute value and correct it to match Amazon standard format. Common issues: size values not in standard format (use XL not Extra Large), color values with special characters.',\n    needs_seller_support: false,\n    estimated_time: '1-2 hours'\n  },\n  'RELATIONSHIP_NOT_FOUND': {\n    what_rejected: 'The parent-child relationship could not be established.',\n    why: 'Amazon could not link the child listing to the specified parent. This usually happens when the parent SKU has not been fully processed yet.',\n    what_to_fix: 'Wait 30 minutes and check if the parent listing is visible in Seller Central. If the parent exists, resubmit the feed. If not, create the parent listing first.',\n    needs_seller_support: false,\n    estimated_time: '30 minutes to 2 hours'\n  },\n  'FEED_PROCESSING_ERROR': {\n    what_rejected: 'Amazon encountered an internal error while processing your feed.',\n    why: 'This is an Amazon-side error, not caused by your data. It can happen during high-traffic periods or system maintenance.',\n    what_to_fix: 'Wait 1 hour and resubmit the same feed. If the error persists after 3 attempts, contact Amazon Seller Support with your feed_id.',\n    needs_seller_support: true,\n    estimated_time: '1-24 hours'\n  },\n  'THROTTLED': {\n    what_rejected: 'Your feed submission was throttled by Amazon.',\n    why: 'Amazon limits the number of feed submissions per account within a time window.',\n    what_to_fix: 'Wait at least 1 hour before resubmitting. Avoid submitting multiple feeds in quick succession.',\n    needs_seller_support: false,\n    estimated_time: '1-2 hours'\n  }\n};\n\nconst explainedErrors = errors.map(function(err) {\n  const explanation = ERROR_EXPLANATIONS[err.message_code] || {\n    what_rejected: 'Amazon returned an unrecognized error: ' + (err.message_code || 'UNKNOWN'),\n    why: 'This error code is not in our known error library.',\n    what_to_fix: 'Contact Amazon Seller Support with your feed_id: ' + feedStatus.feed_id + ' and this error code for assistance.',\n    needs_seller_support: true,\n    estimated_time: 'Unknown \u2014 depends on Seller Support response time'\n  };\n  return {\n    message_code: err.message_code || 'UNKNOWN_ERROR',\n    amazon_description: err.description || 'No description provided',\n    what_rejected: explanation.what_rejected,\n    why: explanation.why,\n    what_to_fix: explanation.what_to_fix,\n    needs_seller_support: explanation.needs_seller_support,\n    estimated_time: explanation.estimated_time\n  };\n});\n\nreturn [{ json: {\n  feed_id: feedStatus.feed_id,\n  request_id: submissionLog.request_id,\n  submission_log_id: submissionLog.id,\n  processing_status: feedStatus.processing_status,\n  messages_processed: processingReport.messages_processed || 0,\n  messages_successful: processingReport.messages_successful || 0,\n  messages_with_error: processingReport.messages_with_error || 0,\n  error_count: errors.length,\n  explained_errors: explainedErrors,\n  processing_report_json: processingReport,\n  is_complete: feedStatus.processing_status === 'DONE' || feedStatus.processing_status === 'FATAL'\n}}];"
+        "jsCode": "const feedStatus = $input.first().json;\nconst submissionLog = $('Fetch Pending Submissions').item.json;\n\nconst processingReport = feedStatus.processing_report || {};\nconst errors = processingReport.errors || [];\n\nconst ERROR_EXPLANATIONS = {\n  'DUPLICATE_VARIATION_ATTRIBUTE': {\n    what_rejected: 'Two or more child listings share the same variation value.',\n    why: 'Amazon requires each child in a variation family to have a unique value. For example, two items cannot both be listed as Red.',\n    what_to_fix: 'Check your child listings and ensure each one has a different color, size, or other variation value. Remove or reassign the duplicate.',\n    needs_seller_support: false,\n    estimated_time: '1-2 hours'\n  },\n  'UNSUPPORTED_VARIATION_THEME': {\n    what_rejected: 'The variation theme you used is not supported for this product type.',\n    why: 'Amazon only allows specific variation themes per product category. For example, FOOTWEAR does not support ColorSize.',\n    what_to_fix: 'Check the Product Type Definitions for your category and use a supported theme. Common supported themes are Color, Size, or ColorSize for clothing.',\n    needs_seller_support: false,\n    estimated_time: '2-4 hours'\n  },\n  'MISSING_REQUIRED_ATTRIBUTE': {\n    what_rejected: 'A required field is missing from one of your listings.',\n    why: 'Amazon requires certain attributes to be present before a variation merge can be processed. Missing attributes prevent the listing from being catalogued correctly.',\n    what_to_fix: 'Open the affected listing in Seller Central and fill in all required attributes for your product type. Then resubmit.',\n    needs_seller_support: false,\n    estimated_time: '1-3 hours'\n  },\n  'PARENT_SKU_NOT_FOUND': {\n    what_rejected: 'The parent SKU you specified was not found in your Amazon account.',\n    why: 'Either the parent SKU does not exist, was recently deleted, or was never created as a parent listing.',\n    what_to_fix: 'Verify the parent SKU exists in Seller Central under Manage Inventory. If it was deleted, you may need to recreate it or contact Seller Support.',\n    needs_seller_support: true,\n    estimated_time: '1-3 business days if Seller Support needed'\n  },\n  'INVALID_ATTRIBUTE_VALUE': {\n    what_rejected: 'One or more attribute values are not valid for this product type.',\n    why: 'Amazon validates attribute values against its product type schema. Values that do not match the allowed format or enum are rejected.',\n    what_to_fix: 'Check the rejected attribute value and correct it to match Amazon standard format. Common issues: size values not in standard format (use XL not Extra Large), color values with special characters.',\n    needs_seller_support: false,\n    estimated_time: '1-2 hours'\n  },\n  'RELATIONSHIP_NOT_FOUND': {\n    what_rejected: 'The parent-child relationship could not be established.',\n    why: 'Amazon could not link the child listing to the specified parent. This usually happens when the parent SKU has not been fully processed yet.',\n    what_to_fix: 'Wait 30 minutes and check if the parent listing is visible in Seller Central. If the parent exists, resubmit the feed. If not, create the parent listing first.',\n    needs_seller_support: false,\n    estimated_time: '30 minutes to 2 hours'\n  },\n  'FEED_PROCESSING_ERROR': {\n    what_rejected: 'Amazon encountered an internal error while processing your feed.',\n    why: 'This is an Amazon-side error, not caused by your data. It can happen during high-traffic periods or system maintenance.',\n    what_to_fix: 'Wait 1 hour and resubmit the same feed. If the error persists after 3 attempts, contact Amazon Seller Support with your feed_id.',\n    needs_seller_support: true,\n    estimated_time: '1-24 hours'\n  },\n  'THROTTLED': {\n    what_rejected: 'Your feed submission was throttled by Amazon.',\n    why: 'Amazon limits the number of feed submissions per account within a time window.',\n    what_to_fix: 'Wait at least 1 hour before resubmitting. Avoid submitting multiple feeds in quick succession.',\n    needs_seller_support: false,\n    estimated_time: '1-2 hours'\n  }\n};\n\nconst explainedErrors = errors.map(function(err) {\n  const explanation = ERROR_EXPLANATIONS[err.message_code] || {\n    what_rejected: 'Amazon returned an unrecognized error: ' + (err.message_code || 'UNKNOWN'),\n    why: 'This error code is not in our known error library.',\n    what_to_fix: 'Contact Amazon Seller Support with your feed_id: ' + feedStatus.feed_id + ' and this error code for assistance.',\n    needs_seller_support: true,\n    estimated_time: 'Unknown — depends on Seller Support response time'\n  };\n  return {\n    message_code: err.message_code || 'UNKNOWN_ERROR',\n    amazon_description: err.description || 'No description provided',\n    what_rejected: explanation.what_rejected,\n    why: explanation.why,\n    what_to_fix: explanation.what_to_fix,\n    needs_seller_support: explanation.needs_seller_support,\n    estimated_time: explanation.estimated_time\n  };\n});\n\nreturn [{ json: {\n  feed_id: feedStatus.feed_id,\n  request_id: submissionLog.request_id,\n  submission_log_id: submissionLog.id,\n  processing_status: feedStatus.processing_status,\n  messages_processed: processingReport.messages_processed || 0,\n  messages_successful: processingReport.messages_successful || 0,\n  messages_with_error: processingReport.messages_with_error || 0,\n  error_count: errors.length,\n  explained_errors: explainedErrors,\n  processing_report_json: processingReport,\n  is_complete: feedStatus.processing_status === 'DONE' || feedStatus.processing_status === 'FATAL'\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        80
+        -1792,
+        336
       ],
-      "id": "23f330fd-842b-453c-9eeb-eb90251282d6",
+      "id": "e0aa7e23-1e1c-4f16-add8-4eff54ce6d28",
       "name": "Parse Processing Report"
     },
     {
@@ -148,10 +148,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        80
+        -1584,
+        336
       ],
-      "id": "47d81dbd-c24b-45cc-8373-121342e4ff25",
+      "id": "1782a75d-489a-4370-bdc5-c0e2218a63dd",
       "name": "Is Processing Complete"
     },
     {
@@ -182,10 +182,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -1376,
+        256
       ],
-      "id": "f8d535db-33f4-44e3-9026-2f438c860a05",
+      "id": "ba616938-8327-4c0a-ada4-69b1c501e32a",
       "name": "Update Submission Log",
       "credentials": {
         "httpBasicAuth": {
@@ -210,10 +210,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1112,
-        176
+        -2496,
+        432
       ],
-      "id": "8b6f3d21-4e97-4c8a-b5d6-1f2a9c7e4b83",
+      "id": "6f683b45-7514-42c0-acf2-b6b2b9ae32c4",
       "name": "Check For Pending Feeds"
     },
     {
@@ -244,10 +244,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        0,
-        176
+        -1376,
+        432
       ],
-      "id": "7d3a9c1e-5f68-4b2a-9d15-e6c8f3a1b7d4",
+      "id": "bf3a2675-b572-4b17-93c6-39fa9d7cdeae",
       "name": "Is Processing Status Done"
     },
     {
@@ -273,10 +273,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        208,
-        176
+        -1168,
+        432
       ],
-      "id": "9f4b7e2a-6c81-4d95-a3f7-8e1b6c9d2a54",
+      "id": "ac0d5e6a-6879-4904-944a-9a238a0c946e",
       "name": "Trigger Post-Submission Verification",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -378,13 +378,13 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "458ffab7-6677-4974-9cbe-e8259947b7c2",
+  "versionId": "a6718b42-94b8-4368-a55d-5b84855f26eb",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

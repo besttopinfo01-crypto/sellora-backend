@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -800,
-        0
+        -992,
+        864
       ],
-      "id": "e1f2a3b4-0000-0000-0000-000000000000",
+      "id": "dadb5bb9-2fae-48ba-bda2-9a3413035e19",
       "name": "Webhook",
       "webhookId": "e1f2a3b4-9c5d-4e6f-8a7b-1c2d3e4f5a6b"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -592,
-        0
+        -784,
+        864
       ],
-      "id": "11111111-0000-0000-0000-000000000001",
+      "id": "ee548e66-1d65-4992-87a9-9a37c61dd723",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -384,
-        0
+        -576,
+        864
       ],
-      "id": "22222222-0000-0000-0000-000000000002",
+      "id": "63aec16b-812f-4d02-8660-1e2952039939",
       "name": "Is Valid"
     },
     {
@@ -84,18 +84,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        -120
+        -368,
+        736
       ],
-      "id": "33333333-0000-0000-0000-000000000003",
+      "id": "e306264f-e57f-49b4-9c2c-0fb233787b3d",
       "name": "Fetch Validation Result",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -116,10 +116,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        40
+        -368,
+        896
       ],
-      "id": "44444444-0000-0000-0000-000000000004",
+      "id": "84830497-ad66-45a3-bf38-6060ca0e74b1",
       "name": "Fetch Merge Request Raw",
       "credentials": {
         "httpCustomAuth": {
@@ -135,16 +135,16 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        16,
-        40
+        -176,
+        896
       ],
-      "id": "44444444-0000-0000-0000-000000000005",
+      "id": "556ddc0a-2008-4909-8269-10ad4d3defbc",
       "name": "Fetch Merge Request"
     },
     {
       "parameters": {
-        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
         "method": "POST",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
         "sendHeaders": true,
@@ -162,8 +162,7 @@
         "options": {
           "response": {
             "response": {
-              "responseFormat": "text",
-              "outputPropertyName": "data"
+              "responseFormat": "text"
             }
           }
         }
@@ -171,10 +170,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        208,
-        40
+        16,
+        896
       ],
-      "id": "55555555-0000-0000-0000-000000000006",
+      "id": "db51cf21-4840-46bc-b0bf-b99e13ee5f65",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -207,22 +206,22 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        400,
-        40
+        208,
+        896
       ],
-      "id": "66666666-0000-0000-0000-000000000007",
+      "id": "f4475af9-37ec-4899-9bce-582c6d1d95c3",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
-          "id": "AmazonLWA_PLACEHOLDER_ID",
+          "id": "GaNwuUXcMv16Z5kh",
           "name": "Amazon LWA"
         }
       }
     },
     {
       "parameters": {
-        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_seller_selling_partner_id",
         "method": "POST",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_seller_selling_partner_id",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
         "sendHeaders": true,
@@ -242,10 +241,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        592,
-        40
+        400,
+        896
       ],
-      "id": "77777777-0000-0000-0000-000000000008",
+      "id": "9b35f896-8f23-4039-bd0f-4b4bd35e7f53",
       "name": "Get Seller Selling Partner ID",
       "credentials": {
         "httpCustomAuth": {
@@ -261,10 +260,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        784,
-        40
+        592,
+        896
       ],
-      "id": "88888888-0000-0000-0000-000000000009",
+      "id": "8c4eb299-bb93-4149-a23b-62f20d86d928",
       "name": "Fetch Siblings"
     },
     {
@@ -274,10 +273,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        976,
-        40
+        784,
+        896
       ],
-      "id": "99999999-0000-0000-0000-000000000010",
+      "id": "bad95e34-51e4-4347-8e62-c2456c35f1e5",
       "name": "Build AI Prompt"
     },
     {
@@ -307,11 +306,17 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1168,
-        40
+        976,
+        896
       ],
-      "id": "aaaaaaaa-0000-0000-0000-000000000011",
-      "name": "Call Claude"
+      "id": "5803035c-e4c2-46bd-b48d-12b1d95aa5c0",
+      "name": "Call Claude",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "r2H1ykX6gxgcUp9i",
+          "name": "Header Auth account"
+        }
+      }
     },
     {
       "parameters": {
@@ -320,10 +325,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1360,
-        40
+        1168,
+        896
       ],
-      "id": "bbbbbbbb-0000-0000-0000-000000000012",
+      "id": "8459b433-3cb1-4fb9-b12c-f5f8cb6c8271",
       "name": "Parse AI Response"
     },
     {
@@ -333,10 +338,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1552,
-        40
+        1360,
+        896
       ],
-      "id": "cccccccc-0000-0000-0000-000000000013",
+      "id": "ea1604ab-66b7-4303-b948-ed1dcf00e77e",
       "name": "Respond With Explanation"
     },
     {
@@ -346,10 +351,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -384,
-        200
+        -576,
+        1056
       ],
-      "id": "dddddddd-0000-0000-0000-000000000014",
+      "id": "f2f8d973-aa3d-428e-8839-0c20de89df86",
       "name": "Respond Rejected"
     },
     {
@@ -359,10 +364,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        16,
-        200
+        -176,
+        1104
       ],
-      "id": "eeeeeeee-0000-0000-0000-000000000015",
+      "id": "63186273-e147-4561-9025-ebaabd9208f4",
       "name": "Resolve Results"
     },
     {
@@ -393,10 +398,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        112,
-        200
+        -16,
+        1056
       ],
-      "id": "ffffffff-0000-0000-0000-000000000016",
+      "id": "cfa7a0d2-b7ed-44b0-a0a3-f2dda64a4106",
       "name": "Has Results?"
     },
     {
@@ -406,10 +411,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        208,
-        320
+        16,
+        1184
       ],
-      "id": "10101010-0000-0000-0000-000000000017",
+      "id": "3da5e516-4846-44e3-8e09-8c866dae614e",
       "name": "Respond No Report"
     }
   ],
@@ -595,17 +600,17 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "00000000-0000-0000-0000-000000000000",
+  "versionId": "d0c05cff-12ae-4d78-8fe3-9830dd62e4b1",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "NewExplainWorkflow001",
+  "id": "DX6HNfqDpPVUzEIk",
   "tags": []
 }

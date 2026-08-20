@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1664,
-        160
+        -4352,
+        1792
       ],
-      "id": "155c7c3b-3dab-4ea7-a17b-b6c896383ce0",
+      "id": "3bf9cb64-cfc0-4de6-b399-4b3ad3ce9991",
       "name": "Webhook",
       "webhookId": "f3a9c1d7-6b24-4e85-9c30-8d5f2a7b4c19"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1456,
-        160
+        -4144,
+        1792
       ],
-      "id": "17a100e9-7406-4b88-bc44-85e835251879",
+      "id": "c2316e9a-e6cd-4b90-bbfe-1de05da986f1",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1248,
-        160
+        -3936,
+        1792
       ],
-      "id": "0ff8a197-c223-4163-9d8f-84ea3d9aef5e",
+      "id": "b2d738f7-c9ec-47b3-bf42-31e0097debec",
       "name": "Is Valid"
     },
     {
@@ -85,10 +85,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -960,
-        96
+        -3648,
+        1728
       ],
-      "id": "174dfe7e-afd1-491b-a817-0bbfd09bc463",
+      "id": "3026603a-71b1-405a-b076-71844124bf14",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -122,10 +122,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -768,
-        96
+        -3456,
+        1728
       ],
-      "id": "369e269c-503c-40ff-b682-b12731d31459",
+      "id": "d645eb88-1942-446d-9801-c71c3af1f167",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -151,10 +151,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -560,
-        96
+        -3248,
+        1728
       ],
-      "id": "a44276c0-6926-4f0e-924e-ce4a7e2c9881",
+      "id": "c9c65a48-da59-49be-b339-79a1537d6165",
       "name": "Fetch Parent",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -166,10 +166,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -352,
-        96
+        -3040,
+        1728
       ],
-      "id": "11569993-3ced-455e-8d36-4629c88fb078",
+      "id": "295426b1-8d31-47bd-b22b-f3c3b560f7b4",
       "name": "Parent Gate"
     },
     {
@@ -200,10 +200,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -144,
-        96
+        -2832,
+        1728
       ],
-      "id": "f0ccc3aa-3400-4ac3-bfbd-9471dae9fb5d",
+      "id": "f8bce96e-3a29-499b-9cce-635d1f61dcf2",
       "name": "Parent OK"
     },
     {
@@ -213,10 +213,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        64,
-        32
+        -2624,
+        1664
       ],
-      "id": "21b1974f-40ee-477d-92a2-d20d2b56eb15",
+      "id": "d1594faf-91cc-4405-96f5-5a9e374196a5",
       "name": "Prepare Batch List"
     },
     {
@@ -226,10 +226,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        480,
-        32
+        -2208,
+        1664
       ],
-      "id": "73351b64-f4e3-45e5-ad21-2eeb0ed8cc35",
+      "id": "40196f83-448c-4c90-9c9b-1618614c35d8",
       "name": "Validate Child vs Parent"
     },
     {
@@ -239,10 +239,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        688,
-        32
+        -2000,
+        1664
       ],
-      "id": "67c09817-263b-43d3-94f3-c5cda034698f",
+      "id": "8d38f7ec-f19d-4530-89e3-d1bb996af4c8",
       "name": "Respond With Validation"
     },
     {
@@ -252,10 +252,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        0,
-        176
+        -2688,
+        1808
       ],
-      "id": "f668eadb-f7e1-478b-830f-fbc66ce105a1",
+      "id": "81ab6c3e-a826-4ed4-a9fd-a5217cf760d8",
       "name": "Respond Parent Issue"
     },
     {
@@ -265,10 +265,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1200,
-        400
+        -3888,
+        2032
       ],
-      "id": "d8fd62f0-af8f-4c95-b5b4-23c3139207bd",
+      "id": "ad60c821-10aa-4f6f-a40a-1fbeedbbe7ad",
       "name": "Respond Rejected"
     },
     {
@@ -278,10 +278,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        272,
-        32
+        -2416,
+        1664
       ],
-      "id": "6532bd39-9550-4f58-82df-fbdd3ca2ac96",
+      "id": "485d3d7b-cad3-4547-8a1f-ef7aeb56bd69",
       "name": "Fetch Family Batch"
     },
     {
@@ -294,10 +294,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1152,
-        -208
+        -3840,
+        1424
       ],
-      "id": "36a57f3f-c633-4cdf-b2fc-1ca7166d4193",
+      "id": "afcf6ef9-b44d-4f36-bb1d-73d1533a1242",
       "name": "Get Seller Status",
       "alwaysOutputData": true,
       "credentials": {
@@ -315,10 +315,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -960,
-        -192
+        -3648,
+        1440
       ],
-      "id": "6b653546-573b-4e43-ac72-fd4647615808",
+      "id": "b08c66b6-e8c1-4478-abaf-9c44f252cefd",
       "name": "Seller Gate"
     },
     {
@@ -349,10 +349,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -688,
-        -208
+        -3376,
+        1424
       ],
-      "id": "c8ab0f4d-36ce-43a0-b01d-73207f073064",
+      "id": "edc01811-eb9b-46ea-899e-ed9daff935a6",
       "name": "Is Eligible"
     },
     {
@@ -369,10 +369,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -320,
-        -224
+        -3008,
+        1408
       ],
-      "id": "21f29345-983d-4492-b6e3-6f3d50f927ec",
+      "id": "d59bb8ba-108e-43c7-9d57-b064e913582e",
       "name": "Rate Limit Gate",
       "credentials": {
         "httpCustomAuth": {
@@ -408,10 +408,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -80,
-        -224
+        -2768,
+        1408
       ],
-      "id": "f6992463-f4d5-453b-a02a-faa80e511467",
+      "id": "8ddc3028-216f-4456-bffc-7d0de8989f86",
       "name": "Check Rate Limit"
     },
     {
@@ -421,10 +421,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        224,
-        -224
+        -2464,
+        1408
       ],
-      "id": "c9b08969-47c3-42dc-9189-ea1a7cdbd896",
+      "id": "6fea12c6-5cea-401b-9bc2-934e3c13a48c",
       "name": "Format Rate Limit Response"
     },
     {
@@ -434,10 +434,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        416,
-        -176
+        -2272,
+        1456
       ],
-      "id": "7de56429-c392-47c2-b98f-c295c697a1dd",
+      "id": "f63fd9e3-d5d2-4a1d-af90-201b133fea03",
       "name": "Respond Rate Limited"
     },
     {
@@ -447,10 +447,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -480,
-        -128
+        -3168,
+        1504
       ],
-      "id": "216fe621-e93f-4aba-b5f4-344e2ce5e4bf",
+      "id": "55442f03-7cb2-41b1-9083-7d0890d93d68",
       "name": "Respond Seller Ineligible"
     },
     {
@@ -481,10 +481,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        704,
-        320
+        -1984,
+        1952
       ],
-      "id": "b6e9f2a4-5d81-4c3e-9f7b-2a6d8c1e4f93",
+      "id": "d9cebf47-cfec-4e44-9f46-6a0fa08a9448",
       "name": "Needs Fallback Check"
     },
     {
@@ -497,10 +497,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        912,
-        240
+        -1776,
+        1872
       ],
-      "id": "c3f7a5d9-6e82-4b1f-8c4a-3d9e6b2f7a15",
+      "id": "1dd4cd7e-fa71-411b-bef2-72c24f94f90e",
       "name": "Get Seller Selling Partner ID (Fallback)",
       "alwaysOutputData": true,
       "credentials": {
@@ -548,10 +548,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1120,
-        240
+        -1568,
+        1872
       ],
-      "id": "d8a2c6e4-7f93-4b5a-9d1c-6e3f8a2b5c97",
+      "id": "cdc352e0-721f-407c-93a9-b648b4d8333b",
       "name": "Search Listings By ASIN",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -563,10 +563,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1328,
-        240
+        -1360,
+        1872
       ],
-      "id": "e1b4d7f2-8c95-4a3e-9b6d-1f5a8c3e7d94",
+      "id": "101fe0e2-daff-4d88-9639-f3b10b6f6c35",
       "name": "Parse Fallback Check"
     },
     {
@@ -597,10 +597,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1536,
-        240
+        -1152,
+        1872
       ],
-      "id": "f7b3d6a9-8e42-4c5f-9a1b-3d6e8c2f5a97",
+      "id": "8a3f02b1-2a3f-4f3a-b350-15378a599029",
       "name": "Is Schema Lookup Needed"
     },
     {
@@ -620,10 +620,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1744,
-        160
+        -944,
+        1792
       ],
-      "id": "a5c8e2f6-9b73-4d1a-8e4c-2f9b6d3a7e58",
+      "id": "e9de1422-d460-45fb-8126-2f0c8aaccf0f",
       "name": "Get Product Type Definition (Fallback)",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -636,10 +636,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1952,
-        160
+        -736,
+        1792
       ],
-      "id": "b8d1f4a7-6c92-4e3b-9f5d-1a8c6e2b9f43",
+      "id": "458b0874-93d2-468a-9148-49f6e0c34a39",
       "name": "Fetch Schema (Fallback)",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -651,10 +651,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2160,
-        160
+        -528,
+        1792
       ],
-      "id": "c3e6a9d2-7f84-4b5c-8e1a-4d7c9b3e6f85",
+      "id": "e35fa08e-a67f-4d8b-b66f-513d257b1367",
       "name": "Determine Real Attribute Names"
     }
   ],
@@ -984,7 +984,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "637950fb-45ec-4313-806f-252884e4c10c",
+  "versionId": "6426fec2-904b-4c9d-ba21-49da93de67dc",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

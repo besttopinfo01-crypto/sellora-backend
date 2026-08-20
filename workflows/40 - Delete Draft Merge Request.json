@@ -1,0 +1,591 @@
+{
+  "name": "40 - Delete Draft Merge Request",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aadd3d6a-7cce-4a3f-93d5-9c41bfd796fa",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "6742785f-b872-423d-8b74-28c0100094c1",
+      "name": "Webhook",
+      "webhookId": "aadd3d6a-7cce-4a3f-93d5-9c41bfd796fa"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "1a7c0fa5-7ade-4615-b25f-c1330c03979c",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e1db3ddf-ee31-429a-a1fe-5584c4bffebe",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "64df8bd5-47dc-4a7f-9886-ba69d83a35b4",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b92aa84b-af1c-4f87-87e6-3823843c43a8",
+      "name": "Fetch Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const fetched = $input.first().json;\nconst row = Array.isArray(fetched) ? fetched[0] : fetched;\nconst ctx = $('Validate Input').first().json;\n\nif (!row || !row.request_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MERGE_REQUEST_NOT_FOUND',\n    request_id: ctx.request_id,\n    message: 'No merge_requests row found for this request_id.'\n  }}];\n}\n\n// Genuine delete only ever runs for a request that never got past draft -\n// re-checked here against the real row, not just trusted from whichever\n// button the frontend happened to show (same belt-and-suspenders reasoning\n// wf28's own confirmations re-check already documents). Anything past\n// draft has already been logged (approval_logs) or, further along,\n// actually submitted to Amazon (submission_logs) - deleting the local row\n// at that point would hide real history without undoing anything real on\n// Amazon's side, which is exactly the case archive exists for instead.\nif (row.status !== 'draft') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'NOT_A_DRAFT',\n    request_id: row.request_id,\n    status: row.status,\n    message: 'Only requests still at draft can be permanently deleted (current status: ' + row.status + '). Use archive instead.'\n  }}];\n}\n\nreturn [{ json: { decision: 'IS_DRAFT', request_id: row.request_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "d0b1e8e7-0c0e-445a-837c-4a6209a16969",
+      "name": "Check Is Draft"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7fc390c0-fdc5-42e3-be99-d75ccc5e7c30",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "IS_DRAFT",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "94a6711e-d543-44ed-910d-0666ad21a7f5",
+      "name": "Is Draft"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/submission_logs?request_id=eq.{{ $('Check Is Draft').first().json.request_id }}&select=id&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "03bf09d7-24d3-45aa-8cec-da7a5fe9eb44",
+      "name": "Fetch Submission Log",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Check Is Draft').first().json;\nconst rawItems = $input.all();\n\n// Same \"one item containing the whole array, or one item per row\"\n// ambiguity already documented and handled elsewhere in this project\n// (wf14/wf21's collectAll) - plus a third shape specific to a genuinely\n// empty PostgREST result ([]): a single item whose json is an empty\n// placeholder object {} rather than an array at all. All three are\n// confirmed real, not theoretical - the third is exactly what caused a\n// false SUBMISSION_LOG_EXISTS rejection on a genuinely clean draft,\n// confirmed independently via direct SQL against submission_logs\n// returning zero rows for the same request_id.\nlet rows;\nif (rawItems.length === 1 && Array.isArray(rawItems[0].json)) {\n  rows = rawItems[0].json;\n} else {\n  rows = rawItems\n    .map(function(i) { return i.json; })\n    .filter(function(j) { return j && typeof j === 'object' && !Array.isArray(j) && Object.keys(j).length > 0; });\n}\n\n// Checking for a real `id` specifically (the one field this query\n// actually selects), not just \"is there a row-shaped object at all\" -\n// belt and suspenders on top of the empty-object filter above.\nconst hasRealSubmissionLog = rows.some(function(r) {\n  return r && r.id !== undefined && r.id !== null;\n});\n\nif (hasRealSubmissionLog) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SUBMISSION_LOG_EXISTS',\n    request_id: ctx.request_id,\n    message: 'A submission log exists for this request despite its draft status - this is unexpected and worth checking directly before deleting anything.'\n  }}];\n}\n\nreturn [{ json: { decision: 'SAFE_TO_DELETE', request_id: ctx.request_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "c3cdea6e-48cf-46c0-8815-46ba17e56257",
+      "name": "Check Safe To Delete"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "505202f6-5f23-4782-9dea-0bd11ce5278e",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "SAFE_TO_DELETE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "d07db6b7-3b4b-4c07-8caf-0cce5e238c11",
+      "name": "Is Safe"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/variation_matrices?request_id=eq.{{ $('Check Safe To Delete').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "9428c42d-4b88-4fa4-a312-670b40f499d8",
+      "name": "Delete Variation Matrices",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $('Check Safe To Delete').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "4f683c07-adf3-46fc-9e90-6bb9c6b7c51a",
+      "name": "Delete Approval Logs",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_request_items?request_id=eq.{{ $('Check Safe To Delete').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "e18617d8-4740-403c-8d6b-d1143f8ac5ea",
+      "name": "Delete Merge Request Items",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Check Safe To Delete').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1872,
+        0
+      ],
+      "id": "1e7ff105-7921-4267-805a-6a7ab5424414",
+      "name": "Delete Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Check Safe To Delete').first().json;\nreturn [{ json: {\n  decision: 'DELETED',\n  request_id: ctx.request_id,\n  message: 'Draft request permanently deleted, along with its items and any staged matrix or approval data. Nothing was ever sent to Amazon for this request.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "cf271b32-48cf-4359-b945-d9d1ecba0a6e",
+      "name": "Finalize Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2288,
+        0
+      ],
+      "id": "6f55428c-f548-4e7c-a4e7-0f7e36596a51",
+      "name": "Respond With Confirmation"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        224
+      ],
+      "id": "ef47f2e4-8926-429f-93a5-5431617ad0ca",
+      "name": "Respond Rejected"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Check Is Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Is Draft": {
+      "main": [
+        [
+          {
+            "node": "Is Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Draft": {
+      "main": [
+        [
+          {
+            "node": "Fetch Submission Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Submission Log": {
+      "main": [
+        [
+          {
+            "node": "Check Safe To Delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Safe To Delete": {
+      "main": [
+        [
+          {
+            "node": "Is Safe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Safe": {
+      "main": [
+        [
+          {
+            "node": "Delete Variation Matrices",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Variation Matrices": {
+      "main": [
+        [
+          {
+            "node": "Delete Approval Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Approval Logs": {
+      "main": [
+        [
+          {
+            "node": "Delete Merge Request Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Merge Request Items": {
+      "main": [
+        [
+          {
+            "node": "Delete Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Finalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Response": {
+      "main": [
+        [
+          {
+            "node": "Respond With Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f90ad8ab-b169-4b89-a392-6b6282418eaa",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "76ca1febd92f4e",
+  "tags": []
+}

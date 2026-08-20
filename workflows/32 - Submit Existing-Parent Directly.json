@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2000,
-        -32
+        3488,
+        176
       ],
-      "id": "webhook-node-id-001",
+      "id": "38424d93-7d7e-48fe-b52a-53577e82036d",
       "name": "Webhook",
       "webhookId": "3ecb64d6-d6b4-4148-a202-277b43be6217"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1792,
-        -32
+        3696,
+        176
       ],
-      "id": "5e3cc846-0be5-4cf6-b50e-a6735b7d3b61",
+      "id": "2c82ba94-d599-454e-9310-9911d2385258",
       "name": "Validate Input"
     },
     {
@@ -59,15 +59,14 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1584,
-        -32
+        3904,
+        176
       ],
-      "id": "c3fb8ec8-f93c-41ad-9187-66ff3b88e2c6",
+      "id": "b983c959-b90c-4c35-a2ae-1214e0aa1bd1",
       "name": "Is Valid"
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $('Validate Input').first().json.request_id }}&order=id.desc&limit=1",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
@@ -76,10 +75,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1376,
-        -32
+        4112,
+        176
       ],
-      "id": "d07e1539-5255-4d28-b97e-d8ce9c559554",
+      "id": "1291acc8-4614-4e7b-99fa-1a1925ea220d",
       "name": "Fetch Approval Log",
       "alwaysOutputData": true,
       "credentials": {
@@ -91,7 +90,6 @@
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,seller_id,marketplace_id,is_new_parent,status",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
@@ -100,10 +98,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1168,
-        -32
+        4320,
+        176
       ],
-      "id": "07df00be-8f36-449d-a0c1-3b95f9da45a8",
+      "id": "b4bbda06-ff15-4602-bd8b-afa4ee848fb5",
       "name": "Fetch Merge Request",
       "alwaysOutputData": true,
       "credentials": {
@@ -120,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -960,
-        -32
+        4528,
+        176
       ],
-      "id": "7a675c36-7d25-49f3-974c-522d02c21092",
+      "id": "485d6837-8282-4f87-9b7a-72289cd0f989",
       "name": "Check Ready To Submit"
     },
     {
@@ -154,10 +152,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -752,
-        -32
+        4736,
+        176
       ],
-      "id": "56a85137-9160-4d86-9361-2e00ba819f14",
+      "id": "18bffabc-026f-4b4f-a07f-0394576d58d5",
       "name": "Is Ready"
     },
     {
@@ -166,7 +164,6 @@
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Check Ready To Submit').first().json.request_id }}&status=not.in.(submitting,verified,failed,partially_failed)",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
-        "options": {},
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -182,15 +179,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\"status\": \"submitting\"}"
+        "jsonBody": "={\"status\": \"submitting\"}",
+        "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -544,
-        -32
+        4944,
+        176
       ],
-      "id": "fe9460e4-01bf-47d1-9de9-2140a3d3e6a1",
+      "id": "6c535044-fb1c-4c34-9977-e07605651c12",
       "name": "Claim Submission",
       "alwaysOutputData": true,
       "credentials": {
@@ -207,10 +205,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -336,
-        -32
+        5152,
+        176
       ],
-      "id": "e154cadc-a3ff-4bbf-878b-4d1ececc4600",
+      "id": "68c11efe-eeb0-4726-afb9-24f80d643d89",
       "name": "Check Claim Succeeded"
     },
     {
@@ -241,15 +239,14 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -128,
-        -32
+        5360,
+        176
       ],
-      "id": "540343f8-7799-46e6-8269-b134a189f8d1",
+      "id": "58b85678-0474-40c4-80ac-d6ef54081961",
       "name": "Is Claimed"
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?seller_id=eq.{{ $('Check Claim Succeeded').first().json.seller_id }}&select=selling_partner_id",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
@@ -258,10 +255,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        80,
-        -32
+        5136,
+        -144
       ],
-      "id": "ee7ce840-6459-4b98-8000-0fc18b37646b",
+      "id": "c3bfeb0b-0d0a-4447-a982-56497553c281",
       "name": "Get Seller Selling Partner ID",
       "alwaysOutputData": true,
       "credentials": {
@@ -291,10 +288,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        288,
-        -32
+        5344,
+        -144
       ],
-      "id": "c6ee521a-c606-4463-92ac-88fe085be902",
+      "id": "fb7486c6-7364-435b-a7b1-da63ed8322fa",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -334,10 +331,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        496,
-        -32
+        5552,
+        -144
       ],
-      "id": "8a92b181-79a9-465d-b24a-80b205d1351a",
+      "id": "97bc5f05-5fc8-4e0b-8dc1-1b5bc46eeb66",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -353,10 +350,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        704,
-        -32
+        5760,
+        -144
       ],
-      "id": "5fd32729-3b08-4309-a201-354a2f0b1721",
+      "id": "1800cd93-963b-490b-8b0a-b3b340f02214",
       "name": "Submit All Children Directly"
     },
     {
@@ -366,10 +363,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1120,
-        -32
+        6176,
+        -144
       ],
-      "id": "3ab4736e-5d13-4e2a-be7f-50b8833889f2",
+      "id": "d4797da9-540f-4c55-8c86-d37e317bbc36",
       "name": "Summarize Results"
     },
     {
@@ -378,7 +375,6 @@
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $json.request_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
-        "options": {},
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -394,15 +390,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"status\": {{ JSON.stringify($json.final_status) }},\n  \"direct_submission_report\": {{ JSON.stringify($json.results) }}\n}"
+        "jsonBody": "={\n  \"status\": {{ JSON.stringify($json.final_status) }},\n  \"direct_submission_report\": {{ JSON.stringify($json.results) }}\n}",
+        "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1328,
-        -32
+        6384,
+        -144
       ],
-      "id": "f3619c44-e158-4c99-a39c-2da7e87e2cf6",
+      "id": "e9554266-1957-44a4-b2a8-f62d3a6ceb35",
       "name": "Update Merge Request Report",
       "alwaysOutputData": true,
       "credentials": {
@@ -420,10 +417,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1536,
-        -32
+        6592,
+        -144
       ],
-      "id": "25a2a24c-1cf5-4a02-846e-9bbb8cd24b92",
+      "id": "e197f8e9-49be-4a4c-aac9-cbfe65888df9",
       "name": "Restore After Report Update"
     },
     {
@@ -433,10 +430,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1744,
-        -32
+        6800,
+        -144
       ],
-      "id": "83535c84-864e-4449-aab7-40bbcea31240",
+      "id": "b9fca02c-6223-42ec-ae8f-a920da97ba18",
       "name": "Respond With Result"
     },
     {
@@ -446,10 +443,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -544,
-        224
+        4944,
+        432
       ],
-      "id": "acbada45-a8a5-400f-9b0e-f309ffe81b2f",
+      "id": "ba3ae65e-35e6-410a-97e1-cf253de188a0",
       "name": "Respond Rejected"
     },
     {
@@ -480,10 +477,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        808,
-        -32
+        5872,
+        -144
       ],
-      "id": "d9f2b6e4-7a83-4c1e-9b5f-3d8a6c2e9f47",
+      "id": "729caa3f-2057-4f5e-b44e-3a9d11bccff8",
       "name": "Is Submitted"
     }
   ],
@@ -722,11 +719,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "c4d7e0b3-8f5a-4c2b-9d0e-3a7b6c9d1e85",
+  "versionId": "73abdf06-9227-4601-b743-c28e12ac3aa7",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "n32DirectSubmit5FgHi",
+  "id": "l4IlVPn40LhwBnAW",
   "tags": []
 }

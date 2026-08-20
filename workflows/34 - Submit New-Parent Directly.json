@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2400,
-        -32
+        -3792,
+        -144
       ],
-      "id": "webhook-node-34",
+      "id": "77d97cea-cb1b-4902-b9b0-f5889dbc430b",
       "name": "Webhook",
       "webhookId": "f2a9d4e7-9557-4c43-9e0f-654ff988a10a"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2192,
-        -32
+        -3584,
+        -144
       ],
-      "id": "384f0216-3594-4e79-9dda-27f756608563",
+      "id": "e2c1d3d4-7cec-4c32-85af-314ae56f5b0b",
       "name": "Validate Input"
     },
     {
@@ -59,15 +59,14 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1984,
-        -32
+        -3376,
+        -144
       ],
-      "id": "f9535575-f8b4-49f3-8d79-e3c7ece4faea",
+      "id": "c5e4295c-a297-4fdb-b09c-44660d37e805",
       "name": "Is Valid"
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/approval_logs?request_id=eq.{{ $('Validate Input').first().json.request_id }}&order=id.desc&limit=1",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
@@ -76,10 +75,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1776,
-        -32
+        -3792,
+        -384
       ],
-      "id": "5a5d2dff-0ccd-4d03-a883-e2f6c2b5abe3",
+      "id": "c39fb3aa-21fc-4f2c-8060-4f4176e1a673",
       "name": "Fetch Approval Log",
       "alwaysOutputData": true,
       "credentials": {
@@ -91,7 +90,6 @@
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,seller_id,marketplace_id,is_new_parent,new_parent_sku,status",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
@@ -100,10 +98,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1568,
-        -32
+        -3584,
+        -384
       ],
-      "id": "cb06aa28-131b-468a-9193-e8abac92f4a0",
+      "id": "c4b7d987-b271-4a74-9afb-d4e5f18de20a",
       "name": "Fetch Merge Request",
       "alwaysOutputData": true,
       "credentials": {
@@ -120,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1360,
-        -32
+        -3376,
+        -384
       ],
-      "id": "18b000f7-489f-4413-a9c8-7a05052ad499",
+      "id": "d4910a53-54e8-4518-a2c3-cb8f540b055f",
       "name": "Check Ready To Submit"
     },
     {
@@ -154,10 +152,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1152,
-        -32
+        -3168,
+        -384
       ],
-      "id": "2b7e69f2-5875-468d-8631-e2ba9873dd8f",
+      "id": "d41e5e1c-7aeb-4c83-a957-a09a0b85f333",
       "name": "Is Ready"
     },
     {
@@ -188,10 +186,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -944,
-        -32
+        -2912,
+        -208
       ],
-      "id": "d381d654-5197-46c1-ab3e-cb61fc9a90eb",
+      "id": "92a60d55-0880-4457-87de-b29da6d39a62",
       "name": "Is Create Action"
     },
     {
@@ -200,7 +198,6 @@
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Check Ready To Submit').first().json.request_id }}&status=not.in.(submitting,verified,failed,partially_failed)",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
-        "options": {},
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -216,15 +213,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\"status\": \"submitting\"}"
+        "jsonBody": "={\"status\": \"submitting\"}",
+        "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -736,
-        -152
+        -2704,
+        -320
       ],
-      "id": "c2b30059-031c-42e4-a49f-0680648f5304",
+      "id": "b9e4bdb7-31c9-4056-b2a5-4d8f00fe0a0f",
       "name": "Claim Submission",
       "alwaysOutputData": true,
       "credentials": {
@@ -241,10 +239,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -528,
-        -152
+        -2496,
+        -320
       ],
-      "id": "36989139-b222-4398-bfa5-7fef8b5cf9e8",
+      "id": "32de56fa-3189-4f8a-86d1-9c05eb4de48c",
       "name": "Check Claim Succeeded"
     },
     {
@@ -275,10 +273,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -320,
-        -152
+        -2288,
+        -320
       ],
-      "id": "8ca0012b-7857-48c6-93f1-7521798e2df5",
+      "id": "5e042b10-ffcb-4113-a10a-d54dd3fafd32",
       "name": "Is Claimed"
     },
     {
@@ -288,10 +286,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -736,
-        88
+        -2704,
+        -80
       ],
-      "id": "cefc6573-f69b-42c4-a23d-3b01adcf7611",
+      "id": "02d4c017-52f2-45ad-9f2f-9402c80b39c0",
       "name": "Prepare Verify Context"
     },
     {
@@ -301,15 +299,14 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -112,
-        -32
+        -2896,
+        -576
       ],
-      "id": "e473d735-2f08-4e56-bf84-9f56433f8b0a",
+      "id": "7d2d13bf-1e03-48ea-9cd9-e05c95f92810",
       "name": "Resolve Submission Context"
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?seller_id=eq.{{ $('Resolve Submission Context').first().json.seller_id }}&select=selling_partner_id",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
@@ -318,10 +315,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        96,
-        -32
+        -2688,
+        -576
       ],
-      "id": "b163a4da-ed4b-4871-950b-9b068d53aa6a",
+      "id": "588de635-f6cc-49d1-9db8-d0b6a9744fe0",
       "name": "Get Seller Selling Partner ID",
       "alwaysOutputData": true,
       "credentials": {
@@ -351,10 +348,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        304,
-        -32
+        -2480,
+        -576
       ],
-      "id": "8a77f478-0c42-4a42-905e-0921397a77eb",
+      "id": "d511f145-40de-4f43-b28e-764134bd56d4",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -394,10 +391,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        512,
-        -32
+        -2272,
+        -576
       ],
-      "id": "5f91d999-dd00-4d4d-8067-f25a9e2acded",
+      "id": "a003a5ef-8312-42c5-9b7d-55b799e618f5",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -413,10 +410,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        720,
-        -32
+        -2064,
+        -576
       ],
-      "id": "ac465fb3-1ba0-4b2b-9e8e-ba9bebbafea1",
+      "id": "b7ec2d65-1f40-42a1-8bb8-52a38b7a0a3c",
       "name": "Create Or Verify Parent Then Attach Children"
     },
     {
@@ -447,10 +444,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        928,
-        -32
+        -1856,
+        -576
       ],
-      "id": "3e10de3c-f3c2-4084-a69f-2452221a1ca6",
+      "id": "34cc0079-f43c-4640-8ad9-1bc9d30d4c3e",
       "name": "Is Submitted"
     },
     {
@@ -460,10 +457,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1136,
-        -32
+        -1648,
+        -576
       ],
-      "id": "d1b65b1b-0591-436f-ba5b-d979715399d2",
+      "id": "e9edd37a-5f72-4984-bf71-544ac438ff05",
       "name": "Summarize Results"
     },
     {
@@ -472,7 +469,6 @@
         "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $json.request_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
-        "options": {},
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -488,15 +484,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"status\": {{ JSON.stringify($json.final_status) }},\n  \"direct_submission_report\": {{ JSON.stringify($json.results) }}\n}"
+        "jsonBody": "={\n  \"status\": {{ JSON.stringify($json.final_status) }},\n  \"direct_submission_report\": {{ JSON.stringify($json.results) }}\n}",
+        "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1344,
-        -32
+        -1440,
+        -576
       ],
-      "id": "0adb847c-d329-405a-92c9-9072495c968d",
+      "id": "d699596a-d321-405b-a557-3c39e6357e3d",
       "name": "Update Merge Request Report",
       "alwaysOutputData": true,
       "credentials": {
@@ -514,10 +511,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1552,
-        -32
+        -1232,
+        -576
       ],
-      "id": "b677b2a7-053d-4b8c-a5bd-7814e9652776",
+      "id": "e39dda58-efb1-4f71-999f-ce9c192a0d4d",
       "name": "Restore After Report Update"
     },
     {
@@ -527,10 +524,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1760,
-        -32
+        -1024,
+        -576
       ],
-      "id": "dd24c383-14b0-41d9-950d-8896122e27ae",
+      "id": "ced5ebfa-e46e-4baf-a300-540d985047ab",
       "name": "Respond With Result"
     },
     {
@@ -540,10 +537,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -944,
-        320
+        -2912,
+        160
       ],
-      "id": "981a7b26-cd5e-446d-add3-9fbc141800aa",
+      "id": "f6acde77-34b9-49d0-b165-a543b6e3a146",
       "name": "Respond Rejected"
     }
   ],
@@ -822,11 +819,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f7a0b3d6-9e84-4c2f-8a5b-3d9e7f4a0f68",
+  "versionId": "1ce82153-80c5-4873-8be6-bab7175eb7dd",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "n34NewParentDirect7HiJk",
+  "id": "eiDv7hLzBxP4GpRR",
   "tags": []
 }

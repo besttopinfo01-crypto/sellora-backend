@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -624,
-        96
+        -1744,
+        432
       ],
-      "id": "02a191db-0d26-486f-97b3-6e4e04c54efb",
+      "id": "784f3529-48d8-4448-b801-ffd6451f6b2d",
       "name": "Webhook",
       "webhookId": "d89b858f-f860-4882-b1a3-bed0dad3e4e2"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        96
+        -1536,
+        432
       ],
-      "id": "15e7b4b6-131b-4d36-990e-8fb41c801957",
+      "id": "e85ed2c2-51c6-420e-8dbb-4c9add8a08bd",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        96
+        -1328,
+        432
       ],
-      "id": "9bff0d0e-1b49-4e24-bf9e-7221db7eae5c",
+      "id": "941ec930-79a8-4d2e-960d-c34f06247ceb",
       "name": "Is Valid"
     },
     {
@@ -75,18 +75,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -1120,
+        336
       ],
-      "id": "c5e6ca43-32b3-49e0-b4c0-77c95594b6b7",
+      "id": "4b21618c-9817-4f76-bbf7-8c2c95e2645c",
       "name": "Fetch Merge Request",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -95,10 +95,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        0
+        -912,
+        336
       ],
-      "id": "6ac0f5e1-fecd-4441-9a62-309bf7cf0fb0",
+      "id": "f89d5251-f651-4d08-96e4-e9fe9cd6d6b2",
       "name": "Check Merge Request Found"
     },
     {
@@ -129,10 +129,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        416,
-        0
+        -704,
+        336
       ],
-      "id": "d2b10f19-97c5-441e-b4f3-1f4bc906e542",
+      "id": "214e3a37-4a5b-4b78-9c1d-b18979de8dc3",
       "name": "Is Found"
     },
     {
@@ -162,10 +162,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
-        0
+        -496,
+        336
       ],
-      "id": "c5980a7b-8c81-44e4-a6cc-58aa88e86737",
+      "id": "1c2ca640-5f1d-42fc-8b98-974a67505335",
       "name": "Log Approval",
       "credentials": {
         "httpCustomAuth": {
@@ -181,10 +181,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        832,
-        0
+        -288,
+        336
       ],
-      "id": "ea335c69-0ced-49aa-9cf9-ade87227df63",
+      "id": "6a38d32a-b077-47f2-8f49-5b7a12ce47c4",
       "name": "Finalize Response"
     },
     {
@@ -215,10 +215,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1040,
-        0
+        -80,
+        336
       ],
-      "id": "6db8309f-c8f6-44ca-a217-6b16993b1bbd",
+      "id": "031a8fd9-a8b5-4208-bafc-6aae563b51ef",
       "name": "Is Logged"
     },
     {
@@ -228,10 +228,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1248,
-        0
+        128,
+        336
       ],
-      "id": "a2fc330a-8e79-401f-88ad-4fd2c53bc823",
+      "id": "8f3f064e-97b9-40a4-9ddb-9b46029cba0e",
       "name": "Respond With Confirmation"
     },
     {
@@ -241,10 +241,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        208,
-        224
+        -912,
+        560
       ],
-      "id": "d4c8b6a2-9e1f-4a73-8c5d-2b7f9e3a6d18",
+      "id": "516b965d-16d3-4661-a29d-4b61f92394c4",
       "name": "Respond Rejected"
     }
   ],
@@ -377,11 +377,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "e1f4a7c2-3b9d-4e6a-8c1f-5d2b9a7e4c60",
+  "versionId": "40bca3f4-9d6e-49c0-aeef-44db821becce",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "n28LogApprova1XyZw",
+  "id": "6QGdaqwI1fyePtJH",
   "tags": []
 }

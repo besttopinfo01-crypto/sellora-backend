@@ -11,24 +11,24 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -160,
-        -544
+        -7520,
+        1808
       ],
-      "id": "29fe3484-b528-473a-82d0-b2be35b24773",
+      "id": "9c539d9c-ded1-4840-98ad-bbfbeff6ab9e",
       "name": "Webhook",
       "webhookId": "e8f2a6b4-5c17-4d93-a0e2-7b9d4c1f8e56"
     },
     {
       "parameters": {
-        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\n\nif (!body.parent_asin || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'parent_asin and marketplace_id are both required.'\n  }}];\n}\n\nconst asin = String(body.parent_asin).trim().toUpperCase();\n\nif (!/^[A-Z0-9]{10}$/.test(asin)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_ASIN_FORMAT',\n    message: 'parent_asin must be a 10-character alphanumeric Amazon ASIN (e.g. B0CVFVHY93).',\n    parent_asin: body.parent_asin\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  parent_asin: asin,\n  marketplace_id: body.marketplace_id\n}}];"
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\n\nif (!body.parent_asin || !body.marketplace_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_FIELDS',\n    message: 'parent_asin and marketplace_id are both required.'\n  }}];\n}\n\nconst asin = String(body.parent_asin).trim().toUpperCase();\n\nif (!/^[A-Z0-9]{10}$/.test(asin)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_ASIN_FORMAT',\n    message: 'parent_asin must be a 10-character alphanumeric Amazon ASIN (e.g. B0CVFVHY93).',\n    parent_asin: body.parent_asin\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  parent_asin: asin,\n  marketplace_id: body.marketplace_id,\n  // Optional. Set by callers who only need a plain \"does this ASIN\n  // belong to any family, yes or no\" answer (child-entry.jsx's\n  // per-listing family check) and don't care about resolving a real\n  // attribute name for it - unlike new-merge.jsx's parent lookup, which\n  // genuinely does need that if this ASIN turns out to be a self-declared\n  // new parent. Defaults to false/undefined, so every existing caller\n  // that doesn't send it keeps today's exact behavior unchanged.\n  skip_theme_resolution: !!body.skip_theme_resolution\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        -544
+        -7312,
+        1808
       ],
-      "id": "76362726-cf64-4d39-b265-95bdbe74bf21",
+      "id": "7aac5efc-9a2c-48ae-af41-7a06a3b30263",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        256,
-        -544
+        -7104,
+        1808
       ],
-      "id": "47a31493-b2ee-4067-92aa-72c48c88a1c3",
+      "id": "785ecfe5-6ff6-4c82-908e-459e0e33066a",
       "name": "Is Valid"
     },
     {
@@ -85,10 +85,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        464,
-        -640
+        -6896,
+        1712
       ],
-      "id": "130028cc-a129-4b53-bbcb-3ae68c4e14ea",
+      "id": "2feade21-2aa8-4cd6-92fe-6a9c30f78727",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -122,10 +122,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        672,
-        -640
+        -6688,
+        1712
       ],
-      "id": "94b6bcf9-75e0-4bf8-884f-df818da4c3d5",
+      "id": "bd073391-6840-494f-97fd-0606f20d4cb1",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -151,10 +151,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        880,
-        -640
+        -6480,
+        1712
       ],
-      "id": "9b13ae6a-52a3-4e1f-9981-c1b5ff64f301",
+      "id": "ec7f017b-220d-4d14-a359-9cf5b6f6dd9c",
       "name": "Fetch Catalog Item",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -166,10 +166,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1088,
-        -640
+        -6272,
+        1712
       ],
-      "id": "cc56453a-c5e6-45ee-9bc0-8a6d761cd2ac",
+      "id": "bdee72ba-7502-44a6-8161-d8eba8104ff6",
       "name": "Parse Parent Data"
     },
     {
@@ -179,10 +179,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1296,
-        -640
+        -6064,
+        1712
       ],
-      "id": "55948e3d-6f91-4da6-85f6-bd5c1164df6e",
+      "id": "0cfc107b-2b81-4b71-ab59-67f9b9ac5f7b",
       "name": "Respond With Parent Data"
     },
     {
@@ -192,10 +192,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        464,
-        -448
+        -6896,
+        1904
       ],
-      "id": "9a95d25f-9f97-42dc-984c-da23035de389",
+      "id": "285fe729-2223-4c0f-8c48-c26efff19d47",
       "name": "Respond Rejected"
     },
     {
@@ -208,10 +208,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        320,
-        -720
+        -7040,
+        1632
       ],
-      "id": "3ac3a1a0-e14b-4cae-8b8c-4e8923f4066b",
+      "id": "fbea5abb-0c6f-4f14-9610-a0d64d557f49",
       "name": "Get Seller Status",
       "alwaysOutputData": true,
       "credentials": {
@@ -229,10 +229,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        992,
-        -128
+        -6368,
+        2224
       ],
-      "id": "219ab7a2-d41a-46e1-a323-f752978e163d",
+      "id": "c75a70ec-d8cb-4a7b-b007-f808a0e9b777",
       "name": "Seller Gate"
     },
     {
@@ -263,10 +263,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1344,
-        16
+        -6016,
+        2368
       ],
-      "id": "c1bba9d5-1b45-4ad6-8895-6bc620e94822",
+      "id": "2a5bfd20-83ec-49bf-9863-a55aa2a28700",
       "name": "Is Eligible"
     },
     {
@@ -283,10 +283,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1296,
-        -176
+        -6064,
+        2176
       ],
-      "id": "de2cc6b2-a5ad-4c09-bfc2-2261212f3a51",
+      "id": "8683668c-0182-47d2-8bad-0bc35c703437",
       "name": "Rate Limit Gate",
       "credentials": {
         "httpCustomAuth": {
@@ -322,10 +322,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1088,
-        80
+        -6272,
+        2432
       ],
-      "id": "6afdd8e9-c1d9-4385-8d89-428158a076b1",
+      "id": "eb17ff22-bea6-4502-81c4-83553213ae1b",
       "name": "Check Rate Limit"
     },
     {
@@ -335,10 +335,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1552,
-        128
+        -5808,
+        2480
       ],
-      "id": "fda49f9b-a76f-459c-825b-c354c9b8787c",
+      "id": "5de776fb-e469-4a51-8b65-a94e67c150a3",
       "name": "Respond Seller Ineligible"
     },
     {
@@ -348,10 +348,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1424,
-        304
+        -5936,
+        2656
       ],
-      "id": "0b7b75e3-4d69-4545-be55-60617086f317",
+      "id": "de736cbf-a70a-4ea7-86a5-efddcba8243b",
       "name": "Respond Rate Limited"
     },
     {
@@ -361,10 +361,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1248,
-        272
+        -6112,
+        2624
       ],
-      "id": "63a09735-361d-4e20-af29-7f1b150e812a",
+      "id": "ed55de72-e1f8-4f0e-8a42-5ae72eb0fd67",
       "name": "Format Rate Limit Response"
     },
     {
@@ -395,10 +395,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1088,
-        -800
+        -6272,
+        1552
       ],
-      "id": "b3e6a9c4-5d81-4f2a-9c7e-3b8d1a6f4e92",
+      "id": "54ba4131-3b57-4047-adba-c8a82beeb94d",
       "name": "Needs Fallback Check"
     },
     {
@@ -411,10 +411,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1296,
-        -880
+        -6064,
+        1472
       ],
-      "id": "c7f1d4a8-6e93-4b2f-8d5c-1a9e6b3f7d84",
+      "id": "596d4a52-fc9f-43b7-baaa-4c045f31c874",
       "name": "Get Seller Selling Partner ID (Fallback)",
       "alwaysOutputData": true,
       "credentials": {
@@ -462,25 +462,25 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1504,
-        -880
+        -5856,
+        1472
       ],
-      "id": "d9a3f6c1-7b84-4e5a-9c2d-6f1b8a3e5c97",
+      "id": "7e769427-71c9-4d53-a1f4-fdcc8682accf",
       "name": "Search Listings By ASIN",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const upstream = $input.first().json;\nconst originalRejection = $('Parse Parent Data').first().json;\nconst req = $('Validate Input').first().json;\n\nconst items = Array.isArray(upstream.items) ? upstream.items : [];\nconst match = items[0];\n\nif (!match || !match.attributes) {\n  // No listing found for this seller/ASIN via the Listings API either -\n  // the original rejection stands, unchanged.\n  return [{ json: originalRejection }];\n}\n\nconst parentageEntry = match.attributes.parentage_level && match.attributes.parentage_level[0];\nconst parentageValue = parentageEntry && parentageEntry.value;\n\nif (parentageValue !== 'parent') {\n  // Genuinely not marked as a parent on the seller's own listing either\n  // - the original rejection stands, unchanged.\n  return [{ json: originalRejection }];\n}\n\nconst themeEntry = match.attributes.variation_theme && match.attributes.variation_theme[0];\nconst summary = (match.summaries && match.summaries[0]) || {};\nconst brandEntry = match.attributes.brand && match.attributes.brand[0];\n\n// Confirmed a real parent, but theme_attributes can't come from a\n// populated catalog relationship (there isn't one yet) - it has to come\n// from the product type's own schema instead. Passing what's needed for\n// that lookup forward rather than guessing here.\nreturn [{ json: {\n  decision: 'NEEDS_SCHEMA_LOOKUP',\n  parent_asin: req.parent_asin,\n  marketplace_id: req.marketplace_id,\n  brand: brandEntry ? brandEntry.value : null,\n  item_name: summary.itemName || null,\n  product_type: summary.productType || null,\n  variation_theme: themeEntry ? themeEntry.name : null\n}}];"
+        "jsCode": "const upstream = $input.first().json;\nconst originalRejection = $('Parse Parent Data').first().json;\nconst req = $('Validate Input').first().json;\n\nconst items = Array.isArray(upstream.items) ? upstream.items : [];\nconst match = items[0];\n\nif (!match || !match.attributes) {\n  // No listing found for this seller/ASIN via the Listings API either -\n  // the original rejection stands, unchanged.\n  return [{ json: originalRejection }];\n}\n\nconst parentageEntry = match.attributes.parentage_level && match.attributes.parentage_level[0];\nconst parentageValue = parentageEntry && parentageEntry.value;\n\nif (parentageValue !== 'parent') {\n  // Genuinely not marked as a parent on the seller's own listing either\n  // - the original rejection stands, unchanged.\n  return [{ json: originalRejection }];\n}\n\n// It IS self-declared as a parent - a real conflict for a caller that\n// only wants to know whether this ASIN is free to use as a child (see\n// skip_theme_resolution's own comment in Validate Input). Reported\n// directly here rather than continuing into the schema/theme-resolution\n// chain below, which exists to resolve a real attribute name for a NEW\n// parent - not needed just to report the conflict, and by far the\n// slower and more failure-prone half of this fallback path (a second\n// live Amazon schema fetch, on top of the listings search already done\n// above). Existing callers that don't send skip_theme_resolution are\n// unaffected - this only fires when it's explicitly set.\nif (req.skip_theme_resolution) {\n  const summaryForConflict = (match.summaries && match.summaries[0]) || {};\n  return [{ json: {\n    decision: 'NOT_A_PARENT',\n    reason: 'SELF_DECLARED_PARENT_CONFLICT',\n    parent_asin: req.parent_asin,\n    marketplace_id: req.marketplace_id,\n    message: 'This ASIN already has parentage_level=parent set on its own listing, even though it has no children attached yet. Amazon does not allow the same listing to be both a parent and a child, so it can\\'t be used as a child here.',\n    item_info: {\n      brand: (match.attributes.brand && match.attributes.brand[0] && match.attributes.brand[0].value) || null,\n      item_name: summaryForConflict.itemName || null,\n      product_type: summaryForConflict.productType || null\n    }\n  }}];\n}\n\nconst themeEntry = match.attributes.variation_theme && match.attributes.variation_theme[0];\nconst summary = (match.summaries && match.summaries[0]) || {};\nconst brandEntry = match.attributes.brand && match.attributes.brand[0];\n\n// Confirmed a real parent, but theme_attributes can't come from a\n// populated catalog relationship (there isn't one yet) - it has to come\n// from the product type's own schema instead. Passing what's needed for\n// that lookup forward rather than guessing here.\nreturn [{ json: {\n  decision: 'NEEDS_SCHEMA_LOOKUP',\n  parent_asin: req.parent_asin,\n  marketplace_id: req.marketplace_id,\n  brand: brandEntry ? brandEntry.value : null,\n  item_name: summary.itemName || null,\n  product_type: summary.productType || null,\n  variation_theme: themeEntry ? themeEntry.name : null\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1712,
-        -880
+        -5648,
+        1472
       ],
-      "id": "e5b8c2f4-9a71-4d6e-8c3b-7f2a5e9d1c68",
+      "id": "8067b48e-b0a7-498b-a7d6-e8bebcc87464",
       "name": "Parse Fallback Check"
     },
     {
@@ -511,10 +511,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1920,
-        -880
+        -5440,
+        1472
       ],
-      "id": "a7d1e4c8-6f92-4b3e-9c5a-2d8f6b1e4c93",
+      "id": "6649074b-fe77-49cb-89a6-5e9fef80027c",
       "name": "Is Schema Lookup Needed"
     },
     {
@@ -534,10 +534,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2128,
-        -960
+        -5232,
+        1392
       ],
-      "id": "b3e5f9a2-7c84-4d6b-8f1a-3e9c6d2b8f47",
+      "id": "8ea3e768-34d2-44ed-859b-8818847a946f",
       "name": "Get Product Type Definition (Fallback)",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -550,25 +550,25 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2336,
-        -960
+        -5024,
+        1392
       ],
-      "id": "c9f2a6d4-8b73-4e5c-9d1f-4a8b6c3e9d58",
+      "id": "710f867e-933b-4e80-8d69-e89c01bebd7c",
       "name": "Fetch Schema (Fallback)",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Not verified against a real schema response yet - this is a\n// defensive, pattern-based read of a standard JSON Schema allOf/if/then\n// conditional structure, not a copy of a confirmed example. If it\n// doesn't find a confident match, it deliberately falls back to an\n// empty array rather than guessing - same safe default as before,\n// just now only used when genuinely uncertain instead of always.\nfunction findRealAttribute(schema, dimensionName) {\n  const allOfEntries = Array.isArray(schema.allOf) ? schema.allOf : [];\n  const dimLower = dimensionName.toLowerCase();\n\n  for (const entry of allOfEntries) {\n    const ifBlock = entry.if;\n    const thenBlock = entry.then;\n    if (!ifBlock || !thenBlock) continue;\n\n    const ifStr = JSON.stringify(ifBlock).toLowerCase();\n    if (ifStr.indexOf(dimLower) === -1) continue;\n\n    const required = Array.isArray(thenBlock.required)\n      ? thenBlock.required\n      : (thenBlock.properties ? Object.keys(thenBlock.properties) : []);\n    if (!required.length) continue;\n\n    const plausible = required.find(function(name) {\n      return name.toLowerCase().indexOf(dimLower) !== -1;\n    });\n    // No single-required-attribute fallback here - removed for the same\n    // reason wf15's copy of this same heuristic removed it: on real\n    // SHIRT data it confidently returned collar_style for a COLOR theme,\n    // a confirmed false positive (see wf15's own comment on this exact\n    // fix). This file had its own separate, not-yet-fixed copy of the\n    // original heuristic; now it matches wf15's.\n    if (plausible) return plausible;\n  }\n  return null;\n}\n\nconst schema = $input.first().json;\nconst context = $('Parse Fallback Check').first().json;\nconst themeName = context.variation_theme || '';\nconst dimensions = themeName.split('/').filter(Boolean);\n\nconst themeAttributes = dimensions.map(function(d) { return findRealAttribute(schema, d); });\nconst allFound = dimensions.length > 0 && themeAttributes.every(function(a) { return !!a; });\n\nreturn [{ json: {\n  decision: 'PARENT_CONFIRMED',\n  parent_asin: context.parent_asin,\n  marketplace_id: context.marketplace_id,\n  parent_preview: {\n    brand: context.brand,\n    item_name: context.item_name,\n    product_type: context.product_type,\n    category: null,\n    variation_theme: themeName,\n    theme_attributes: allFound ? themeAttributes : [],\n    child_count: 0,\n    child_asins: []\n  },\n  note: allFound\n    ? 'Found via this listing\\'s own self-declared parentage_level, not a populated catalog variation family - most likely because no child has been attached yet. Attribute name(s) resolved from the live product type schema.'\n    : 'Found via this listing\\'s own self-declared parentage_level, but could not confidently resolve the real attribute name(s) from the schema - theme_attributes is empty, so the app will fall back to its own guess for now. Worth a manual check.'\n}}];"
+        "jsCode": "// Not verified against a real schema response yet - this is a\n// defensive, pattern-based read of a standard JSON Schema allOf/if/then\n// conditional structure, not a copy of a confirmed example. If it\n// doesn't find a confident match, it deliberately falls back to an\n// empty array rather than guessing - same safe default as before,\n// just now only used when genuinely uncertain instead of always.\nfunction findRealAttribute(schema, dimensionName) {\n  const allOfEntries = Array.isArray(schema.allOf) ? schema.allOf : [];\n  const dimLower = dimensionName.toLowerCase();\n\n  for (const entry of allOfEntries) {\n    const ifBlock = entry.if;\n    const thenBlock = entry.then;\n    if (!ifBlock || !thenBlock) continue;\n\n    const ifStr = JSON.stringify(ifBlock).toLowerCase();\n    if (ifStr.indexOf(dimLower) === -1) continue;\n\n    const required = Array.isArray(thenBlock.required)\n      ? thenBlock.required\n      : (thenBlock.properties ? Object.keys(thenBlock.properties) : []);\n    if (!required.length) continue;\n\n    const plausible = required.find(function(name) {\n      return name.toLowerCase().indexOf(dimLower) !== -1;\n    });\n    if (plausible) return plausible;\n    if (required.length === 1) return required[0];\n  }\n  return null;\n}\n\nconst schema = $input.first().json;\nconst context = $('Parse Fallback Check').first().json;\nconst themeName = context.variation_theme || '';\nconst dimensions = themeName.split('/').filter(Boolean);\n\nconst themeAttributes = dimensions.map(function(d) { return findRealAttribute(schema, d); });\nconst allFound = dimensions.length > 0 && themeAttributes.every(function(a) { return !!a; });\n\nreturn [{ json: {\n  decision: 'PARENT_CONFIRMED',\n  parent_asin: context.parent_asin,\n  marketplace_id: context.marketplace_id,\n  parent_preview: {\n    brand: context.brand,\n    item_name: context.item_name,\n    product_type: context.product_type,\n    category: null,\n    variation_theme: themeName,\n    theme_attributes: allFound ? themeAttributes : [],\n    child_count: 0,\n    child_asins: []\n  },\n  note: allFound\n    ? 'Found via this listing\\'s own self-declared parentage_level, not a populated catalog variation family - most likely because no child has been attached yet. Attribute name(s) resolved from the live product type schema.'\n    : 'Found via this listing\\'s own self-declared parentage_level, but could not confidently resolve the real attribute name(s) from the schema - theme_attributes is empty, so the app will fall back to its own guess for now. Worth a manual check.'\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2544,
-        -960
+        -4816,
+        1392
       ],
-      "id": "d1a4b8e6-9c72-4f3a-8e5d-1b7c9a3f6e82",
+      "id": "30b45e83-874f-46fe-b872-89c71973faf9",
       "name": "Determine Real Attribute Names"
     }
   ],
@@ -847,7 +847,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "d4e01463-8b50-46d3-9f18-0cb89572bc96",
+  "versionId": "d8d4f08d-ec2c-480f-96af-a4eda2228fff",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

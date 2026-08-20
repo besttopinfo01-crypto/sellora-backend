@@ -10,8 +10,11 @@
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [-624, 96],
-      "id": "578643b4-4c5d-4011-9781-93bc523f4e00",
+      "position": [
+        -624,
+        96
+      ],
+      "id": "776e1e8c-6764-4fd3-858b-13e8fb57149c",
       "name": "Webhook",
       "webhookId": "68cca135-8358-41fe-9980-ca1730ba456b"
     },
@@ -21,8 +24,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-416, 96],
-      "id": "703ea9f0-2f3f-46a7-9cc4-9d87704bd57c",
+      "position": [
+        -416,
+        96
+      ],
+      "id": "53e8062f-cbf1-4b27-963e-de8f91ba4756",
       "name": "Validate Input"
     },
     {
@@ -52,8 +58,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [-208, 96],
-      "id": "4215730f-1880-4c85-b5a6-c35a54b1a448",
+      "position": [
+        -208,
+        96
+      ],
+      "id": "60f58143-9fd1-4c49-9cf4-d7bc19157ba4",
       "name": "Is Valid"
     },
     {
@@ -65,23 +74,35 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            { "name": "grant_type", "value": "client_credentials" },
-            { "name": "scope", "value": "sellingpartnerapi::notifications" }
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "scope",
+              "value": "sellingpartnerapi::notifications"
+            }
           ]
         },
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [0, 0],
-      "id": "f93412ff-5880-4724-b401-c61836a80bb9",
+      "position": [
+        0,
+        0
+      ],
+      "id": "ac18aa56-41d4-4b36-ae1c-ff5fbf4f0f3a",
       "name": "Get Grantless Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -97,8 +118,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "x-amz-access-token", "value": "={{ $('Get Grantless Access Token').first().json.access_token }}" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Get Grantless Access Token').first().json.access_token }}"
+            }
           ]
         },
         "sendBody": true,
@@ -108,8 +135,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [208, 0],
-      "id": "c5fd6f76-8acc-43de-a121-c2275537b2af",
+      "position": [
+        208,
+        0
+      ],
+      "id": "82f49753-a2e9-428b-b71b-8a056a8f6a9e",
       "name": "Create Destination",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -120,8 +150,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [416, 0],
-      "id": "e1df6603-e93e-404c-9430-292a70e8b27f",
+      "position": [
+        416,
+        0
+      ],
+      "id": "421361a3-51f7-4383-817e-d81a4535fbc3",
       "name": "Parse Destination"
     },
     {
@@ -151,8 +184,11 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [624, 0],
-      "id": "9201ea7d-0f64-4a7e-8fd5-7d8e911eade3",
+      "position": [
+        624,
+        0
+      ],
+      "id": "bb95d065-09d3-4c32-9963-3a85ec13d959",
       "name": "Is Destination Ready"
     },
     {
@@ -162,8 +198,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "x-amz-access-token", "value": "={{ $('Get Grantless Access Token').first().json.access_token }}" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $('Get Grantless Access Token').first().json.access_token }}"
+            }
           ]
         },
         "sendBody": true,
@@ -173,8 +215,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [832, 0],
-      "id": "3cfc2a7b-a6fb-408e-a8f6-e41031860af6",
+      "position": [
+        832,
+        0
+      ],
+      "id": "d04085af-1823-49a3-b213-c40336ff2281",
       "name": "Create Subscription",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -185,8 +230,11 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1040, 0],
-      "id": "4004c479-1e7c-4f4c-aa5f-7cc01bf01655",
+      "position": [
+        1040,
+        0
+      ],
+      "id": "f8e063d3-9557-4620-9c25-3ef190adf70c",
       "name": "Parse Subscription"
     },
     {
@@ -195,8 +243,11 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [1248, 0],
-      "id": "7ad28296-12e8-4a4f-95b6-fd4e34176dd5",
+      "position": [
+        1248,
+        0
+      ],
+      "id": "d69b90f8-0fd6-4ff1-bfc8-ccc5435c87d1",
       "name": "Respond With Result"
     },
     {
@@ -205,44 +256,141 @@
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [208, 224],
-      "id": "b8e3f1a7-4c92-4d6e-8a5f-1c9d2b7e6f83",
+      "position": [
+        208,
+        224
+      ],
+      "id": "516be535-b6ae-497d-9222-63a949299a16",
       "name": "Respond Rejected"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": { "main": [[{ "node": "Validate Input", "type": "main", "index": 0 }]] },
-    "Validate Input": { "main": [[{ "node": "Is Valid", "type": "main", "index": 0 }]] },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Is Valid": {
       "main": [
-        [{ "node": "Get Grantless Access Token", "type": "main", "index": 0 }],
-        [{ "node": "Respond Rejected", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Grantless Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Get Grantless Access Token": { "main": [[{ "node": "Create Destination", "type": "main", "index": 0 }]] },
-    "Create Destination": { "main": [[{ "node": "Parse Destination", "type": "main", "index": 0 }]] },
-    "Parse Destination": { "main": [[{ "node": "Is Destination Ready", "type": "main", "index": 0 }]] },
+    "Get Grantless Access Token": {
+      "main": [
+        [
+          {
+            "node": "Create Destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Destination": {
+      "main": [
+        [
+          {
+            "node": "Parse Destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Destination": {
+      "main": [
+        [
+          {
+            "node": "Is Destination Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Is Destination Ready": {
       "main": [
-        [{ "node": "Create Subscription", "type": "main", "index": 0 }],
-        [{ "node": "Respond Rejected", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Create Subscription": { "main": [[{ "node": "Parse Subscription", "type": "main", "index": 0 }]] },
-    "Parse Subscription": { "main": [[{ "node": "Respond With Result", "type": "main", "index": 0 }]] }
+    "Create Subscription": {
+      "main": [
+        [
+          {
+            "node": "Parse Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Subscription": {
+      "main": [
+        [
+          {
+            "node": "Respond With Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f2a5b8d1-6c94-4e7a-9b3f-8d1c6a2e5f70",
+  "versionId": "fb351860-9c06-4902-b64d-8ca5eda50e99",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "n29SetupNotif2AbCd",
+  "id": "S0dDBnf1iSw3dLYW",
   "tags": []
 }

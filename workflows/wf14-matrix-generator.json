@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -800,
-        -32
+        -112,
+        1008
       ],
-      "id": "3b3ded16-d43f-4430-9afa-53a4aaa7f70f",
+      "id": "c1b8c81b-3f59-4755-a15d-1f9f9ce7d0de",
       "name": "Webhook",
       "webhookId": "2ecec6f3-e3c1-4a51-a313-ee3068297770"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -592,
-        -32
+        96,
+        1008
       ],
-      "id": "64c664a8-2898-4529-8b19-96bfaa31fa31",
+      "id": "18f5c268-320f-4ff3-b0bd-4b97dfb290ae",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -384,
-        -32
+        304,
+        1008
       ],
-      "id": "a56297e2-5da2-4fde-af57-0385373ffe2e",
+      "id": "4b7b9771-f332-459d-8ad6-9df45e9edd61",
       "name": "Is Valid"
     },
     {
@@ -75,10 +75,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        -128
+        512,
+        912
       ],
-      "id": "f6364102-eb7d-436e-8435-bc9ccdfb8a0b",
+      "id": "0514c8cf-9e18-49d1-a6c2-7c11dce22594",
       "name": "Fetch Merge Request",
       "credentials": {
         "httpCustomAuth": {
@@ -97,10 +97,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        32,
-        -128
+        720,
+        912
       ],
-      "id": "969026b3-f2a9-44f4-9017-eb70810ab9f9",
+      "id": "3e42b7b6-64f1-48fd-874d-6002408ec680",
       "name": "Fetch Items",
       "credentials": {
         "httpCustomAuth": {
@@ -111,15 +111,15 @@
     },
     {
       "parameters": {
-        "jsCode": "const merge = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(merge) ? merge[0] : merge;\n\nconst itemsInput = $('Fetch Items').all();\nlet items;\nif (itemsInput.length === 1 && Array.isArray(itemsInput[0].json)) {\n  items = itemsInput[0].json;\n} else {\n  items = itemsInput.map(function(i) { return i.json; });\n}\n\n// New-parent mode never inserts the anchor listing into\n// merge_request_items - it's tracked separately on merge_requests\n// (anchor_sku / anchor_own_values), since it was never \"added\" the way\n// the other children were, the same reasoning wf27's Build Payload\n// already uses. Without this, the anchor is silently absent from this\n// preview: a 2-listing new-parent merge would render only a single\n// cell, which reads exactly like that one value belongs to the parent\n// itself rather than to the one visible child - it doesn't; the parent\n// never carries the dimension attribute at all (confirmed separately in\n// wf27's Build Payload, which explicitly skips it). This just makes the\n// preview show every real family member, anchor included.\nif (mergeRow.is_new_parent && mergeRow.anchor_sku) {\n  const anchorOwnValues = mergeRow.anchor_own_values || {};\n  items = items.concat([{\n    sku: mergeRow.anchor_sku,\n    dimension1_value: anchorOwnValues[mergeRow.dimension1_attribute] || null,\n    dimension2_value: mergeRow.dimension2_attribute ? (anchorOwnValues[mergeRow.dimension2_attribute] || null) : null\n  }]);\n}\n\nconst isMatrix = !!mergeRow.dimension2_theme;\nconst dim1Values = [...new Set(items.map(i => i.dimension1_value).filter(Boolean))].sort();\nconst dim2Values = isMatrix\n  ? [...new Set(items.map(i => i.dimension2_value).filter(Boolean))].sort()\n  : [];\n\nconst cells = [];\nconst duplicates = [];\nconst missing = [];\n\nif (isMatrix) {\n  for (const d1 of dim1Values) {\n    for (const d2 of dim2Values) {\n      const matches = items.filter(i => i.dimension1_value === d1 && i.dimension2_value === d2);\n      if (matches.length === 0) {\n        missing.push({ dimension1_value: d1, dimension2_value: d2 });\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: null, status: 'missing' });\n      } else if (matches.length === 1) {\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: matches[0].sku, status: 'filled' });\n      } else {\n        duplicates.push({ dimension1_value: d1, dimension2_value: d2, skus: matches.map(m => m.sku) });\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: matches[0].sku, status: 'duplicate', all_skus: matches.map(m => m.sku) });\n      }\n    }\n  }\n} else {\n  for (const d1 of dim1Values) {\n    const matches = items.filter(i => i.dimension1_value === d1);\n    if (matches.length === 1) {\n      cells.push({ dimension1_value: d1, sku: matches[0].sku, status: 'filled' });\n    } else if (matches.length > 1) {\n      duplicates.push({ dimension1_value: d1, skus: matches.map(m => m.sku) });\n      cells.push({ dimension1_value: d1, sku: matches[0].sku, status: 'duplicate', all_skus: matches.map(m => m.sku) });\n    }\n  }\n}\n\nreturn [{ json: {\n  request_id: mergeRow.request_id,\n  seller_id: mergeRow.seller_id,\n  dimension1_values: dim1Values,\n  dimension2_values: dim2Values,\n  cells: cells,\n  duplicate_combinations: duplicates,\n  missing_combinations: missing,\n  matrix_confirmed: false\n}}];"
+        "jsCode": "const merge = $('Fetch Merge Request').first().json;\nconst mergeRow = Array.isArray(merge) ? merge[0] : merge;\n\nconst itemsInput = $('Fetch Items').all();\nlet items;\nif (itemsInput.length === 1 && Array.isArray(itemsInput[0].json)) {\n  items = itemsInput[0].json;\n} else {\n  items = itemsInput.map(function(i) { return i.json; });\n}\n\n// New-parent mode never inserts the anchor listing into\n// merge_request_items - it's tracked separately on merge_requests\n// (anchor_sku / anchor_own_values), since it was never \"added\" the way\n// the other children were, the same reasoning wf27's Build Payload\n// already uses. Without this, the anchor is silently absent from this\n// preview: a 2-listing new-parent merge would render only a single\n// cell, which reads exactly like that one value belongs to the parent\n// itself rather than to the one visible child - it doesn't; the parent\n// never carries the dimension attribute at all (confirmed separately in\n// wf27's Build Payload, which explicitly skips it). This just makes the\n// preview show every real family member, anchor included.\nif (mergeRow.is_new_parent && mergeRow.anchor_sku) {\n  const anchorOwnValues = mergeRow.anchor_own_values || {};\n  items = items.concat([{\n    sku: mergeRow.anchor_sku,\n    dimension1_value: anchorOwnValues[mergeRow.dimension1_attribute] || null,\n    dimension2_value: mergeRow.dimension2_attribute ? (anchorOwnValues[mergeRow.dimension2_attribute] || null) : null\n  }]);\n}\n\n// Turns a dimension value into a display-ready string, whatever shape it\n// actually is. A simple attribute's value is already a string - passed\n// through unchanged. A structured attribute's value (e.g. shirt_size's\n// {size_class, size_system, neck_size, neck_size_to}) is a real object -\n// confirmed live to reach this exact point completely unformatted,\n// crashing the preview screen trying to render it directly, and also\n// silently breaking the deduplication/matching logic below (object\n// equality is by reference, not value - two children with the identical\n// structured size would have been treated as different values, not\n// caught as a genuine duplicate). Formatting to a string HERE, before\n// any of that logic runs, fixes both at once with one change rather\n// than two. Built generically from whatever keys the object actually\n// has, not hardcoded to shirt_size's specific fields.\nfunction formatDimensionValue(value) {\n  if (value === null || value === undefined) return null;\n  if (typeof value === 'object') {\n    const formatted = Object.entries(value)\n      .filter(function(entry) { return entry[0] !== 'marketplace_id'; })\n      .map(function(entry) { return entry[0] + ': ' + entry[1]; })\n      .join(', ');\n    return formatted || null;\n  }\n  return String(value);\n}\n\nitems = items.map(function(item) {\n  return Object.assign({}, item, {\n    dimension1_value: formatDimensionValue(item.dimension1_value),\n    dimension2_value: formatDimensionValue(item.dimension2_value)\n  });\n});\n\nconst isMatrix = !!mergeRow.dimension2_theme;\nconst dim1Values = [...new Set(items.map(i => i.dimension1_value).filter(Boolean))].sort();\nconst dim2Values = isMatrix\n  ? [...new Set(items.map(i => i.dimension2_value).filter(Boolean))].sort()\n  : [];\n\nconst cells = [];\nconst duplicates = [];\nconst missing = [];\n\nif (isMatrix) {\n  for (const d1 of dim1Values) {\n    for (const d2 of dim2Values) {\n      const matches = items.filter(i => i.dimension1_value === d1 && i.dimension2_value === d2);\n      if (matches.length === 0) {\n        missing.push({ dimension1_value: d1, dimension2_value: d2 });\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: null, status: 'missing' });\n      } else if (matches.length === 1) {\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: matches[0].sku, status: 'filled' });\n      } else {\n        duplicates.push({ dimension1_value: d1, dimension2_value: d2, skus: matches.map(m => m.sku) });\n        cells.push({ dimension1_value: d1, dimension2_value: d2, sku: matches[0].sku, status: 'duplicate', all_skus: matches.map(m => m.sku) });\n      }\n    }\n  }\n} else {\n  for (const d1 of dim1Values) {\n    const matches = items.filter(i => i.dimension1_value === d1);\n    if (matches.length === 1) {\n      cells.push({ dimension1_value: d1, sku: matches[0].sku, status: 'filled' });\n    } else if (matches.length > 1) {\n      duplicates.push({ dimension1_value: d1, skus: matches.map(m => m.sku) });\n      cells.push({ dimension1_value: d1, sku: matches[0].sku, status: 'duplicate', all_skus: matches.map(m => m.sku) });\n    }\n  }\n}\n\nreturn [{ json: {\n  request_id: mergeRow.request_id,\n  seller_id: mergeRow.seller_id,\n  dimension1_values: dim1Values,\n  dimension2_values: dim2Values,\n  cells: cells,\n  duplicate_combinations: duplicates,\n  missing_combinations: missing,\n  matrix_confirmed: false\n}}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        240,
-        -128
+        928,
+        912
       ],
-      "id": "77911f2f-dd58-405e-b648-cd98e26ded68",
+      "id": "f89c9aec-d229-453f-86d6-768d2156cd36",
       "name": "Generate Matrix"
     },
     {
@@ -129,10 +129,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        656,
-        -128
+        1344,
+        912
       ],
-      "id": "df3e5038-c2b5-4653-8cb1-e9e8ebf69600",
+      "id": "c6d04105-8860-4601-bef7-0075d955d53c",
       "name": "Respond to Webhook"
     },
     {
@@ -142,10 +142,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -144,
-        96
+        544,
+        1136
       ],
-      "id": "abb4adf6-ea44-48c4-879a-4b66fb51b242",
+      "id": "e0ff6d07-23a3-46ab-8f84-3ed211c69b71",
       "name": "Respond to Webhook1"
     },
     {
@@ -175,10 +175,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        448,
-        -128
+        1136,
+        912
       ],
-      "id": "6485ba53-5d97-4327-aa19-336dac642e1a",
+      "id": "bb33dbb2-c1ea-438a-9e31-92b35ad8c6aa",
       "name": "Store Matrix",
       "credentials": {
         "httpCustomAuth": {
@@ -263,11 +263,6 @@
         ]
       ]
     },
-    "Respond to Webhook": {
-      "main": [
-        []
-      ]
-    },
     "Store Matrix": {
       "main": [
         [
@@ -286,7 +281,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "9d9f6d01-e467-4b80-81ae-03a6b98712c5",
+  "versionId": "edf105ed-db6b-4018-bbfc-60ec63825d66",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

@@ -1,0 +1,536 @@
+{
+  "name": "wf10-oauth-callback",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "aa0212f6-d1b9-4f04-b80b-fc5ef527a3aa",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -912,
+        512
+      ],
+      "id": "e64c2f9c-ab86-4248-8662-4521bb25892a",
+      "name": "Webhook",
+      "webhookId": "aa0212f6-d1b9-4f04-b80b-fc5ef527a3aa"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst q = raw.query ? raw.query : raw;\n\nconst state = q.state;\nconst sellingPartnerId = q.selling_partner_id;\nconst spapiOauthCode = q.spapi_oauth_code;\n\nif (!state || !sellingPartnerId || !spapiOauthCode) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_REQUIRED_PARAMS',\n    message: 'Amazon did not return one or more required parameters (state, selling_partner_id, spapi_oauth_code).'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_PARAMS',\n  state: state,\n  selling_partner_id: sellingPartnerId,\n  spapi_oauth_code: spapiOauthCode,\n  received_at: $now.toISO()\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        368
+      ],
+      "id": "0c0fa24c-820d-4209-8c8a-51731f0701eb",
+      "name": "Extract Query Params"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "63dd7701-8459-45e0-a32c-e40aed103d7e",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "HAS_PARAMS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -576,
+        496
+      ],
+      "id": "ca301d3a-7d0a-49c0-9bd7-b40bd32a713a",
+      "name": "Has Required Params"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/oauth_states?state=eq.{{ $json.state }}&select=seller_id,created_at,used_at",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -368,
+        160
+      ],
+      "id": "50eba438-2e1b-42bb-89e7-a05a897a596b",
+      "name": "Fetch OAuth State",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const params = $('Extract Query Params').first().json;\n\n// Fetch OAuth State's own output confirms this arrives as a bare row\n// object when a match is found, not the raw PostgREST array — so\n// Array.isArray() here was always false, silently treating every real,\n// unused, unexpired state as \"not found.\" Check items.length instead,\n// which correctly reflects zero vs. one item either way.\nconst items = $input.all();\nlet row = null;\nif (items.length > 0) {\n  const data = items[0].json;\n  row = Array.isArray(data) ? data[0] : data;\n}\n\nif (!row || !row.seller_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'UNKNOWN_STATE',\n    message: 'This authorization attempt was not recognized. Please start over from Connect Amazon Account.'\n  }}];\n}\nif (row.used_at) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'STATE_ALREADY_USED',\n    message: 'This authorization link has already been used. Please start over from Connect Amazon Account.'\n  }}];\n}\n// Basic staleness check here; Day 10 builds the full, user-facing\n// clean-restart handling for this specific case in more detail.\nconst ageMinutes = (Date.now() - new Date(row.created_at).getTime()) / 60000;\nif (ageMinutes > 10) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'STATE_EXPIRED',\n    message: 'This authorization attempt took too long and expired. Please start over from Connect Amazon Account.',\n    age_minutes: ageMinutes\n  }}];\n}\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: row.seller_id,\n  state: params.state,\n  selling_partner_id: params.selling_partner_id,\n  spapi_oauth_code: params.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        160
+      ],
+      "id": "1b2cc424-b8d9-4be3-a858-f91cc5814073",
+      "name": "Validate State"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "561a59aa-d51e-49f2-a854-3b24ea62cafe",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        160
+      ],
+      "id": "e6c81145-98cf-4d94-ad57-4d3c26e2757a",
+      "name": "State Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/oauth_states?state=eq.{{ $json.state }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"used_at\": {{ JSON.stringify($now.toISO()) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        256,
+        320
+      ],
+      "id": "0d92b685-f47a-4f4a-b33f-1675c079c3d4",
+      "name": "Mark State Used",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Repackages what Validate State confirmed into the flat shape the\n// token-exchange chain below reads from. Named/dated from when the\n// exchange itself was still a next-session stub; it's since been wired\n// in directly below (spapi_oauth_code expires in 5 minutes, so it fires\n// immediately - nothing here queues or delays that).\nconst validated = $('Validate State').first().json;\nreturn [{ json: {\n  seller_id: validated.seller_id,\n  selling_partner_id: validated.selling_partner_id,\n  spapi_oauth_code: validated.spapi_oauth_code,\n  ready_for_token_exchange: true\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        320
+      ],
+      "id": "06140f82-4dc4-45c5-9cff-21eadd337964",
+      "name": "Prepare Handoff (Day 9)"
+    },
+    {
+      "parameters": {
+        "respondWith": "redirect",
+        "redirectURL": "https://catalove.ai/?connected=true",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1152,
+        320
+      ],
+      "id": "f7e4163c-682e-4848-9b7a-b953244791a7",
+      "name": "Respond Success (placeholder)"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        416
+      ],
+      "id": "a35a577b-2680-4890-b1f7-7f7f7fdcc56e",
+      "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -576,
+        704
+      ],
+      "id": "cb3c481f-ba92-4c9d-93bf-3bf98ed63db9",
+      "name": "Respond Missing Params"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "authorization_code"
+            },
+            {
+              "name": "code",
+              "value": "={{ $json.spapi_oauth_code }}"
+            },
+            {
+              "name": "redirect_uri",
+              "value": "https://n8n.catalove.ai/webhook/aa0212f6-d1b9-4f04-b80b-fc5ef527a3aa"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        592,
+        320
+      ],
+      "id": "33e117f4-e3f7-48e4-b141-35977a90b635",
+      "name": "Exchange Code for Tokens",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/store_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_seller_id\": \"{{ $('Prepare Handoff (Day 9)').first().json.seller_id }}\",\n  \"p_refresh_token\": \"{{ $('Exchange Code for Tokens').first().json.refresh_token }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        768,
+        320
+      ],
+      "id": "2d0f0654-5942-40bb-8479-dba59cb5d29e",
+      "name": "Store Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst message = data.message || 'Something went wrong. Please start over from Connect Amazon Account.';\n\nconst html = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>Connection unsuccessful</title>\n<style>\nbody { font-family: -apple-system, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; color: #1a1a1a; text-align: center; }\nh1 { font-size: 20px; }\np { color: #555; line-height: 1.5; }\na.button { display: inline-block; margin-top: 24px; padding: 12px 24px; background: #232f3e; color: white; text-decoration: none; border-radius: 4px; }\n</style>\n</head>\n<body>\n<h1>We couldn't connect your Amazon account</h1>\n<p>${message}</p>\n<a class=\"button\" href=\"https://catalove.ai/?connected=false\">Try again</a>\n</body>\n</html>`;\n\nreturn [{ json: { html } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        416
+      ],
+      "id": "79e38afd-8b77-42a7-8bfd-9c6874f95f4c",
+      "name": "Build Rejection Page"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/upsert_seller_selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n       \"p_seller_id\": \"{{ $('Prepare Handoff (Day 9)').first().json.seller_id }}\",\n       \"p_selling_partner_id\": \"{{ $('Prepare Handoff (Day 9)').first().json.selling_partner_id }}\"\n     }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        976,
+        320
+      ],
+      "id": "1abf8c91-d4a1-4c83-b29c-f17ee0535a19",
+      "name": "Store Selling Partner ID",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Query Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Query Params": {
+      "main": [
+        [
+          {
+            "node": "Has Required Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Required Params": {
+      "main": [
+        [
+          {
+            "node": "Fetch OAuth State",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Missing Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch OAuth State": {
+      "main": [
+        [
+          {
+            "node": "Validate State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate State": {
+      "main": [
+        [
+          {
+            "node": "State Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "State Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Mark State Used",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Rejection Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark State Used": {
+      "main": [
+        [
+          {
+            "node": "Prepare Handoff (Day 9)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Handoff (Day 9)": {
+      "main": [
+        [
+          {
+            "node": "Exchange Code for Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange Code for Tokens": {
+      "main": [
+        [
+          {
+            "node": "Store Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Store Selling Partner ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Rejection Page": {
+      "main": [
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Selling Partner ID": {
+      "main": [
+        [
+          {
+            "node": "Respond Success (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "52eeae98-2834-4f4e-9541-4ba4b481fc57",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "i7dyAOySjI9JKfLG",
+  "tags": []
+}

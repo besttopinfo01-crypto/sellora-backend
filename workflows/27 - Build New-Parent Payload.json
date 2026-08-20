@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -624,
-        96
+        -10736,
+        3008
       ],
-      "id": "278f7467-3baa-49bc-879e-f03b1c98fc2b",
+      "id": "eea62819-c4ab-4229-8247-d69b0c0365fe",
       "name": "Webhook",
       "webhookId": "3385fc94-0447-419c-98ec-34f18a66cf5c"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        96
+        -10528,
+        3008
       ],
-      "id": "be91bfe0-e1d9-4fe4-96cb-a5dfe3d01335",
+      "id": "d851f010-d361-4942-af21-e219c8e4b295",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        96
+        -10320,
+        3008
       ],
-      "id": "4b8b3a45-baa2-4420-817b-58abb4c63af7",
+      "id": "c33c59e4-354b-46d6-8bac-c48857c41d71",
       "name": "Is Valid"
     },
     {
@@ -75,18 +75,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -10112,
+        2912
       ],
-      "id": "24cb9bb3-76c9-4de9-a741-b42cc4ee047b",
+      "id": "475b86d3-847f-4c57-9516-6ebb90dde0ef",
       "name": "Fetch Merge Request",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -98,18 +98,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        208,
-        0
+        -9904,
+        2912
       ],
-      "id": "708e9f45-1482-4205-8443-03f79bd337d9",
+      "id": "ef2e9317-dcd2-43cb-8445-635e0a96c2b8",
       "name": "Fetch Items",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -131,10 +131,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        416,
-        0
+        -9696,
+        2912
       ],
-      "id": "a7bca098-3314-465a-88a5-c2f13bd9bcf9",
+      "id": "cec67734-00da-4401-a1e9-75dd83005fe3",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -168,10 +168,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
-        0
+        -9488,
+        2912
       ],
-      "id": "e0e0ae79-5a25-465e-bebf-e19fe586918d",
+      "id": "49b6c2b8-56f7-4960-b056-3bb0b291e9d5",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -190,18 +190,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        784,
-        -432
+        -9328,
+        2480
       ],
-      "id": "055a6ccb-8c35-4569-8dc3-a5160782cf32",
+      "id": "74913007-e71b-4b61-88e6-4c6f09836697",
       "name": "Get Seller Selling Partner ID",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -220,10 +220,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        992,
-        -432
+        -9120,
+        2480
       ],
-      "id": "711f5dd9-a0d6-428e-b213-0d689348aed3",
+      "id": "41037f75-c492-4f1e-9613-d5d69be1f722",
       "name": "Fetch Anchor Listing",
       "alwaysOutputData": true
     },
@@ -244,10 +244,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1408,
-        -432
+        -8704,
+        2480
       ],
-      "id": "2867508c-f3a8-4877-904e-011290b655c9",
+      "id": "c5960598-9957-4577-abf5-ad5fa171394e",
       "name": "Get Product Type Definition",
       "alwaysOutputData": true
     },
@@ -265,10 +265,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1616,
-        -432
+        -8496,
+        2480
       ],
-      "id": "3cad3f4a-a8cc-4b02-a043-ce669a17c9b5",
+      "id": "853327b4-2adf-4346-b674-4e1808ac909a",
       "name": "Fetch Schema",
       "alwaysOutputData": true
     },
@@ -279,10 +279,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2032,
-        -432
+        -8080,
+        2480
       ],
-      "id": "b5cd2868-a66f-4d4e-aacc-d13a383e4ad8",
+      "id": "d4088903-597b-4b08-b407-3612287ea23b",
       "name": "Build Payload"
     },
     {
@@ -313,10 +313,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1184,
-        64
+        -8928,
+        2976
       ],
-      "id": "ca12194c-c25c-47eb-b1eb-ff8dbed176b7",
+      "id": "59ce2149-cdcf-4c65-ba6a-c938a774179f",
       "name": "Is Payload Ready"
     },
     {
@@ -326,10 +326,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1392,
-        64
+        -8720,
+        2976
       ],
-      "id": "3f07ac74-25a0-4304-abd7-dcfcde2840f5",
+      "id": "bb92c065-be71-4dc8-a6c0-78b1602c271b",
       "name": "Respond With Payload"
     },
     {
@@ -339,10 +339,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        208,
-        224
+        -9904,
+        3136
       ],
-      "id": "31965a3c-005e-49fc-9c4c-8774551a8b18",
+      "id": "90b5df94-6b98-4130-b5b3-e32d6f688e17",
       "name": "Respond Rejected"
     },
     {
@@ -352,10 +352,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1824,
-        -432
+        -8288,
+        2480
       ],
-      "id": "8c2e6a1f-4d5b-4e97-9b3a-3f7c1d2a9b64",
+      "id": "f5774b20-66c8-4a02-a635-583df967092c",
       "name": "Generate Generic Parent Content"
     },
     {
@@ -365,24 +365,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        -432
+        -8912,
+        2480
       ],
-      "id": "f1a4c8d2-6e93-4b7a-9c1d-2b8e5f3a7d61",
+      "id": "36cdd5c8-3782-4fb5-8ac2-50371cebd7e1",
       "name": "Resolve Anchor Product Type"
     },
     {
       "parameters": {
-        "mode": "runOnceForAllItems",
         "jsCode": "// Fetches each child's real Amazon attributes - this did not exist before.\n// The only prior per-item data was Fetch Items' Supabase row (sku, asin,\n// parent_sku, dimension1_value, dimension2_value, normalized_product_type),\n// which has no real Amazon attribute data at all. Needed so a conditionally\n// required attribute the anchor lacks (e.g. batteries_required) can be\n// resolved from the children instead of just failing outright. Same\n// endpoint, same includedData, same auth pattern as Fetch Anchor Listing -\n// just parameterized per child SKU instead of the anchor's.\nreturn (async function() {\n  const itemsInput = $('Fetch Items').all();\n  const items = (itemsInput.length === 1 && Array.isArray(itemsInput[0].json))\n    ? itemsInput[0].json\n    : itemsInput.map(function(i) { return i.json; });\n\n  const accessToken = $('Exchange for Access Token').first().json.access_token;\n  const sellingPartnerId = $('Get Seller Selling Partner ID').first().json.selling_partner_id;\n  const marketplaceId = $('Fetch Merge Request').first().json.marketplace_id;\n\n  const results = [];\n  for (const item of items) {\n    try {\n      const response = await this.helpers.httpRequest({\n        method: 'GET',\n        url: 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/' + sellingPartnerId\n          + '/' + encodeURIComponent(item.sku)\n          + '?marketplaceIds=' + marketplaceId + '&includedData=summaries,attributes',\n        headers: { 'x-amz-access-token': accessToken },\n        json: true\n      });\n      results.push({ sku: item.sku, attributes: (response && response.attributes) || {}, fetch_error: null });\n    } catch (err) {\n      // A single child's fetch failing shouldn't block the whole payload\n      // build - it just means this child can't help resolve a missing\n      // attribute, same as if it genuinely had none. Recorded, not thrown.\n      results.push({ sku: item.sku, attributes: {}, fetch_error: (err && err.message) || 'unknown error' });\n    }\n  }\n  return results.map(function(r) { return { json: r }; });\n}).call(this);"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        -300
+        -8912,
+        2624
       ],
-      "id": "f7c3a9e1-6b58-4d24-9a17-3e6c8d5b2f94",
+      "id": "c6e4667a-b2dc-4c4b-ac2a-1e875cf93c54",
       "name": "Fetch Child Listings"
     }
   ],
@@ -585,7 +584,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f305120b-d433-4cd7-8258-6857cb23e5ed",
+  "versionId": "6522892a-2ff2-48d5-b06c-789bdbd6c758",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
