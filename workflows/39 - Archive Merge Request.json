@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id } }];"
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\n// Defaults to 'archive' when omitted, for backward compatibility with the\n// original archive-only caller - but an explicitly-provided, unrecognized\n// action is rejected outright rather than silently coerced, so a typo\n// doesn't quietly do the wrong thing to a real record.\nconst action = body.action === undefined ? 'archive' : body.action;\nif (action !== 'archive' && action !== 'unarchive') {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_ACTION', message: 'action must be \"archive\" or \"unarchive\" if provided.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id, action: action } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -90,7 +90,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const fetched = $input.first().json;\nconst row = Array.isArray(fetched) ? fetched[0] : fetched;\nconst ctx = $('Validate Input').first().json;\n\nif (!row || !row.request_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MERGE_REQUEST_NOT_FOUND',\n    request_id: ctx.request_id,\n    message: 'No merge_requests row found for this request_id.'\n  }}];\n}\n\nif (row.archived_at) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'ALREADY_ARCHIVED',\n    request_id: row.request_id,\n    message: 'This request is already archived.'\n  }}];\n}\n\nreturn [{ json: { decision: 'FOUND', request_id: row.request_id } }];"
+        "jsCode": "const fetched = $input.first().json;\nconst row = Array.isArray(fetched) ? fetched[0] : fetched;\nconst ctx = $('Validate Input').first().json;\n\nif (!row || !row.request_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MERGE_REQUEST_NOT_FOUND',\n    request_id: ctx.request_id,\n    message: 'No merge_requests row found for this request_id.'\n  }}];\n}\n\nif (ctx.action === 'archive' && row.archived_at) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'ALREADY_ARCHIVED',\n    request_id: row.request_id,\n    message: 'This request is already archived.'\n  }}];\n}\n\nif (ctx.action === 'unarchive' && !row.archived_at) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'NOT_ARCHIVED',\n    request_id: row.request_id,\n    message: 'This request is not currently archived - there is nothing to restore.'\n  }}];\n}\n\n// The actual value to PATCH is computed here, as a real JS value (a real\n// ISO string, or a real null), not as text - so the PATCH node downstream\n// can use the same proven whole-body JSON.stringify($json) pattern from\n// wf23, rather than trying to splice a conditional expression into the\n// middle of hand-written JSON text (the exact fragile pattern that broke\n// workflow 39's own now-42nd sibling earlier today).\nreturn [{ json: {\n  decision: 'FOUND',\n  request_id: row.request_id,\n  action: ctx.action,\n  archived_at: ctx.action === 'archive' ? new Date().toISOString() : null\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -157,7 +157,7 @@
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"archived_at\": \"{{ $now.toISO() }}\"\n}"
+        "jsonBody": "={{ JSON.stringify({ archived_at: $json.archived_at }) }}"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
@@ -166,7 +166,7 @@
         0
       ],
       "id": "61011e46-5c7f-485e-9bfa-651fecffe9d6",
-      "name": "Archive Request",
+      "name": "Update Archive Status",
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
@@ -177,7 +177,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const ctx = $('Check Found').first().json;\nreturn [{ json: {\n  decision: 'ARCHIVED',\n  request_id: ctx.request_id,\n  message: 'Request archived. It will no longer appear on the dashboard by default. Nothing on Amazon, and no other table, was touched.'\n}}];"
+        "jsCode": "const ctx = $('Check Found').first().json;\nconst message = ctx.action === 'archive'\n  ? 'Request archived. It will no longer appear on the dashboard by default. Nothing on Amazon, and no other table, was touched.'\n  : 'Request restored. It will appear back on the dashboard\\'s active list. Nothing on Amazon, and no other table, was touched.';\n\nreturn [{ json: {\n  decision: ctx.action === 'archive' ? 'ARCHIVED' : 'UNARCHIVED',\n  request_id: ctx.request_id,\n  message: message\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -283,7 +283,7 @@
       "main": [
         [
           {
-            "node": "Archive Request",
+            "node": "Update Archive Status",
             "type": "main",
             "index": 0
           }
@@ -297,22 +297,22 @@
         ]
       ]
     },
-    "Archive Request": {
+    "Finalize Response": {
       "main": [
         [
           {
-            "node": "Finalize Response",
+            "node": "Respond With Confirmation",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Finalize Response": {
+    "Update Archive Status": {
       "main": [
         [
           {
-            "node": "Respond With Confirmation",
+            "node": "Finalize Response",
             "type": "main",
             "index": 0
           }

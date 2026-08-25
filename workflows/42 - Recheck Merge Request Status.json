@@ -1,0 +1,908 @@
+{
+  "name": "42 - Recheck Merge Request Status",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e944aef5-3a10-4222-9792-290bb105e1da",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        96
+      ],
+      "id": "669878ab-3f46-4de6-a254-d19aaf3cc26b",
+      "name": "Webhook",
+      "webhookId": "e944aef5-3a10-4222-9792-290bb105e1da"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.request_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUEST_ID', message: 'request_id is required.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', request_id: body.request_id } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "665020bc-c23e-4884-8149-5090e72bb962",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "933f5fed-7d79-4daa-b8ae-6b92a229e5a0",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "bad896f9-e755-4cdf-a187-61a08d5ab58d",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Validate Input').first().json.request_id }}&select=request_id,seller_id,marketplace_id,status,direct_submission_report",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "25c458c7-9021-4952-86c0-fb3c20999712",
+      "name": "Fetch Merge Request",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst ctx = $('Validate Input').first().json;\nconst found = Array.isArray(row) ? row[0] : row;\n\nif (!found || !found.request_id) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'MERGE_REQUEST_NOT_FOUND', request_id: ctx.request_id,\n    message: 'No merge_requests row found for this request_id.'\n  }}];\n}\n\nconst report = found.direct_submission_report;\n// Two real shapes have to be handled here, not just one guessed from\n// memory: wf32/wf34's own original writes store this as a bare array\n// directly, while a request that has already been through this same\n// recheck workflow once before will have it wrapped as {results: [...]}\n// from Build Patch Body's own output. Confirmed directly against a real\n// stored row rather than assumed from what this workflow itself writes.\nlet results = null;\nif (Array.isArray(report)) {\n  results = report;\n} else if (report && Array.isArray(report.results)) {\n  results = report.results;\n}\n\nif (!results || results.length === 0) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'NOTHING_TO_RECHECK', request_id: found.request_id,\n    message: 'This request has no direct submission results yet - there is nothing real to recheck until it has actually been submitted at least once.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_REPORT',\n  request_id: found.request_id,\n  seller_id: found.seller_id,\n  marketplace_id: found.marketplace_id,\n  results: results\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "8879d017-b6bf-442d-b3e8-96f52e880c32",
+      "name": "Check Has Report"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4c146919-be2b-4247-a4b9-09f96aacf7d9",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "HAS_REPORT",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "5ee5b618-9213-4de6-b9cb-84119eee96b9",
+      "name": "Is Checkable"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $('Check Has Report').first().json.seller_id }}&select=status,contact_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        -80
+      ],
+      "id": "5805867a-de4d-4aff-ba68-93fd4def2176",
+      "name": "Get Seller Status",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_seller_selling_partner_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Check Has Report').first().json.seller_id }}\" }"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        80
+      ],
+      "id": "b29fdd86-8396-4614-a86e-946adfb2fe0a",
+      "name": "Get Selling Partner ID",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $('Get Selling Partner ID').first().json;\nconst ctx = $('Check Has Report').first().json;\nconst identityRow = Array.isArray(rows) ? rows[0] : rows;\n\nconst sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\n\nif (!sellerRow) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'SELLER_NOT_FOUND', seller_id: ctx.seller_id,\n    message: 'No seller record exists for this seller_id.'\n  }}];\n}\n\nif (sellerRow.status !== 'active') {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'SELLER_NOT_ACTIVE', seller_id: ctx.seller_id, seller_status: sellerRow.status,\n    message: 'This seller account is not active (status: ' + sellerRow.status + '). Access is not permitted.'\n  }}];\n}\n\nif (!identityRow || !identityRow.selling_partner_id) {\n  return [{ json: {\n    decision: 'REJECTED', reason: 'SELLER_NOT_CONNECTED', seller_id: ctx.seller_id,\n    message: 'No Amazon connection is stored for this seller_id.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'HAS_IDENTITY',\n  request_id: ctx.request_id,\n  seller_id: ctx.seller_id,\n  selling_partner_id: identityRow.selling_partner_id,\n  marketplace_id: ctx.marketplace_id,\n  results: ctx.results\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "05fb4c82-1f1f-4cba-bbf9-ef5f20932202",
+      "name": "Identity Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "187be1a1-47b5-4278-953e-96258e89216c",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "HAS_IDENTITY",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "8b5dbcde-ce1e-4275-93c4-b309aaf8da3e",
+      "name": "Has Identity"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Check Has Report').first().json.seller_id }}\" }"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "cc409eba-4769-4151-9bd7-4cd6b48109d9",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "18ba7d77-d572-42c7-b0ed-fd186611e5c6",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/check_and_increment_rate_limit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"p_seller_id\": \"{{ $('Check Has Report').first().json.seller_id }}\",\n    \"p_action_type\": \"merge_request_recheck\",\n    \"p_max_per_window\": 10\n  }"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "699a9b83-159e-4f60-bd6b-b7cad3a1a062",
+      "name": "Rate Limit Gate",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst row = Array.isArray(upstream) ? upstream[0] : upstream;\n\nif (row && row.allowed === false) {\n  return [{ json: { decision: 'RATE_LIMITED', message: 'Too many rechecks for this seller in a short window. Try again shortly.' } }];\n}\nreturn [{ json: { decision: 'OK' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        0
+      ],
+      "id": "6dbdc9d4-a5b2-4283-b2b1-b2f945a4f861",
+      "name": "Check Rate Limit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4a5d05a1-82df-43e9-9e28-c6d3d68546f5",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "RATE_LIMITED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "6778578c-e645-44f1-b4a1-b504adfa18f2",
+      "name": "Is Rate Limited"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Check Has Report').first().json;\nconst identity = $('Identity Gate').first().json;\nconst token = $('Exchange for Access Token').first().json.access_token;\n\nreturn ctx.results.map(function(r) {\n  return { json: {\n    sku: r.sku,\n    // A parent row (from wf32/34's own Summarize Results) carries\n    // verified_parent; every child row carries verified_child instead -\n    // same distinguishing field already used throughout this project's\n    // own direct_submission_report shape.\n    is_parent: r.verified_parent !== undefined,\n    original_patch_status: r.patch_status !== undefined ? r.patch_status : null,\n    original_patch_issues: r.patch_issues || [],\n    original_error: r.error || null,\n    selling_partner_id: identity.selling_partner_id,\n    marketplace_id: identity.marketplace_id,\n    access_token: token\n  }};\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        0
+      ],
+      "id": "ad92f2f4-e00f-4967-911e-e809aa42cd3a",
+      "name": "Prepare SKU List"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst included = 'summaries,attributes,issues';\nconst url = 'https://sellingpartnerapi-na.amazon.com/listings/2021-08-01/items/'\n  + encodeURIComponent(item.selling_partner_id) + '/'\n  + encodeURIComponent(item.sku)\n  + '?marketplaceIds=' + encodeURIComponent(item.marketplace_id)\n  + '&includedData=' + encodeURIComponent(included);\n\nreturn [{ json: {\n  url: url,\n  access_token: item.access_token,\n  sku: item.sku,\n  is_parent: item.is_parent,\n  original_patch_status: item.original_patch_status,\n  original_patch_issues: item.original_patch_issues,\n  original_error: item.original_error\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        0
+      ],
+      "id": "ca688c1b-a9fc-408b-b971-b707fef47452",
+      "name": "Build Listings URL"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2704,
+        0
+      ],
+      "id": "43e99602-c6b9-4292-9ae6-03cfab19d545",
+      "name": "Fetch Listing Item",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const upstream = $input.first().json;\nconst ctx = $('Build Listings URL').first().json;\n\nif (!upstream || upstream.error || (!upstream.sku && !upstream.summaries)) {\n  const result = {\n    sku: ctx.sku,\n    patch_status: ctx.original_patch_status,\n    patch_issues: ctx.original_patch_issues,\n    verify_issues: [{\n      code: 'RECHECK_LOOKUP_FAILED',\n      message: 'Could not fetch this listing\\'s current state from Amazon to recheck it.',\n      severity: 'ERROR',\n      categories: []\n    }],\n    error: ctx.original_error\n  };\n  if (ctx.is_parent) { result.verified_parent = false; } else { result.verified_child = false; }\n  return [{ json: result }];\n}\n\nconst issues = Array.isArray(upstream.issues) ? upstream.issues : [];\n// Same ERROR-vs-everything-else distinction already established and\n// tested throughout this project (e.g. the FBA-conversion WARNING that\n// never blocks anything) - only a real ERROR-severity issue means this\n// listing is still genuinely not clean, not the mere presence of any\n// issue at all.\nconst errorIssues = issues.filter(function(i) { return i.severity === 'ERROR'; });\nconst isCleanNow = errorIssues.length === 0;\n\nconst result = {\n  sku: ctx.sku,\n  patch_status: ctx.original_patch_status,\n  patch_issues: ctx.original_patch_issues,\n  verify_issues: issues,\n  error: ctx.original_error\n};\nif (ctx.is_parent) { result.verified_parent = isCleanNow; } else { result.verified_child = isCleanNow; }\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        0
+      ],
+      "id": "0779e4d6-ba47-40f5-a014-d24f3a2ff87d",
+      "name": "Classify Fresh Result"
+    },
+    {
+      "parameters": {
+        "jsCode": "function collectAll(nodeItems) {\n  if (nodeItems.length === 1 && Array.isArray(nodeItems[0].json)) return nodeItems[0].json;\n  return nodeItems.map(function(i) { return i.json; });\n}\n\nconst ctx = $('Check Has Report').first().json;\nconst fresh = collectAll($input.all());\n\nconst parentRow = fresh.find(function(r) { return r.verified_parent !== undefined; });\nconst childRows = fresh.filter(function(r) { return r.verified_child !== undefined; });\n\n// No parent row in the stored report at all (existing-parent merges never\n// carry one) - don't let its absence block the determination either way.\nconst parentOk = parentRow ? parentRow.verified_parent : true;\nconst allChildrenOk = childRows.length > 0 && childRows.every(function(r) { return r.verified_child; });\nconst anyChildOk = childRows.some(function(r) { return r.verified_child; });\n\nlet finalStatus;\nif (parentOk && allChildrenOk) { finalStatus = 'verified'; }\nelse if (parentOk && anyChildOk) { finalStatus = 'partially_failed'; }\nelse { finalStatus = 'failed'; }\n\nreturn [{ json: {\n  decision: 'RECHECKED',\n  request_id: ctx.request_id,\n  final_status: finalStatus,\n  results: fresh\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        0
+      ],
+      "id": "d185f2f6-935d-463d-9654-ff342f5ad2b4",
+      "name": "Combine Fresh Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $input.first().json;\n// direct_submission_report must stay a bare array here, not wrapped in an\n// object - confirmed directly against wf38's own real Resolve Results\n// node, which does Array.isArray(mergeRequestRow.direct_submission_report)\n// and treats anything else as \"no report at all.\" wf32/wf34 both already\n// write this column as a bare array; wrapping it here (as an earlier,\n// unverified version of this file did) silently broke wf38's own \"See\n// why\" explanation for any request that had ever been through a recheck -\n// found from a real, live symptom, not caught by any test written before\n// this. final_status doesn't need to live inside this column at all - it\n// is already set as its own top-level status field on this same PATCH.\nreturn [{ json: {\n  status: ctx.final_status,\n  direct_submission_report: ctx.results\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3224,
+        0
+      ],
+      "id": "8f3128cf-10d3-4b0c-8115-7b4cd456a799",
+      "name": "Build Patch Body"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?request_id=eq.{{ $('Combine Fresh Results').first().json.request_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3328,
+        0
+      ],
+      "id": "1563db8f-2126-40c7-bebb-6f7866d50ca8",
+      "name": "Update Merge Request Report",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Combine Fresh Results').first().json;\nreturn [{ json: {\n  decision: 'RECHECKED',\n  request_id: ctx.request_id,\n  final_status: ctx.final_status,\n  message: 'Rechecked ' + ctx.results.length + ' listing(s) directly against Amazon\\'s current data - this reflects what Amazon actually shows right now, not a re-submission of anything.',\n  results: ctx.results\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3536,
+        0
+      ],
+      "id": "0e6815b2-14b5-4e26-b719-95e23e832435",
+      "name": "Finalize Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3744,
+        0
+      ],
+      "id": "be5c9b3d-c61e-4ec6-b9fd-3d57075894b6",
+      "name": "Respond With Recheck"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        224
+      ],
+      "id": "ace0f8f6-2e6a-41f8-9f2f-55d6078051fb",
+      "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: {\n  decision: 'RATE_LIMITED',\n  message: 'Too many rechecks for this seller in a short window. Try again shortly.'\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        224
+      ],
+      "id": "0ab01401-5ad8-48f3-b1e9-44369acd6f43",
+      "name": "Format Rate Limit Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2288,
+        224
+      ],
+      "id": "11d21465-616a-4688-b221-d67c3faf101b",
+      "name": "Respond Rate Limited"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Fetch Merge Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Merge Request": {
+      "main": [
+        [
+          {
+            "node": "Check Has Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Has Report": {
+      "main": [
+        [
+          {
+            "node": "Is Checkable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Checkable": {
+      "main": [
+        [
+          {
+            "node": "Get Selling Partner ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Selling Partner ID": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Status": {
+      "main": [
+        [
+          {
+            "node": "Identity Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identity Gate": {
+      "main": [
+        [
+          {
+            "node": "Has Identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Identity": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Is Rate Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Rate Limited": {
+      "main": [
+        [
+          {
+            "node": "Format Rate Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare SKU List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Rate Limit Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Rate Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare SKU List": {
+      "main": [
+        [
+          {
+            "node": "Build Listings URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Listings URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch Listing Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Listing Item": {
+      "main": [
+        [
+          {
+            "node": "Classify Fresh Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Fresh Result": {
+      "main": [
+        [
+          {
+            "node": "Combine Fresh Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Fresh Results": {
+      "main": [
+        [
+          {
+            "node": "Build Patch Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Patch Body": {
+      "main": [
+        [
+          {
+            "node": "Update Merge Request Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Merge Request Report": {
+      "main": [
+        [
+          {
+            "node": "Finalize Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Response": {
+      "main": [
+        [
+          {
+            "node": "Respond With Recheck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "32a3b9c5-e434-4c3c-8ae5-a580f15e44d2",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "49353a3efc024f",
+  "tags": []
+}

@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\n\nreturn [{ json: { decision: 'VALID', seller_id: body.seller_id } }];"
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\n\n// Defaults to false (the existing, active-only view) when omitted, so\n// every caller that only ever knew this endpoint before today keeps\n// getting exactly what it got before.\nreturn [{ json: { decision: 'VALID', seller_id: body.seller_id, show_archived: body.show_archived === true } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -138,7 +138,7 @@
     },
     {
       "parameters": {
-        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?seller_id=eq.{{ $('Validate Input').first().json.seller_id }}&archived_at=is.null&select=request_id,status,merge_type,marketplace_id,created_at,dimension1_theme,dimension2_theme,is_new_parent,anchor_sku&order=created_at.desc",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/merge_requests?seller_id=eq.{{ $('Validate Input').first().json.seller_id }}&archived_at={{ $('Validate Input').first().json.show_archived ? 'not.is.null' : 'is.null' }}&select=request_id,status,merge_type,marketplace_id,created_at,dimension1_theme,dimension2_theme,is_new_parent,anchor_sku&order=created_at.desc",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpCustomAuth",
         "options": {}
