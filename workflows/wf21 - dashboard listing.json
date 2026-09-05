@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1248,
-        192
+        -4544,
+        496
       ],
-      "id": "3dadc4fd-6478-4095-9090-1b0df8340b50",
+      "id": "cbeefd5f-ea52-4eb0-9292-6e267240ab7a",
       "name": "Webhook",
       "webhookId": "d5f8a3c1-6e29-4b74-9a2f-8c1b5e7d3f60"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1040,
-        192
+        -4336,
+        496
       ],
-      "id": "a56466a3-85ae-47d8-a628-1e77122df3ad",
+      "id": "49cb89fd-c4d2-4586-93a5-d1681bca9ed6",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -832,
-        192
+        -4128,
+        496
       ],
-      "id": "9e49a4d8-7703-477e-bbea-68590dcd65e4",
+      "id": "75d39196-44fe-4918-82ca-b3dd6bcd862e",
       "name": "Is Valid"
     },
     {
@@ -75,10 +75,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -624,
-        96
+        -3920,
+        400
       ],
-      "id": "d3de3f5b-7ed5-4e1b-b404-a53acc65f00e",
+      "id": "84acb94a-130f-4bc8-9549-72e71c879574",
       "name": "Get Seller Status",
       "alwaysOutputData": true,
       "credentials": {
@@ -96,10 +96,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        96
+        -3712,
+        400
       ],
-      "id": "84bf038b-3dca-411a-be3c-6dc6615d7b7d",
+      "id": "02caea4c-fcc8-4fa4-81f7-8674c96700a7",
       "name": "Seller Gate"
     },
     {
@@ -130,10 +130,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        96
+        -3504,
+        400
       ],
-      "id": "fbe3a943-5c42-458e-9322-8079da016368",
+      "id": "4a737ff0-7cb7-45c5-bb2d-1364ec28d6a8",
       "name": "Is Eligible"
     },
     {
@@ -146,10 +146,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -3296,
+        304
       ],
-      "id": "c902b6ac-1144-4bf5-9b0e-b721e13c135f",
+      "id": "ad383615-09ec-44b7-bd2a-4c0bf548ac09",
       "name": "Fetch Merge Requests",
       "alwaysOutputData": true,
       "credentials": {
@@ -170,10 +170,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        208,
-        0
+        -3088,
+        304
       ],
-      "id": "884d51ac-08eb-4adb-bba2-38127ab35147",
+      "id": "aff537b5-a7ff-4d57-aa32-09779750d809",
       "name": "Fetch Merge Request Items",
       "alwaysOutputData": true,
       "executeOnce": true,
@@ -187,15 +187,15 @@
     },
     {
       "parameters": {
-        "jsCode": "function collectAll(nodeItems) {\n  // n8n may return a PostgREST array response as ONE item containing the\n  // array, or split it into one item per row - handle both. Same defensive\n  // pattern already used in wf14's Fetch Items node; missed reusing it here\n  // the first time, which is exactly why Fetch Merge Requests' real 4 rows\n  // never reached this node's output correctly.\n  if (nodeItems.length === 1 && Array.isArray(nodeItems[0].json)) {\n    return nodeItems[0].json;\n  }\n  return nodeItems.map(function(i) { return i.json; });\n}\n\nconst ctx = $('Validate Input').first().json;\nconst requests = collectAll($('Fetch Merge Requests').all());\nconst items = collectAll($input.all());\n\n// Group items by request_id for child-count and parent_sku lookup.\nconst itemsByRequest = {};\nitems.forEach(function(item) {\n  if (!itemsByRequest[item.request_id]) itemsByRequest[item.request_id] = [];\n  itemsByRequest[item.request_id].push(item);\n});\n\nconst rows = requests.map(function(req) {\n  const reqItems = itemsByRequest[req.request_id] || [];\n\n  // OPEN QUESTION (still unconfirmed): 'parentage' column's real values are\n  // unknown - may distinguish parent-rows from child-rows within this same\n  // table. For now this counts ALL item rows for the request. Revisit once\n  // real data lets you check `select distinct parentage from merge_request_items`.\n  //\n  // Confirmed live, not assumed: new-parent mode never inserts the anchor\n  // listing into merge_request_items - it's tracked separately on\n  // merge_requests (anchor_sku), exactly the same fact wf14's own matrix\n  // generator already had to work around for the same reason. Without this,\n  // every new-parent merge undercounts by exactly one - confirmed against a\n  // real 4-child request that this node reported as 3.\n  const hasUncountedAnchor = !!(req.is_new_parent && req.anchor_sku);\n  const childCount = reqItems.length + (hasUncountedAnchor ? 1 : 0);\n\n  const parentSkuItem = reqItems.find(function(i) { return i.parent_sku; });\n\n  return {\n    request_id: req.request_id,\n    status: req.status,\n    merge_type: req.merge_type,\n    marketplace_id: req.marketplace_id,\n    parent_sku: parentSkuItem ? parentSkuItem.parent_sku : null,\n    child_count: childCount,\n    is_new_parent: !!req.is_new_parent,\n    dimension1_theme: req.dimension1_theme,\n    dimension2_theme: req.dimension2_theme || null,\n    created_at: req.created_at\n  };\n});\n\nreturn [{ json: {\n  decision: 'DASHBOARD_READY',\n  seller_id: ctx.seller_id,\n  count: rows.length,\n  requests: rows\n}}];"
+        "jsCode": "function collectAll(nodeItems) {\n  // Zero real rows come back from PostgREST as `[]`. n8n's array-splitting\n  // turns that into ZERO items, but this node's alwaysOutputData setting\n  // then forces a single placeholder item through anyway so the workflow\n  // doesn't just stop - and that placeholder's json is a bare {}, no keys\n  // at all. A real row always carries the keys from the query's own\n  // ?select= list, even when every value is null, so an empty-object check\n  // safely tells the placeholder apart from a real row. Confirmed this was\n  // the exact cause of a phantom \"1 request\" (and phantom \"1 child,\" since\n  // both this collection and the items collection produce the same\n  // placeholder shape, which then collide under the same undefined\n  // request_id key below) for any seller with zero real merge requests.\n  if (nodeItems.length === 1 && Object.keys(nodeItems[0].json).length === 0) {\n    return [];\n  }\n  // n8n may return a PostgREST array response as ONE item containing the\n  // array, or split it into one item per row - handle both. Same defensive\n  // pattern already used in wf14's Fetch Items node; missed reusing it here\n  // the first time, which is exactly why Fetch Merge Requests' real 4 rows\n  // never reached this node's output correctly.\n  if (nodeItems.length === 1 && Array.isArray(nodeItems[0].json)) {\n    return nodeItems[0].json;\n  }\n  return nodeItems.map(function(i) { return i.json; });\n}\n\nconst ctx = $('Validate Input').first().json;\nconst requests = collectAll($('Fetch Merge Requests').all());\nconst items = collectAll($input.all());\n\n// Group items by request_id for child-count and parent_sku lookup.\nconst itemsByRequest = {};\nitems.forEach(function(item) {\n  if (!itemsByRequest[item.request_id]) itemsByRequest[item.request_id] = [];\n  itemsByRequest[item.request_id].push(item);\n});\n\nconst rows = requests.map(function(req) {\n  const reqItems = itemsByRequest[req.request_id] || [];\n\n  // OPEN QUESTION (still unconfirmed): 'parentage' column's real values are\n  // unknown - may distinguish parent-rows from child-rows within this same\n  // table. For now this counts ALL item rows for the request. Revisit once\n  // real data lets you check `select distinct parentage from merge_request_items`.\n  //\n  // Confirmed live, not assumed: new-parent mode never inserts the anchor\n  // listing into merge_request_items - it's tracked separately on\n  // merge_requests (anchor_sku), exactly the same fact wf14's own matrix\n  // generator already had to work around for the same reason. Without this,\n  // every new-parent merge undercounts by exactly one - confirmed against a\n  // real 4-child request that this node reported as 3.\n  const hasUncountedAnchor = !!(req.is_new_parent && req.anchor_sku);\n  const childCount = reqItems.length + (hasUncountedAnchor ? 1 : 0);\n\n  const parentSkuItem = reqItems.find(function(i) { return i.parent_sku; });\n\n  return {\n    request_id: req.request_id,\n    status: req.status,\n    merge_type: req.merge_type,\n    marketplace_id: req.marketplace_id,\n    parent_sku: parentSkuItem ? parentSkuItem.parent_sku : null,\n    child_count: childCount,\n    is_new_parent: !!req.is_new_parent,\n    dimension1_theme: req.dimension1_theme,\n    dimension2_theme: req.dimension2_theme || null,\n    created_at: req.created_at\n  };\n});\n\nreturn [{ json: {\n  decision: 'DASHBOARD_READY',\n  seller_id: ctx.seller_id,\n  count: rows.length,\n  requests: rows\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        416,
-        0
+        -2880,
+        304
       ],
-      "id": "358bf15f-b4a8-4e7e-abbc-92467c0a118f",
+      "id": "252932b4-3662-4885-a172-5a5bd2a4dda2",
       "name": "Aggregate Dashboard Rows"
     },
     {
@@ -205,10 +205,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        624,
-        0
+        -2672,
+        304
       ],
-      "id": "dac0f059-ef31-415c-bfff-577ff169f19b",
+      "id": "6964b19e-a5e5-4b9c-aeee-4604e7d2c519",
       "name": "Respond With Dashboard"
     },
     {
@@ -218,10 +218,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        0,
-        240
+        -3296,
+        544
       ],
-      "id": "d3ef7dbf-c896-4a54-8ec1-b9180b977387",
+      "id": "5f5bf243-cf0d-42bf-915e-f7a2765db626",
       "name": "Respond Seller Ineligible"
     },
     {
@@ -231,10 +231,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -832,
-        384
+        -4128,
+        688
       ],
-      "id": "ef8f38e9-8319-4781-87d3-f2a8df6ead69",
+      "id": "cf336538-0686-4b89-9e1a-91567c302d79",
       "name": "Respond Rejected"
     }
   ],
@@ -360,7 +360,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "cf7d24d9-8ae0-424a-888b-fcaf9ede3295",
+  "versionId": "a478fbcc-dc06-4809-ae6d-fa7632a878fc",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

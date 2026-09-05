@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -624,
-        96
+        -1760,
+        272
       ],
-      "id": "3aa3fd9c-ab68-46be-8fd2-895da3a3fed1",
+      "id": "f9b5d2b1-f86c-4e4b-bae1-2e7ebef880b3",
       "name": "Webhook",
       "webhookId": "460ce982-d555-48d8-9f47-9600c81be483"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        96
+        -1552,
+        272
       ],
-      "id": "e4cb9107-576b-4d44-9ae8-b4c4cddfa322",
+      "id": "bd6eb7a1-dbc2-4d0e-a6dd-18e4912c9825",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        96
+        -1344,
+        272
       ],
-      "id": "da7e669b-7444-47c0-b90c-39876f6d6c0e",
+      "id": "4c083cb8-b64d-4367-848a-f3de764971c5",
       "name": "Is Valid"
     },
     {
@@ -75,18 +75,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -1136,
+        176
       ],
-      "id": "4842d274-f154-437d-9635-f43eb7554c3b",
+      "id": "055cdc76-fb47-4e97-aae3-f0c59edd5c0f",
       "name": "Fetch Merge Request",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -95,10 +95,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        0
+        -928,
+        176
       ],
-      "id": "ef6ae3d1-1a01-43a8-a4ea-378129f0d83a",
+      "id": "a4819db3-2487-4429-974d-da5b22549ab3",
       "name": "Check Found"
     },
     {
@@ -129,10 +129,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        416,
-        0
+        -720,
+        176
       ],
-      "id": "38d96b48-b8a0-413a-989f-b29d8f92ffae",
+      "id": "52fc6f29-2955-4280-b252-b24f5aff30eb",
       "name": "Is Found"
     },
     {
@@ -154,26 +154,26 @@
             }
           ]
         },
-        "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ archived_at: $json.archived_at }) }}"
+        "jsonBody": "={{ JSON.stringify({ archived_at: $json.archived_at }) }}",
+        "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
-        0
+        -512,
+        176
       ],
-      "id": "61011e46-5c7f-485e-9bfa-651fecffe9d6",
+      "id": "e3b52c0c-769c-4387-85bd-0987f96709ac",
       "name": "Update Archive Status",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -182,10 +182,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        832,
-        0
+        -304,
+        176
       ],
-      "id": "f8b30229-ac04-4647-9f78-9f87cd208c33",
+      "id": "ea620bed-db32-4d64-87e7-1d102ca4ee8b",
       "name": "Finalize Response"
     },
     {
@@ -195,10 +195,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1040,
-        0
+        -96,
+        176
       ],
-      "id": "569f6938-6e5e-444c-a2d5-8541adf85b7b",
+      "id": "d566e826-2ba6-4f04-bde8-8fcab8081f96",
       "name": "Respond With Confirmation"
     },
     {
@@ -208,10 +208,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        208,
-        224
+        -928,
+        400
       ],
-      "id": "9ef832f4-fb06-4dc7-8018-894289d3d588",
+      "id": "46cdd7d7-006a-413e-9f36-bbfeaff40648",
       "name": "Respond Rejected"
     }
   ],
@@ -326,11 +326,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "1cb76f65-636f-4e98-a3b4-8a537645b201",
+  "versionId": "d112db4a-d9ad-4f1a-8d25-438070658dd8",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "6674a7a246b446",
+  "id": "nVvOkX8rm7zujJYQ",
   "tags": []
 }

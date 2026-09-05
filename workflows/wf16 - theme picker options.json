@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2928,
-        576
+        -4080,
+        832
       ],
-      "id": "46f18bff-d229-4632-bb73-99d6d5d1022d",
+      "id": "60b0a5e6-bd75-49b4-81cf-d8f946b99753",
       "name": "Webhook",
       "webhookId": "b4e7d2c6-91f3-4a58-8c0d-2f6a5e9b7d13"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2720,
-        576
+        -3872,
+        832
       ],
-      "id": "4d6befe0-b55c-41ea-89cf-30e33474dfa1",
+      "id": "1b147a67-80e2-4e45-b7d3-099b9d151f38",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -2512,
-        576
+        -3664,
+        832
       ],
-      "id": "85fcdb72-6529-4364-8e58-545fbe56479b",
+      "id": "f5819480-f319-4e73-bc1a-a71867e5c205",
       "name": "Is Valid"
     },
     {
@@ -86,25 +86,25 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2304,
-        480
+        -3456,
+        736
       ],
-      "id": "3d3566d7-00e3-4ce7-99e6-a05d2287cc7f",
+      "id": "7c218533-10c9-440a-8b82-0cc493c92e6a",
       "name": "Fetch Theme Data (wf15)",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const upstream = $input.first().json;\nconst req = $('Validate Input').first().json;\n\nconst valid = Array.isArray(upstream.valid_themes) ? upstream.valid_themes : null;\n\nif (!valid) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'UPSTREAM_NO_THEME_DATA',\n    product_type: req.product_type,\n    marketplace_id: req.marketplace_id,\n    message: 'wf15 returned no valid_themes. Confirm the product type is a real Amazon product type for this marketplace, and that wf15 is Active.',\n    upstream_raw: upstream\n  }}];\n}\n\nconst deprecated = Array.isArray(upstream.deprecated_themes) ? upstream.deprecated_themes : [];\nconst deprecatedSet = new Set(deprecated);\n\n// wf15's per-theme resolved attribute name(s) (its KNOWN_VERIFIED_ATTRIBUTES\n// override plus schema-parse result), keyed by theme string - e.g.\n// theme_attribute_map['SIZE/COLOR'] = ['size_name', 'color']. This was\n// never actually read here despite this node's own job being to pass it\n// through as real_attributes on each theme option: theme-selection.jsx\n// has been reading selectedPicked.real_attributes since it shipped, but\n// it was always undefined coming from this workflow, so new-parent mode -\n// which has no other source for a real attribute name; see that file's\n// own useParentReal/useSchemaReal comment - has been falling straight\n// through to the hardcoded THEME_ATTRIBUTE_MAP guess this whole time,\n// bypassing the \u00a76 fix entirely for the one mode that most needed it.\n// Confirmed by reading both sides directly, not assumed.\nconst themeAttributeMap = upstream.theme_attribute_map || {};\n\n// Core Day 17 rule: only offer themes Amazon is NOT retiring.\n// Real-data example (SHIRT): COLOR/SIZE is deprecated, SIZE/COLOR is not.\nconst usable = valid.filter(function(t) { return !deprecatedSet.has(t); });\n\n// Slash segments ARE the dimensions: 'SIZE/COLOR' = 2-dimension theme.\nconst parsed = usable.map(function(t) {\n  return { theme: t, dimensions: t.split('/'), real_attributes: themeAttributeMap[t] || null };\n});\n\nconst singleDimension = parsed.filter(function(p) { return p.dimensions.length === 1; });\nconst twoDimension = parsed.filter(function(p) { return p.dimensions.length === 2; });\n\n// V1 supports 1 or 2 dimensions (GUI spec). 3+ segment themes are excluded\n// from the picker lists but returned openly below - never silently hidden.\nconst excludedOverTwo = parsed\n  .filter(function(p) { return p.dimensions.length > 2; })\n  .map(function(p) { return p.theme; });\n\nreturn [{ json: {\n  decision: 'OPTIONS_READY',\n  product_type: req.product_type,\n  marketplace_id: req.marketplace_id,\n  counts: {\n    valid_total: valid.length,\n    deprecated_total: deprecated.length,\n    usable_total: usable.length,\n    single_dimension: singleDimension.length,\n    two_dimension: twoDimension.length,\n    excluded_over_two_dimensions: excludedOverTwo.length\n  },\n  single_dimension_themes: singleDimension,\n  two_dimension_themes: twoDimension,\n  excluded_over_two_dimensions: excludedOverTwo,\n  product_type_version: upstream.product_type_version || null,\n  fetched_at: upstream.fetched_at || null,\n  // For the structured-attribute design - a flat map, same shape wf15\n  // itself uses, not duplicated per-theme. Multiple themes can share the\n  // same candidate attribute (e.g. a plain \"color\" candidate could\n  // appear both standalone and inside a matrix theme); one shared map\n  // keyed by attribute name is what stays consistent if either theme's\n  // candidate list changes, rather than two copies that could drift.\n  // theme-selection.jsx looks this up by whichever candidate name it's\n  // actually resolving, not by theme.\n  attribute_schemas: upstream.attribute_schemas || {}\n}}];"
+        "jsCode": "const upstream = $input.first().json;\nconst req = $('Validate Input').first().json;\n\nconst valid = Array.isArray(upstream.valid_themes) ? upstream.valid_themes : null;\n\nif (!valid) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'UPSTREAM_NO_THEME_DATA',\n    product_type: req.product_type,\n    marketplace_id: req.marketplace_id,\n    message: 'wf15 returned no valid_themes. Confirm the product type is a real Amazon product type for this marketplace, and that wf15 is Active.',\n    upstream_raw: upstream\n  }}];\n}\n\nconst deprecated = Array.isArray(upstream.deprecated_themes) ? upstream.deprecated_themes : [];\nconst deprecatedSet = new Set(deprecated);\n\n// wf15's per-theme resolved attribute name(s) (its KNOWN_VERIFIED_ATTRIBUTES\n// override plus schema-parse result), keyed by theme string - e.g.\n// theme_attribute_map['SIZE/COLOR'] = ['size_name', 'color']. This was\n// never actually read here despite this node's own job being to pass it\n// through as real_attributes on each theme option: theme-selection.jsx\n// has been reading selectedPicked.real_attributes since it shipped, but\n// it was always undefined coming from this workflow, so new-parent mode -\n// which has no other source for a real attribute name; see that file's\n// own useParentReal/useSchemaReal comment - has been falling straight\n// through to the hardcoded THEME_ATTRIBUTE_MAP guess this whole time,\n// bypassing the §6 fix entirely for the one mode that most needed it.\n// Confirmed by reading both sides directly, not assumed.\nconst themeAttributeMap = upstream.theme_attribute_map || {};\n\n// Core Day 17 rule: only offer themes Amazon is NOT retiring.\n// Real-data example (SHIRT): COLOR/SIZE is deprecated, SIZE/COLOR is not.\nconst usable = valid.filter(function(t) { return !deprecatedSet.has(t); });\n\n// Slash segments ARE the dimensions: 'SIZE/COLOR' = 2-dimension theme.\nconst parsed = usable.map(function(t) {\n  return { theme: t, dimensions: t.split('/'), real_attributes: themeAttributeMap[t] || null };\n});\n\nconst singleDimension = parsed.filter(function(p) { return p.dimensions.length === 1; });\nconst twoDimension = parsed.filter(function(p) { return p.dimensions.length === 2; });\n\n// V1 supports 1 or 2 dimensions (GUI spec). 3+ segment themes are excluded\n// from the picker lists but returned openly below - never silently hidden.\nconst excludedOverTwo = parsed\n  .filter(function(p) { return p.dimensions.length > 2; })\n  .map(function(p) { return p.theme; });\n\nreturn [{ json: {\n  decision: 'OPTIONS_READY',\n  product_type: req.product_type,\n  marketplace_id: req.marketplace_id,\n  counts: {\n    valid_total: valid.length,\n    deprecated_total: deprecated.length,\n    usable_total: usable.length,\n    single_dimension: singleDimension.length,\n    two_dimension: twoDimension.length,\n    excluded_over_two_dimensions: excludedOverTwo.length\n  },\n  single_dimension_themes: singleDimension,\n  two_dimension_themes: twoDimension,\n  excluded_over_two_dimensions: excludedOverTwo,\n  product_type_version: upstream.product_type_version || null,\n  fetched_at: upstream.fetched_at || null,\n  // For the structured-attribute design - a flat map, same shape wf15\n  // itself uses, not duplicated per-theme. Multiple themes can share the\n  // same candidate attribute (e.g. a plain \"color\" candidate could\n  // appear both standalone and inside a matrix theme); one shared map\n  // keyed by attribute name is what stays consistent if either theme's\n  // candidate list changes, rather than two copies that could drift.\n  // theme-selection.jsx looks this up by whichever candidate name it's\n  // actually resolving, not by theme.\n  attribute_schemas: upstream.attribute_schemas || {}\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2096,
-        480
+        -3248,
+        736
       ],
-      "id": "35937a31-26fe-4b16-84e1-30bb9545c237",
+      "id": "860c162d-23c6-443e-97d3-d8ec8ab4b433",
       "name": "Filter & Parse Themes"
     },
     {
@@ -114,10 +114,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1888,
-        480
+        -3040,
+        736
       ],
-      "id": "f17d9276-9a64-4284-9217-b458713053e8",
+      "id": "0c604864-b9f1-4eb6-9726-8e0139e2608a",
       "name": "Respond With Options"
     },
     {
@@ -127,10 +127,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -2304,
-        672
+        -3456,
+        928
       ],
-      "id": "8435e2ae-e3db-4390-8998-4500d3db3ee2",
+      "id": "ce496f9f-5bf1-433a-a246-37c71a751e16",
       "name": "Respond Rejected"
     }
   ],
@@ -205,7 +205,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "33f025fe-03f3-4989-94a7-8e010b9c87a9",
+  "versionId": "dd44dfd1-7220-46de-b27a-eab27a43f503",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

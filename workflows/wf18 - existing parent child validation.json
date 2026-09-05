@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4352,
-        1792
+        -7552,
+        4048
       ],
-      "id": "3bf9cb64-cfc0-4de6-b399-4b3ad3ce9991",
+      "id": "62d39286-450f-4e60-8a58-81f8c5a6611e",
       "name": "Webhook",
       "webhookId": "f3a9c1d7-6b24-4e85-9c30-8d5f2a7b4c19"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4144,
-        1792
+        -7344,
+        4048
       ],
-      "id": "c2316e9a-e6cd-4b90-bbfe-1de05da986f1",
+      "id": "21ca1c41-5691-4846-aaea-71d5f4bde4fa",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -3936,
-        1792
+        -7136,
+        4048
       ],
-      "id": "b2d738f7-c9ec-47b3-bf42-31e0097debec",
+      "id": "fb253fdb-6a95-44de-bc75-30eba45ade56",
       "name": "Is Valid"
     },
     {
@@ -85,10 +85,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3648,
-        1728
+        -6848,
+        3984
       ],
-      "id": "3026603a-71b1-405a-b076-71844124bf14",
+      "id": "1a00799d-391a-4503-88e9-03e4b1f76f97",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -122,10 +122,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3456,
-        1728
+        -6656,
+        3984
       ],
-      "id": "d645eb88-1942-446d-9801-c71c3af1f167",
+      "id": "af5057cc-ecf5-440d-84a1-583c824df422",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -151,10 +151,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3248,
-        1728
+        -6448,
+        3984
       ],
-      "id": "c9c65a48-da59-49be-b339-79a1537d6165",
+      "id": "f693aad5-7a3e-4c1c-abe7-294357aae00b",
       "name": "Fetch Parent",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -166,10 +166,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3040,
-        1728
+        -6240,
+        3984
       ],
-      "id": "295426b1-8d31-47bd-b22b-f3c3b560f7b4",
+      "id": "de3dca54-8d5a-4a95-9355-47215aeb1da5",
       "name": "Parent Gate"
     },
     {
@@ -200,10 +200,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -2832,
-        1728
+        -6032,
+        3984
       ],
-      "id": "f8bce96e-3a29-499b-9cce-635d1f61dcf2",
+      "id": "e6b1de14-d414-48d8-8880-1a9eaf9b2f0f",
       "name": "Parent OK"
     },
     {
@@ -213,23 +213,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2624,
-        1664
+        -5824,
+        3920
       ],
-      "id": "d1594faf-91cc-4405-96f5-5a9e374196a5",
+      "id": "0eaf179a-3921-4a7d-b78b-ede86c6d8648",
       "name": "Prepare Batch List"
     },
     {
       "parameters": {
-        "jsCode": "const batch = $input.first().json;\nconst prep = $('Prepare Batch List').first().json;\nconst ctx = prep.ctx;\nconst parent = ctx.parent;\n\nif (!batch || batch.error || !Array.isArray(batch.items)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'FAMILY_FETCH_FAILED',\n    message: 'The batch catalog fetch for the family + candidate did not return items.',\n    upstream_raw: batch\n  }}];\n}\n\nconst mkId = ctx.marketplace_id;\n\nfunction forMarketplace(list) {\n  if (!Array.isArray(list)) return {};\n  return list.find(function(e) { return e.marketplaceId === mkId; }) || list[0] || {};\n}\n\nfunction findItem(asin) {\n  return batch.items.find(function(it) { return it.asin === asin; }) || null;\n}\n\nfunction norm(v) {\n  if (v === null || v === undefined) return null;\n  if (typeof v === 'object') {\n    // Structured attribute value (e.g. footwear_size, shirt_size): compare\n    // by the object's own fields, not by JS's default String(v), which\n    // collapses every structured value to the identical \"[object Object]\"\n    // regardless of what it actually contains. Ported verbatim from wf26,\n    // where this was already confirmed as the real cause of a false\n    // UNIQUE_VARIATION_COMBINATION clash between two genuinely different\n    // footwear_size values (a real size 8 and a real size 9 both\n    // stringified identically before that fix) - this file had the same\n    // two functions, never received the same fix, confirmed via a direct\n    // side-by-side and a real test against two structured sizes.\n    const keys = Object.keys(v)\n      .filter(function(k) { return v[k] !== null && v[k] !== undefined; })\n      .sort();\n    if (keys.length === 0) return null;\n    return keys.map(function(k) { return k + ':' + norm(v[k]); }).join('|');\n  }\n  return String(v).trim().toLowerCase();\n}\n\nfunction getAttrValue(item, attrName) {\n  if (!item || !item.attributes || !item.attributes[attrName]) return null;\n  const entries = item.attributes[attrName];\n  if (!Array.isArray(entries) || entries.length === 0) return null;\n  const entry = entries.find(function(e) { return e.marketplaceId === mkId; }) || entries[0];\n  if (!entry) return null;\n  // Simple attributes (color, style, ...) wrap their real value in\n  // entry.value. Structured attributes (footwear_size, shirt_size, ...)\n  // have no separate \"value\" field in the real PTD schema at all - the\n  // entry's own sibling properties (size, size_class, size_system, ...)\n  // ARE the value. Ported from wf26 alongside norm() above - without this\n  // branch every structured attribute silently read as null here, which\n  // marks every existing child values_incomplete and skips them out of\n  // the duplicate-clash check entirely, the quieter, opposite-direction\n  // half of the same underlying gap.\n  if (entry.value !== undefined) return entry.value;\n  const structured = {};\n  let hasFields = false;\n  Object.keys(entry).forEach(function(k) {\n    if (k === 'marketplaceId' || k === 'language_tag') return;\n    structured[k] = entry[k];\n    hasFields = true;\n  });\n  return hasFields ? structured : null;\n}\n\nfunction hasSalesRank(item) {\n  if (!item || !Array.isArray(item.salesRanks)) return false;\n  const entry = item.salesRanks.find(function(e) { return e.marketplaceId === mkId; }) || item.salesRanks[0];\n  if (!entry) return false;\n  const cls = Array.isArray(entry.classificationRanks) ? entry.classificationRanks : [];\n  const grp = Array.isArray(entry.displayGroupRanks) ? entry.displayGroupRanks : [];\n  return cls.length > 0 || grp.length > 0;\n}\n\nconst themeAttrs = parent.theme_attributes || [];\nconst checks = [];\n\nconst candidateItem = findItem(ctx.child_asin);\nif (!candidateItem) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'CHILD_NOT_FOUND',\n    child_asin: ctx.child_asin,\n    marketplace_id: mkId,\n    message: 'The candidate child ASIN was not returned by the Amazon catalog for this marketplace.'\n  }}];\n}\n\nconst candSummary = forMarketplace(candidateItem.summaries);\nconst candPt = forMarketplace(candidateItem.productTypes);\nconst candidate = {\n  asin: ctx.child_asin,\n  brand: candSummary.brand || null,\n  normalized_brand: (candSummary.brand || '').toLowerCase().trim(),\n  item_name: candSummary.itemName || null,\n  product_type: (candPt.productType || '').toUpperCase().trim() || null,\n  category: (candSummary.browseClassification && candSummary.browseClassification.displayName) || null\n};\n\nconst existingChildren = prep.existing_child_asins.map(function(asin) {\n  const item = findItem(asin);\n  const ecSummary = forMarketplace(item ? item.summaries : null);\n  const values = {};\n  const normalizedTuple = [];\n  let anyMissing = false;\n  themeAttrs.forEach(function(attr) {\n    const v = getAttrValue(item, attr);\n    values[attr] = v;\n    if (v === null) anyMissing = true;\n    normalizedTuple.push(norm(v));\n  });\n  return {\n    asin: asin,\n    found_in_catalog: !!item,\n    brand: ecSummary.brand || null,\n    normalized_brand: ((ecSummary.brand || '').toLowerCase().trim()) || null,\n    values: values,\n    normalized_tuple: normalizedTuple,\n    values_incomplete: anyMissing\n  };\n});\n\nconst proposed = {};\nconst proposedTuple = [];\nconst missingAttrs = [];\nthemeAttrs.forEach(function(attr) {\n  const raw = ctx.proposed_values ? ctx.proposed_values[attr] : undefined;\n  if (raw === undefined || raw === null || String(raw).trim() === '') {\n    missingAttrs.push(attr);\n    proposed[attr] = null;\n    proposedTuple.push(null);\n  } else {\n    proposed[attr] = raw;\n    proposedTuple.push(norm(raw));\n  }\n});\n\n// ================= CHECKS (all reported, not first-failure) =================\n\n// 0. Review-language caution (WARNING - flagged by Validate Input's scanner\n// as a soft phrase like \"combine reviews\"/\"merge reviews\", not one of the\n// hard-block phrases - never gates, just surfaced for the seller to confirm).\nconst inputStage = $('Validate Input').first().json;\nif (inputStage.flagged_language) {\n  checks.push({\n    check: 'REVIEW_LANGUAGE_CAUTION', status: 'warning', issue_code: 'REVIEW_LANGUAGE_MENTIONED',\n    matched_phrase: inputStage.flagged_language.phrase,\n    matched_field: inputStage.flagged_language.field,\n    message: 'Your request mentions \"' + inputStage.flagged_language.phrase + '.\" Amazon\\'s variation system legitimately combines reviews when listings become part of the same parent-child family, so this isn\\'t automatically a problem - just confirm that\\'s what you mean, not something that would violate Amazon\\'s review policies.'\n  });\n}\n\n// 1. Brand match.\n// LIVE DISCOVERY (Day 21): parent ASINs are non-buyable placeholder records\n// and can have NO brand in their catalog summaries (parent_brand: null seen\n// live on B00PBORB8Y). A null parent brand is NOT a proven mismatch - derive\n// the family brand from the existing children's real brands (consensus)\n// before judging. If even that yields nothing, report indeterminate as\n// manual_review: never silently pass, never wrongly block.\nconst childBrandSet = existingChildren\n  .map(function(ec) { return ec.normalized_brand; })\n  .filter(function(b, i, arr) { return b && arr.indexOf(b) === i; });\n\nlet familyBrandNorm = parent.normalized_brand || null;\nlet familyBrandDisplay = parent.brand || null;\nlet familyBrandSource = 'parent_record';\nif (!familyBrandNorm) {\n  if (childBrandSet.length === 1) {\n    familyBrandNorm = childBrandSet[0];\n    const donor = existingChildren.find(function(ec) { return ec.normalized_brand === familyBrandNorm; });\n    familyBrandDisplay = donor ? donor.brand : familyBrandNorm;\n    familyBrandSource = 'existing_children_consensus';\n  } else {\n    familyBrandSource = childBrandSet.length === 0 ? 'indeterminate_no_brand_data' : 'indeterminate_children_conflict';\n  }\n}\n\nif (!familyBrandNorm) {\n  checks.push({\n    check: 'BRAND_MATCH', status: 'manual_review', issue_code: 'BRAND_INDETERMINATE',\n    family_brand_source: familyBrandSource,\n    child_brand: candidate.brand,\n    existing_children_brands: childBrandSet,\n    message: 'The family brand could not be determined from the catalog (the parent record has no brand and the existing children give no single consensus). This is not a proven mismatch - confirm manually that the candidate shares the family brand before proceeding.'\n  });\n} else if (candidate.normalized_brand && candidate.normalized_brand === familyBrandNorm) {\n  checks.push({ check: 'BRAND_MATCH', status: 'pass', family_brand: familyBrandDisplay, family_brand_source: familyBrandSource, child_brand: candidate.brand });\n} else {\n  checks.push({\n    check: 'BRAND_MATCH', status: 'hard_block', issue_code: 'BRAND_MISMATCH',\n    family_brand: familyBrandDisplay, family_brand_source: familyBrandSource, child_brand: candidate.brand,\n    message: 'The candidate child brand (' + (candidate.brand || 'unknown') + ') does not match the family brand (' + (familyBrandDisplay || 'unknown') + '). All items in a variation family must share the same brand.'\n  });\n}\n\n// 2. Product type match (hard block on mismatch)\nif (candidate.product_type && candidate.product_type === parent.product_type) {\n  checks.push({ check: 'PRODUCT_TYPE_MATCH', status: 'pass', product_type: parent.product_type });\n} else {\n  checks.push({\n    check: 'PRODUCT_TYPE_MATCH', status: 'hard_block', issue_code: 'PRODUCT_TYPE_MISMATCH',\n    parent_product_type: parent.product_type, child_product_type: candidate.product_type,\n    message: 'The candidate child product type (' + (candidate.product_type || 'unknown') + ') does not match the parent product type (' + (parent.product_type || 'unknown') + ').'\n  });\n}\n\n// 3. Theme match - only when a proposed_theme was explicitly sent.\n//    The theme is otherwise INHERITED from the parent (it cannot be changed after creation).\nif (ctx.proposed_theme) {\n  if (ctx.proposed_theme === parent.variation_theme) {\n    checks.push({ check: 'THEME_MATCH', status: 'pass', theme: parent.variation_theme });\n  } else {\n    checks.push({\n      check: 'THEME_MATCH', status: 'hard_block', issue_code: 'THEME_MISMATCH',\n      parent_theme: parent.variation_theme, proposed_theme: ctx.proposed_theme,\n      message: 'This parent already uses theme ' + parent.variation_theme + '. Amazon does not allow changing a variation theme after the parent is created.'\n    });\n  }\n} else {\n  checks.push({ check: 'THEME_MATCH', status: 'pass', theme: parent.variation_theme, note: 'Theme inherited from parent.' });\n}\n\n// 4. All theme attributes provided (fixable - the seller can supply them)\nif (missingAttrs.length === 0) {\n  checks.push({ check: 'THEME_ATTRIBUTES_PROVIDED', status: 'pass', attributes: themeAttrs });\n} else {\n  checks.push({\n    check: 'THEME_ATTRIBUTES_PROVIDED', status: 'fixable', issue_code: 'MISSING_THEME_ATTRIBUTE_VALUE',\n    missing_attributes: missingAttrs,\n    message: 'This parent theme (' + parent.variation_theme + ') requires a value for each of: ' + themeAttrs.join(', ') + '. Missing: ' + missingAttrs.join(', ') + '.'\n  });\n}\n\n// 5. Duplicate combination (hard block) - only checkable when all values were provided\nif (missingAttrs.length === 0) {\n  const clash = existingChildren.find(function(ec) {\n    if (ec.values_incomplete) return false;\n    return ec.normalized_tuple.length === proposedTuple.length &&\n      ec.normalized_tuple.every(function(v, i) { return v === proposedTuple[i]; });\n  });\n  if (clash) {\n    checks.push({\n      check: 'UNIQUE_VARIATION_COMBINATION', status: 'hard_block', issue_code: 'DUPLICATE_VARIATION_VALUE',\n      clashes_with_asin: clash.asin, clashing_values: clash.values, proposed_values: proposed,\n      message: 'The proposed combination is already used by existing child ' + clash.asin + '. Each combination of ' + themeAttrs.join(' + ') + ' must be unique in the family.'\n    });\n  } else {\n    checks.push({ check: 'UNIQUE_VARIATION_COMBINATION', status: 'pass', proposed_values: proposed });\n  }\n} else {\n  checks.push({ check: 'UNIQUE_VARIATION_COMBINATION', status: 'skipped', note: 'Cannot check uniqueness until all theme attribute values are provided.' });\n}\n\n// 6. Candidate already in THIS family (hard block - nothing to merge)\nif (prep.candidate_in_family) {\n  checks.push({\n    check: 'NOT_ALREADY_IN_FAMILY', status: 'hard_block', issue_code: 'ALREADY_IN_FAMILY',\n    message: 'This ASIN is already a child of this exact parent. There is nothing to merge.'\n  });\n} else {\n  checks.push({ check: 'NOT_ALREADY_IN_FAMILY', status: 'pass' });\n}\n\n// 7. DAY 20 PREVIEW (free from the batch data): candidate already belongs to a DIFFERENT parent.\n//    Per PRD: manual_review, never an automatic hard block - seller must resolve or confirm deliberately.\nconst candRel = forMarketplace(candidateItem.relationships);\nconst candGroups = Array.isArray(candRel.relationships) ? candRel.relationships : [];\nconst candVar = candGroups.find(function(g) { return g.type === 'VARIATION'; }) || null;\nconst candParents = (candVar && Array.isArray(candVar.parentAsins)) ? candVar.parentAsins : [];\nconst otherParents = candParents.filter(function(p) { return p !== ctx.parent_asin; });\nif (otherParents.length > 0) {\n  checks.push({\n    check: 'NO_EXISTING_PARENT_CONFLICT', status: 'manual_review', issue_code: 'EXISTING_PARENT_CONFLICT',\n    conflicting_parents: otherParents,\n    message: 'This ASIN already belongs to a different parent (' + otherParents.join(', ') + '). Amazon does not allow one ASIN in two families. Remove it from that family first, or confirm this move is deliberate.'\n  });\n} else if (!prep.candidate_in_family) {\n  checks.push({ check: 'NO_EXISTING_PARENT_CONFLICT', status: 'pass' });\n}\n\n// 8. DAY 21 - Generic-brand caution (WARNING - shown, asks confirmation, NEVER gates).\nconst brandMatchPassed = checks.some(function(c) { return c.check === 'BRAND_MATCH' && c.status === 'pass'; });\nif (brandMatchPassed && familyBrandNorm === 'generic') {\n  checks.push({\n    check: 'GENERIC_BRAND_CAUTION', status: 'warning', issue_code: 'GENERIC_BRAND_MATCH',\n    corroboration: {\n      family_brand_source: familyBrandSource,\n      product_type_match: candidate.product_type === parent.product_type,\n      parent_category: parent.category || null,\n      candidate_category: candidate.category || null\n    },\n    message: 'Both items carry Amazon\\'s placeholder brand \"Generic\" rather than a registered brand. The brand match passes, but \"Generic\" does not uniquely confirm these products share a common origin the way a registered brand does. Please confirm these are genuinely the same product family - matching product type and category are the stronger evidence here.'\n  });\n}\n\n// 9. DAY 21 - New-listing-into-established-family note (INFO - purely informational, NEVER gates).\nif (!prep.candidate_in_family) {\n  const rankedExisting = existingChildren.filter(function(ec) {\n    return hasSalesRank(findItem(ec.asin));\n  });\n  const candidateRanked = hasSalesRank(candidateItem);\n  if (!candidateRanked && rankedExisting.length > 0) {\n    checks.push({\n      check: 'NEW_LISTING_INTO_ESTABLISHED_FAMILY', status: 'info', issue_code: 'NEW_ASIN_INTO_ESTABLISHED_PARENT',\n      candidate_has_sales_rank: false,\n      existing_children_with_sales_rank: rankedExisting.length,\n      existing_children_total: existingChildren.length,\n      blocks_nothing: true,\n      message: 'The candidate appears to be a newer listing (no sales rank yet) joining a family with established sales history (' + rankedExisting.length + ' of ' + existingChildren.length + ' existing children have sales ranks). This is the normal, expected case for a growing product family and is not a risk signal by itself - noted purely for your awareness. (Amazon\\'s API does not expose review counts; this note is based on sales-rank presence.)'\n    });\n  } else {\n    checks.push({ check: 'NEW_LISTING_INTO_ESTABLISHED_FAMILY', status: 'pass', note: candidateRanked ? 'Candidate already has sales history.' : 'No established-family signal to note.' });\n  }\n}\n\n// 10. DAY 22 - Value formatting suggestions (SUGGESTION - seller confirms, NEVER auto-applied, NEVER gates).\nconst LETTER_SIZES = ['xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl', '2xl', '3xl'];\nconst SIZE_STANDARD_MAP = {\n  'extra small': 'XS', 'x-small': 'XS', 'small': 'S', 'medium': 'M',\n  'large': 'L', 'extra large': 'XL', 'extra-large': 'XL', 'x-large': 'XL',\n  'xx-large': 'XXL', 'xxlarge': 'XXL', '2x large': 'XXL'\n};\nfunction classifyCase(s) {\n  if (s === s.toUpperCase() && /[A-Za-z]/.test(s)) return 'upper';\n  if (s === s.toLowerCase() && /[A-Za-z]/.test(s)) return 'lower';\n  const words = s.split(' ');\n  const isTitle = words.every(function(w) {\n    return w.length > 0 && w[0] === w[0].toUpperCase() && (w.length === 1 || w.slice(1) === w.slice(1).toLowerCase());\n  });\n  return isTitle ? 'title' : 'mixed';\n}\nfunction toTitleCase(s) {\n  return s.split(' ').map(function(w) {\n    return w.length === 0 ? w : (w[0].toUpperCase() + w.slice(1).toLowerCase());\n  }).join(' ');\n}\n\nconst formattingSuggestions = [];\nthemeAttrs.forEach(function(attr) {\n  const raw = proposed[attr];\n  if (raw === null || raw === undefined) return;\n  const rawStr = String(raw);\n  const reasons = [];\n  let current = rawStr;\n\n  const cleaned = current.trim().replace(/\\s+/g, ' ');\n  if (cleaned !== current) { reasons.push('whitespace_cleanup'); current = cleaned; }\n\n  const familyValues = existingChildren\n    .filter(function(ec) { return ec.found_in_catalog && ec.values && ec.values[attr] !== null && ec.values[attr] !== undefined; })\n    .map(function(ec) { return String(ec.values[attr]); });\n\n  const spellingMatch = familyValues.find(function(fv) { return norm(fv) === norm(current) && fv !== current; });\n  if (spellingMatch) {\n    reasons.push('match_family_spelling');\n    current = spellingMatch;\n  } else if (familyValues.length > 0) {\n    const inputCase = classifyCase(current);\n    if (inputCase === 'lower' || inputCase === 'upper') {\n      const familyPatterns = familyValues.map(classifyCase);\n      const uniform = familyPatterns.every(function(p) { return p === familyPatterns[0]; }) ? familyPatterns[0] : null;\n      if (uniform && uniform !== 'mixed' && uniform !== inputCase) {\n        let converted = current;\n        if (uniform === 'upper') converted = current.toUpperCase();\n        else if (uniform === 'lower') converted = current.toLowerCase();\n        else if (uniform === 'title') converted = toTitleCase(current);\n        if (converted !== current) { reasons.push('match_family_case_convention'); current = converted; }\n      }\n    }\n    if (attr === 'size') {\n      const familyAllLetterSizes = familyValues.every(function(fv) { return LETTER_SIZES.indexOf(norm(fv)) !== -1; });\n      const mapped = SIZE_STANDARD_MAP[norm(current)];\n      if (familyAllLetterSizes && mapped && norm(mapped) !== norm(current)) {\n        reasons.push('match_family_size_convention');\n        current = mapped;\n      }\n    }\n  }\n\n  if (current !== rawStr) {\n    formattingSuggestions.push({\n      attribute: attr,\n      original: rawStr,\n      suggested: current,\n      reasons: reasons,\n      note: 'Suggestion only - confirm or keep your original. Nothing is applied automatically.'\n    });\n  }\n});\n\nif (formattingSuggestions.length > 0) {\n  checks.push({\n    check: 'VALUE_FORMATTING', status: 'suggestion', issue_code: 'FORMATTING_SUGGESTIONS',\n    suggestions: formattingSuggestions,\n    message: 'Some proposed values could be adjusted to match this family\\'s existing conventions. These are suggestions for you to confirm - they are never applied automatically and do not block anything.'\n  });\n} else {\n  checks.push({ check: 'VALUE_FORMATTING', status: 'pass', note: 'No formatting suggestions.' });\n}\n\n// ================= DECISION =================\nconst hardBlocks = checks.filter(function(c) { return c.status === 'hard_block'; });\nconst fixable = checks.filter(function(c) { return c.status === 'fixable'; });\nconst manualReviews = checks.filter(function(c) { return c.status === 'manual_review'; });\nconst warnings = checks.filter(function(c) { return c.status === 'warning'; });\nconst infoNotes = checks.filter(function(c) { return c.status === 'info'; });\n\nlet decision = 'CHILD_VALID';\nif (hardBlocks.length > 0) decision = 'BLOCKED';\nelse if (fixable.length > 0) decision = 'NEEDS_INPUT';\nelse if (manualReviews.length > 0) decision = 'MANUAL_REVIEW_REQUIRED';\n\nreturn [{ json: {\n  decision: decision,\n  parent_asin: ctx.parent_asin,\n  child_asin: ctx.child_asin,\n  marketplace_id: mkId,\n  parent: {\n    brand: parent.brand,\n    product_type: parent.product_type,\n    variation_theme: parent.variation_theme,\n    theme_attributes: themeAttrs,\n    child_count: parent.child_count\n  },\n  candidate: candidate,\n  proposed_values: proposed,\n  existing_children: existingChildren,\n  checks: checks,\n  hard_blocks: hardBlocks,\n  fixable_issues: fixable,\n  manual_reviews: manualReviews,\n  warnings: warnings,\n  informational_notes: infoNotes,\n  formatting_suggestions: formattingSuggestions\n}}];"
+        "jsCode": "const batch = $input.first().json;\nconst prep = $('Prepare Batch List').first().json;\nconst ctx = prep.ctx;\nconst parent = ctx.parent;\n\nif (!batch || batch.error || !Array.isArray(batch.items)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'FAMILY_FETCH_FAILED',\n    message: 'The batch catalog fetch for the family + candidate did not return items.',\n    upstream_raw: batch\n  }}];\n}\n\nconst mkId = ctx.marketplace_id;\n\nfunction forMarketplace(list) {\n  if (!Array.isArray(list)) return {};\n  return list.find(function(e) { return e.marketplaceId === mkId; }) || list[0] || {};\n}\n\nfunction findItem(asin) {\n  return batch.items.find(function(it) { return it.asin === asin; }) || null;\n}\n\nfunction norm(v) {\n  if (v === null || v === undefined) return null;\n  if (typeof v === 'object') {\n    // Structured attribute value (e.g. footwear_size, shirt_size): compare\n    // by the object's own fields, not by JS's default String(v), which\n    // collapses every structured value to the identical \"[object Object]\"\n    // regardless of what it actually contains. Ported verbatim from wf26,\n    // where this was already confirmed as the real cause of a false\n    // UNIQUE_VARIATION_COMBINATION clash between two genuinely different\n    // footwear_size values (a real size 8 and a real size 9 both\n    // stringified identically before that fix) - this file had the same\n    // two functions, never received the same fix, confirmed via a direct\n    // side-by-side and a real test against two structured sizes.\n    const keys = Object.keys(v)\n      .filter(function(k) { return v[k] !== null && v[k] !== undefined; })\n      .sort();\n    if (keys.length === 0) return null;\n    return keys.map(function(k) { return k + ':' + norm(v[k]); }).join('|');\n  }\n  return String(v).trim().toLowerCase();\n}\n\nfunction getAttrValue(item, attrName) {\n  if (!item || !item.attributes || !item.attributes[attrName]) return null;\n  const entries = item.attributes[attrName];\n  if (!Array.isArray(entries) || entries.length === 0) return null;\n  const entry = entries.find(function(e) { return e.marketplaceId === mkId; }) || entries[0];\n  if (!entry) return null;\n  // Simple attributes (color, style, ...) wrap their real value in\n  // entry.value. Structured attributes (footwear_size, shirt_size, ...)\n  // have no separate \"value\" field in the real PTD schema at all - the\n  // entry's own sibling properties (size, size_class, size_system, ...)\n  // ARE the value. Ported from wf26 alongside norm() above - without this\n  // branch every structured attribute silently read as null here, which\n  // marks every existing child values_incomplete and skips them out of\n  // the duplicate-clash check entirely, the quieter, opposite-direction\n  // half of the same underlying gap.\n  if (entry.value !== undefined) return entry.value;\n  const structured = {};\n  let hasFields = false;\n  Object.keys(entry).forEach(function(k) {\n    if (k === 'marketplaceId' || k === 'language_tag') return;\n    structured[k] = entry[k];\n    hasFields = true;\n  });\n  return hasFields ? structured : null;\n}\n\nfunction hasSalesRank(item) {\n  if (!item || !Array.isArray(item.salesRanks)) return false;\n  const entry = item.salesRanks.find(function(e) { return e.marketplaceId === mkId; }) || item.salesRanks[0];\n  if (!entry) return false;\n  const cls = Array.isArray(entry.classificationRanks) ? entry.classificationRanks : [];\n  const grp = Array.isArray(entry.displayGroupRanks) ? entry.displayGroupRanks : [];\n  return cls.length > 0 || grp.length > 0;\n}\n\nconst themeAttrsRaw = parent.theme_attributes || [];\nconst checks = [];\n\n// Amazon's own theme_attributes on the parent record can be a generic\n// placeholder label (e.g. \"size\") rather than the real underlying schema\n// attribute (e.g. \"footwear_size\") - confirmed live: a real SHOES parent\n// reporting theme_attributes ['color','size'] combined with a candidate\n// whose real, complete data was under 'footwear_size' reported \"Missing:\n// size\" even though nothing was actually missing. The frontend already\n// resolves this in its own way (Fix B); this workflow never received the\n// equivalent and trusted the raw name directly everywhere - the missing-\n// value check, the uniqueness-tuple comparison, and the formatting\n// suggestions all silently used the wrong key.\n//\n// An attr name is trusted as-is when either the existing family already\n// has real data under that exact name, or the candidate's own\n// proposed_values already uses it directly - the normal, already-working\n// case is completely unchanged by this. Otherwise, it's exactly as\n// unverifiable as Fix B found on the frontend, and gets resolved to\n// whichever proposed_values key isn't already claimed by a different,\n// already-trusted attribute - but ONLY when there is exactly one\n// unresolved theme attribute and exactly one unclaimed key overall, a\n// clean 1-to-1 swap. Any messier shape (more than one unresolved attribute,\n// or zero / more than one leftover key) is real ambiguity or a genuine\n// gap, not a name mismatch to paper over, and falls back to the original\n// name - still reported missing, same as before this change.\n// Only keys carrying a REAL value count as candidates for a name swap.\n// The frontend's attrValues object accumulates an entry for every\n// attribute name a dimension has ever had - when Child Entry's\n// re-verification upgrades a guessed name (size_name) to the real one\n// (footwear_size), the guess's now-orphaned, EMPTY entry stays behind and\n// still arrives here. Counting it would make two candidate keys look\n// available where only one is real, which defeats the 1-to-1 swap below\n// and falls back to the raw name - confirmed live, exactly this produced\n// a spurious \"Missing: size\" while the real footwear_size value was\n// present and complete. A key with no value could never have been the\n// theme's value anyway, so excluding it costs nothing.\nfunction hasRealValue(v) {\n  if (v === undefined || v === null) return false;\n  if (typeof v === 'object') {\n    return Object.keys(v).some(function(k) {\n      return v[k] !== null && v[k] !== undefined && String(v[k]).trim() !== '';\n    });\n  }\n  return String(v).trim() !== '';\n}\nconst proposedKeys = ctx.proposed_values\n  ? Object.keys(ctx.proposed_values).filter(function(k) { return hasRealValue(ctx.proposed_values[k]); })\n  : [];\nconst themeAttrResolution = themeAttrsRaw.map(function(attr) {\n  const verifiedInFamily = prep.existing_child_asins.some(function(asin) {\n    return getAttrValue(findItem(asin), attr) !== null;\n  });\n  const directMatch = proposedKeys.indexOf(attr) !== -1;\n  return { attr: attr, trusted: verifiedInFamily || directMatch };\n});\nconst trustedThemeAttrNames = themeAttrResolution.filter(function(r) { return r.trusted; }).map(function(r) { return r.attr; });\nconst unresolvedThemeAttrs = themeAttrResolution.filter(function(r) { return !r.trusted; });\nconst leftoverProposedKeys = proposedKeys.filter(function(k) { return trustedThemeAttrNames.indexOf(k) === -1; });\nconst themeAttrs = themeAttrsRaw.map(function(attr) {\n  if (trustedThemeAttrNames.indexOf(attr) !== -1) return attr;\n  if (unresolvedThemeAttrs.length === 1 && leftoverProposedKeys.length === 1) return leftoverProposedKeys[0];\n  return attr;\n});\n\nconst candidateItem = findItem(ctx.child_asin);\nif (!candidateItem) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'CHILD_NOT_FOUND',\n    child_asin: ctx.child_asin,\n    marketplace_id: mkId,\n    message: 'The candidate child ASIN was not returned by the Amazon catalog for this marketplace.'\n  }}];\n}\n\nconst candSummary = forMarketplace(candidateItem.summaries);\nconst candPt = forMarketplace(candidateItem.productTypes);\nconst candidate = {\n  asin: ctx.child_asin,\n  brand: candSummary.brand || null,\n  normalized_brand: (candSummary.brand || '').toLowerCase().trim(),\n  item_name: candSummary.itemName || null,\n  product_type: (candPt.productType || '').toUpperCase().trim() || null,\n  category: (candSummary.browseClassification && candSummary.browseClassification.displayName) || null\n};\n\nconst existingChildren = prep.existing_child_asins.map(function(asin) {\n  const item = findItem(asin);\n  const ecSummary = forMarketplace(item ? item.summaries : null);\n  const values = {};\n  const normalizedTuple = [];\n  let anyMissing = false;\n  themeAttrs.forEach(function(attr) {\n    const v = getAttrValue(item, attr);\n    values[attr] = v;\n    if (v === null) anyMissing = true;\n    normalizedTuple.push(norm(v));\n  });\n  return {\n    asin: asin,\n    found_in_catalog: !!item,\n    brand: ecSummary.brand || null,\n    normalized_brand: ((ecSummary.brand || '').toLowerCase().trim()) || null,\n    values: values,\n    normalized_tuple: normalizedTuple,\n    values_incomplete: anyMissing\n  };\n});\n\nconst proposed = {};\nconst proposedTuple = [];\nconst missingAttrs = [];\n// Transparency only - which theme attributes weren't supplied directly by\n// the candidate and were instead auto-derived from a sibling attribute.\nconst derivedAttrs = [];\n\n// Amazon's flat, generic size attributes (a family whose real\n// theme_attributes literally is [\"size\"], as opposed to a specific one\n// like footwear_size or shirt_size) aren't always something a listing\n// carries directly - some only ever have it via a STRUCTURED size\n// attribute, which repeats the same information under its own \"size\"\n// sub-field, just in Amazon's internal enum-token form (\"numeric_9\")\n// rather than the flat attribute's plain display form (\"9\"). Confirmed\n// live on two real, established siblings in this exact family:\n// footwear_size.size \"numeric_8\"/\"numeric_9\" correspond exactly to the\n// family's own flat size values \"8\"/\"9\" - stripping the \"numeric_\" prefix\n// reproduces both exactly, and this is genuinely why a candidate whose\n// footwear_size was fully confirmed and correct still reported \"missing:\n// size\" - the flat attribute the family actually uses was never being\n// looked for anywhere but ctx.proposed_values['size'] itself.\n//\n// Deliberately narrow: only this confirmed numeric_ case is derived.\n// Every other size_class (alpha, age, etc.) has no confirmed mapping yet\n// - guessing wrong here would silently write an incorrect size instead of\n// today's honest \"missing\", which is worse, so anything else still\n// reports missing exactly as before rather than being guessed at.\nfunction deriveFlatSizeFromStructuredSize(structuredValue) {\n  if (!structuredValue || typeof structuredValue !== 'object') return null;\n  const rawSize = structuredValue.size;\n  if (typeof rawSize !== 'string') return null;\n  if (rawSize.indexOf('numeric_') === 0) return rawSize.slice('numeric_'.length);\n  return null;\n}\n\nthemeAttrs.forEach(function(attr) {\n  let raw = ctx.proposed_values ? ctx.proposed_values[attr] : undefined;\n  const suppliedDirectly = !(raw === undefined || raw === null || String(raw).trim() === '');\n\n  if (!suppliedDirectly && attr === 'size' && ctx.proposed_values) {\n    // Look across whatever the candidate actually proposed for a\n    // structured sibling this can be derived from - the real structured\n    // attribute's name varies by product type (footwear_size, shirt_size,\n    // ...), so this isn't hardcoded to one.\n    const derivableFrom = Object.keys(ctx.proposed_values).find(function(k) {\n      return deriveFlatSizeFromStructuredSize(ctx.proposed_values[k]) !== null;\n    });\n    if (derivableFrom) {\n      raw = deriveFlatSizeFromStructuredSize(ctx.proposed_values[derivableFrom]);\n      derivedAttrs.push({ attribute: attr, derived_from: derivableFrom, value: raw });\n    }\n  }\n\n  if (raw === undefined || raw === null || String(raw).trim() === '') {\n    missingAttrs.push(attr);\n    proposed[attr] = null;\n    proposedTuple.push(null);\n  } else {\n    proposed[attr] = raw;\n    proposedTuple.push(norm(raw));\n  }\n});\n\n// ================= CHECKS (all reported, not first-failure) =================\n\n// 0. Review-language caution (WARNING - flagged by Validate Input's scanner\n// as a soft phrase like \"combine reviews\"/\"merge reviews\", not one of the\n// hard-block phrases - never gates, just surfaced for the seller to confirm).\nconst inputStage = $('Validate Input').first().json;\nif (inputStage.flagged_language) {\n  checks.push({\n    check: 'REVIEW_LANGUAGE_CAUTION', status: 'warning', issue_code: 'REVIEW_LANGUAGE_MENTIONED',\n    matched_phrase: inputStage.flagged_language.phrase,\n    matched_field: inputStage.flagged_language.field,\n    message: 'Your request mentions \"' + inputStage.flagged_language.phrase + '.\" Amazon\\'s variation system legitimately combines reviews when listings become part of the same parent-child family, so this isn\\'t automatically a problem - just confirm that\\'s what you mean, not something that would violate Amazon\\'s review policies.'\n  });\n}\n\n// 1. Brand match.\n// LIVE DISCOVERY (Day 21): parent ASINs are non-buyable placeholder records\n// and can have NO brand in their catalog summaries (parent_brand: null seen\n// live on B00PBORB8Y). A null parent brand is NOT a proven mismatch - derive\n// the family brand from the existing children's real brands (consensus)\n// before judging. If even that yields nothing, report indeterminate as\n// manual_review: never silently pass, never wrongly block.\nconst childBrandSet = existingChildren\n  .map(function(ec) { return ec.normalized_brand; })\n  .filter(function(b, i, arr) { return b && arr.indexOf(b) === i; });\n\nlet familyBrandNorm = parent.normalized_brand || null;\nlet familyBrandDisplay = parent.brand || null;\nlet familyBrandSource = 'parent_record';\nif (!familyBrandNorm) {\n  if (childBrandSet.length === 1) {\n    familyBrandNorm = childBrandSet[0];\n    const donor = existingChildren.find(function(ec) { return ec.normalized_brand === familyBrandNorm; });\n    familyBrandDisplay = donor ? donor.brand : familyBrandNorm;\n    familyBrandSource = 'existing_children_consensus';\n  } else {\n    familyBrandSource = childBrandSet.length === 0 ? 'indeterminate_no_brand_data' : 'indeterminate_children_conflict';\n  }\n}\n\nif (!familyBrandNorm) {\n  checks.push({\n    check: 'BRAND_MATCH', status: 'manual_review', issue_code: 'BRAND_INDETERMINATE',\n    family_brand_source: familyBrandSource,\n    child_brand: candidate.brand,\n    existing_children_brands: childBrandSet,\n    message: 'The family brand could not be determined from the catalog (the parent record has no brand and the existing children give no single consensus). This is not a proven mismatch - confirm manually that the candidate shares the family brand before proceeding.'\n  });\n} else if (candidate.normalized_brand && candidate.normalized_brand === familyBrandNorm) {\n  checks.push({ check: 'BRAND_MATCH', status: 'pass', family_brand: familyBrandDisplay, family_brand_source: familyBrandSource, child_brand: candidate.brand });\n} else {\n  checks.push({\n    check: 'BRAND_MATCH', status: 'hard_block', issue_code: 'BRAND_MISMATCH',\n    family_brand: familyBrandDisplay, family_brand_source: familyBrandSource, child_brand: candidate.brand,\n    message: 'The candidate child brand (' + (candidate.brand || 'unknown') + ') does not match the family brand (' + (familyBrandDisplay || 'unknown') + '). All items in a variation family must share the same brand.'\n  });\n}\n\n// 2. Product type match (hard block on mismatch)\nif (candidate.product_type && candidate.product_type === parent.product_type) {\n  checks.push({ check: 'PRODUCT_TYPE_MATCH', status: 'pass', product_type: parent.product_type });\n} else {\n  checks.push({\n    check: 'PRODUCT_TYPE_MATCH', status: 'hard_block', issue_code: 'PRODUCT_TYPE_MISMATCH',\n    parent_product_type: parent.product_type, child_product_type: candidate.product_type,\n    message: 'The candidate child product type (' + (candidate.product_type || 'unknown') + ') does not match the parent product type (' + (parent.product_type || 'unknown') + ').'\n  });\n}\n\n// 3. Theme match - only when a proposed_theme was explicitly sent.\n//    The theme is otherwise INHERITED from the parent (it cannot be changed after creation).\nif (ctx.proposed_theme) {\n  if (ctx.proposed_theme === parent.variation_theme) {\n    checks.push({ check: 'THEME_MATCH', status: 'pass', theme: parent.variation_theme });\n  } else {\n    checks.push({\n      check: 'THEME_MATCH', status: 'hard_block', issue_code: 'THEME_MISMATCH',\n      parent_theme: parent.variation_theme, proposed_theme: ctx.proposed_theme,\n      message: 'This parent already uses theme ' + parent.variation_theme + '. Amazon does not allow changing a variation theme after the parent is created.'\n    });\n  }\n} else {\n  checks.push({ check: 'THEME_MATCH', status: 'pass', theme: parent.variation_theme, note: 'Theme inherited from parent.' });\n}\n\n// 4. All theme attributes provided (fixable - the seller can supply them)\nif (missingAttrs.length === 0) {\n  checks.push({ check: 'THEME_ATTRIBUTES_PROVIDED', status: 'pass', attributes: themeAttrs });\n} else {\n  checks.push({\n    check: 'THEME_ATTRIBUTES_PROVIDED', status: 'fixable', issue_code: 'MISSING_THEME_ATTRIBUTE_VALUE',\n    missing_attributes: missingAttrs,\n    message: 'This parent theme (' + parent.variation_theme + ') requires a value for each of: ' + themeAttrs.join(', ') + '. Missing: ' + missingAttrs.join(', ') + '.'\n  });\n}\n\n// 5. Duplicate combination (hard block) - only checkable when all values were provided\nif (missingAttrs.length === 0) {\n  const clash = existingChildren.find(function(ec) {\n    if (ec.values_incomplete) return false;\n    return ec.normalized_tuple.length === proposedTuple.length &&\n      ec.normalized_tuple.every(function(v, i) { return v === proposedTuple[i]; });\n  });\n  if (clash) {\n    checks.push({\n      check: 'UNIQUE_VARIATION_COMBINATION', status: 'hard_block', issue_code: 'DUPLICATE_VARIATION_VALUE',\n      clashes_with_asin: clash.asin, clashing_values: clash.values, proposed_values: proposed,\n      message: 'The proposed combination is already used by existing child ' + clash.asin + '. Each combination of ' + themeAttrs.join(' + ') + ' must be unique in the family.'\n    });\n  } else {\n    checks.push({ check: 'UNIQUE_VARIATION_COMBINATION', status: 'pass', proposed_values: proposed });\n  }\n} else {\n  checks.push({ check: 'UNIQUE_VARIATION_COMBINATION', status: 'skipped', note: 'Cannot check uniqueness until all theme attribute values are provided.' });\n}\n\n// 6. Candidate already in THIS family (hard block - nothing to merge)\nif (prep.candidate_in_family) {\n  checks.push({\n    check: 'NOT_ALREADY_IN_FAMILY', status: 'hard_block', issue_code: 'ALREADY_IN_FAMILY',\n    message: 'This ASIN is already a child of this exact parent. There is nothing to merge.'\n  });\n} else {\n  checks.push({ check: 'NOT_ALREADY_IN_FAMILY', status: 'pass' });\n}\n\n// 7. DAY 20 PREVIEW (free from the batch data): candidate already belongs to a DIFFERENT parent.\n//    Per PRD: manual_review, never an automatic hard block - seller must resolve or confirm deliberately.\nconst candRel = forMarketplace(candidateItem.relationships);\nconst candGroups = Array.isArray(candRel.relationships) ? candRel.relationships : [];\nconst candVar = candGroups.find(function(g) { return g.type === 'VARIATION'; }) || null;\nconst candParents = (candVar && Array.isArray(candVar.parentAsins)) ? candVar.parentAsins : [];\nconst otherParents = candParents.filter(function(p) { return p !== ctx.parent_asin; });\nif (otherParents.length > 0) {\n  checks.push({\n    check: 'NO_EXISTING_PARENT_CONFLICT', status: 'manual_review', issue_code: 'EXISTING_PARENT_CONFLICT',\n    conflicting_parents: otherParents,\n    message: 'This ASIN already belongs to a different parent (' + otherParents.join(', ') + '). Amazon does not allow one ASIN in two families. Remove it from that family first, or confirm this move is deliberate.'\n  });\n} else if (!prep.candidate_in_family) {\n  checks.push({ check: 'NO_EXISTING_PARENT_CONFLICT', status: 'pass' });\n}\n\n// 8. DAY 21 - Generic-brand caution (WARNING - shown, asks confirmation, NEVER gates).\nconst brandMatchPassed = checks.some(function(c) { return c.check === 'BRAND_MATCH' && c.status === 'pass'; });\nif (brandMatchPassed && familyBrandNorm === 'generic') {\n  checks.push({\n    check: 'GENERIC_BRAND_CAUTION', status: 'warning', issue_code: 'GENERIC_BRAND_MATCH',\n    corroboration: {\n      family_brand_source: familyBrandSource,\n      product_type_match: candidate.product_type === parent.product_type,\n      parent_category: parent.category || null,\n      candidate_category: candidate.category || null\n    },\n    message: 'Both items carry Amazon\\'s placeholder brand \"Generic\" rather than a registered brand. The brand match passes, but \"Generic\" does not uniquely confirm these products share a common origin the way a registered brand does. Please confirm these are genuinely the same product family - matching product type and category are the stronger evidence here.'\n  });\n}\n\n// 9. DAY 21 - New-listing-into-established-family note (INFO - purely informational, NEVER gates).\nif (!prep.candidate_in_family) {\n  const rankedExisting = existingChildren.filter(function(ec) {\n    return hasSalesRank(findItem(ec.asin));\n  });\n  const candidateRanked = hasSalesRank(candidateItem);\n  if (!candidateRanked && rankedExisting.length > 0) {\n    checks.push({\n      check: 'NEW_LISTING_INTO_ESTABLISHED_FAMILY', status: 'info', issue_code: 'NEW_ASIN_INTO_ESTABLISHED_PARENT',\n      candidate_has_sales_rank: false,\n      existing_children_with_sales_rank: rankedExisting.length,\n      existing_children_total: existingChildren.length,\n      blocks_nothing: true,\n      message: 'The candidate appears to be a newer listing (no sales rank yet) joining a family with established sales history (' + rankedExisting.length + ' of ' + existingChildren.length + ' existing children have sales ranks). This is the normal, expected case for a growing product family and is not a risk signal by itself - noted purely for your awareness. (Amazon\\'s API does not expose review counts; this note is based on sales-rank presence.)'\n    });\n  } else {\n    checks.push({ check: 'NEW_LISTING_INTO_ESTABLISHED_FAMILY', status: 'pass', note: candidateRanked ? 'Candidate already has sales history.' : 'No established-family signal to note.' });\n  }\n}\n\n// 10. DAY 22 - Value formatting suggestions (SUGGESTION - seller confirms, NEVER auto-applied, NEVER gates).\nconst LETTER_SIZES = ['xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl', '2xl', '3xl'];\nconst SIZE_STANDARD_MAP = {\n  'extra small': 'XS', 'x-small': 'XS', 'small': 'S', 'medium': 'M',\n  'large': 'L', 'extra large': 'XL', 'extra-large': 'XL', 'x-large': 'XL',\n  'xx-large': 'XXL', 'xxlarge': 'XXL', '2x large': 'XXL'\n};\nfunction classifyCase(s) {\n  if (s === s.toUpperCase() && /[A-Za-z]/.test(s)) return 'upper';\n  if (s === s.toLowerCase() && /[A-Za-z]/.test(s)) return 'lower';\n  const words = s.split(' ');\n  const isTitle = words.every(function(w) {\n    return w.length > 0 && w[0] === w[0].toUpperCase() && (w.length === 1 || w.slice(1) === w.slice(1).toLowerCase());\n  });\n  return isTitle ? 'title' : 'mixed';\n}\nfunction toTitleCase(s) {\n  return s.split(' ').map(function(w) {\n    return w.length === 0 ? w : (w[0].toUpperCase() + w.slice(1).toLowerCase());\n  }).join(' ');\n}\n\nconst formattingSuggestions = [];\nthemeAttrs.forEach(function(attr) {\n  const raw = proposed[attr];\n  if (raw === null || raw === undefined) return;\n  const rawStr = String(raw);\n  const reasons = [];\n  let current = rawStr;\n\n  const cleaned = current.trim().replace(/\\s+/g, ' ');\n  if (cleaned !== current) { reasons.push('whitespace_cleanup'); current = cleaned; }\n\n  const familyValues = existingChildren\n    .filter(function(ec) { return ec.found_in_catalog && ec.values && ec.values[attr] !== null && ec.values[attr] !== undefined; })\n    .map(function(ec) { return String(ec.values[attr]); });\n\n  const spellingMatch = familyValues.find(function(fv) { return norm(fv) === norm(current) && fv !== current; });\n  if (spellingMatch) {\n    reasons.push('match_family_spelling');\n    current = spellingMatch;\n  } else if (familyValues.length > 0) {\n    const inputCase = classifyCase(current);\n    if (inputCase === 'lower' || inputCase === 'upper') {\n      const familyPatterns = familyValues.map(classifyCase);\n      const uniform = familyPatterns.every(function(p) { return p === familyPatterns[0]; }) ? familyPatterns[0] : null;\n      if (uniform && uniform !== 'mixed' && uniform !== inputCase) {\n        let converted = current;\n        if (uniform === 'upper') converted = current.toUpperCase();\n        else if (uniform === 'lower') converted = current.toLowerCase();\n        else if (uniform === 'title') converted = toTitleCase(current);\n        if (converted !== current) { reasons.push('match_family_case_convention'); current = converted; }\n      }\n    }\n    if (attr === 'size') {\n      const familyAllLetterSizes = familyValues.every(function(fv) { return LETTER_SIZES.indexOf(norm(fv)) !== -1; });\n      const mapped = SIZE_STANDARD_MAP[norm(current)];\n      if (familyAllLetterSizes && mapped && norm(mapped) !== norm(current)) {\n        reasons.push('match_family_size_convention');\n        current = mapped;\n      }\n    }\n  }\n\n  if (current !== rawStr) {\n    formattingSuggestions.push({\n      attribute: attr,\n      original: rawStr,\n      suggested: current,\n      reasons: reasons,\n      note: 'Suggestion only - confirm or keep your original. Nothing is applied automatically.'\n    });\n  }\n});\n\nif (formattingSuggestions.length > 0) {\n  checks.push({\n    check: 'VALUE_FORMATTING', status: 'suggestion', issue_code: 'FORMATTING_SUGGESTIONS',\n    suggestions: formattingSuggestions,\n    message: 'Some proposed values could be adjusted to match this family\\'s existing conventions. These are suggestions for you to confirm - they are never applied automatically and do not block anything.'\n  });\n} else {\n  checks.push({ check: 'VALUE_FORMATTING', status: 'pass', note: 'No formatting suggestions.' });\n}\n\n// ================= DECISION =================\nconst hardBlocks = checks.filter(function(c) { return c.status === 'hard_block'; });\nconst fixable = checks.filter(function(c) { return c.status === 'fixable'; });\nconst manualReviews = checks.filter(function(c) { return c.status === 'manual_review'; });\nconst warnings = checks.filter(function(c) { return c.status === 'warning'; });\nconst infoNotes = checks.filter(function(c) { return c.status === 'info'; });\n\nlet decision = 'CHILD_VALID';\nif (hardBlocks.length > 0) decision = 'BLOCKED';\nelse if (fixable.length > 0) decision = 'NEEDS_INPUT';\nelse if (manualReviews.length > 0) decision = 'MANUAL_REVIEW_REQUIRED';\n\nreturn [{ json: {\n  decision: decision,\n  parent_asin: ctx.parent_asin,\n  child_asin: ctx.child_asin,\n  marketplace_id: mkId,\n  parent: {\n    brand: parent.brand,\n    product_type: parent.product_type,\n    variation_theme: parent.variation_theme,\n    theme_attributes: themeAttrs,\n    child_count: parent.child_count\n  },\n  candidate: candidate,\n  proposed_values: proposed,\n  existing_children: existingChildren,\n  checks: checks,\n  hard_blocks: hardBlocks,\n  fixable_issues: fixable,\n  manual_reviews: manualReviews,\n  warnings: warnings,\n  informational_notes: infoNotes,\n  formatting_suggestions: formattingSuggestions,\n  derived_attributes: derivedAttrs\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2208,
-        1664
+        -5408,
+        3920
       ],
-      "id": "40196f83-448c-4c90-9c9b-1618614c35d8",
+      "id": "7196d03f-c935-45a5-b478-c1eeddc71357",
       "name": "Validate Child vs Parent"
     },
     {
@@ -239,10 +239,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -2000,
-        1664
+        -5200,
+        3920
       ],
-      "id": "8d38f7ec-f19d-4530-89e3-d1bb996af4c8",
+      "id": "40df0505-ec2e-42f6-bc7d-a54800fad34e",
       "name": "Respond With Validation"
     },
     {
@@ -252,10 +252,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -2688,
-        1808
+        -5888,
+        4064
       ],
-      "id": "81ab6c3e-a826-4ed4-a9fd-a5217cf760d8",
+      "id": "670c851a-8935-4456-8ad7-1e88110ebd21",
       "name": "Respond Parent Issue"
     },
     {
@@ -265,10 +265,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -3888,
-        2032
+        -7088,
+        4288
       ],
-      "id": "ad60c821-10aa-4f6f-a40a-1fbeedbbe7ad",
+      "id": "3c9a7cf0-b728-4c1c-b046-3fa27ed942d7",
       "name": "Respond Rejected"
     },
     {
@@ -278,10 +278,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2416,
-        1664
+        -5616,
+        3920
       ],
-      "id": "485d3d7b-cad3-4547-8a1f-ef7aeb56bd69",
+      "id": "e0cc12e5-5510-4a43-915c-e51363c1366a",
       "name": "Fetch Family Batch"
     },
     {
@@ -294,10 +294,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3840,
-        1424
+        -7040,
+        3680
       ],
-      "id": "afcf6ef9-b44d-4f36-bb1d-73d1533a1242",
+      "id": "65368497-3254-431a-be16-e7dd21da1947",
       "name": "Get Seller Status",
       "alwaysOutputData": true,
       "credentials": {
@@ -315,10 +315,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3648,
-        1440
+        -6848,
+        3696
       ],
-      "id": "b08c66b6-e8c1-4478-abaf-9c44f252cefd",
+      "id": "69ea275f-7301-4c95-9a65-335f619a2883",
       "name": "Seller Gate"
     },
     {
@@ -349,10 +349,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -3376,
-        1424
+        -6576,
+        3680
       ],
-      "id": "edc01811-eb9b-46ea-899e-ed9daff935a6",
+      "id": "e8846806-4b3d-45c3-a165-b2a3705953be",
       "name": "Is Eligible"
     },
     {
@@ -369,10 +369,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3008,
-        1408
+        -6208,
+        3664
       ],
-      "id": "d59bb8ba-108e-43c7-9d57-b064e913582e",
+      "id": "529cd36f-106a-42ac-a587-343ce7e947bc",
       "name": "Rate Limit Gate",
       "credentials": {
         "httpCustomAuth": {
@@ -408,10 +408,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -2768,
-        1408
+        -5968,
+        3664
       ],
-      "id": "8ddc3028-216f-4456-bffc-7d0de8989f86",
+      "id": "79fe9ef8-a1e1-4647-8bf5-2cff8c153377",
       "name": "Check Rate Limit"
     },
     {
@@ -421,10 +421,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2464,
-        1408
+        -5664,
+        3664
       ],
-      "id": "6fea12c6-5cea-401b-9bc2-934e3c13a48c",
+      "id": "fb26d3f4-754a-4e3e-bbda-f1065d26af4d",
       "name": "Format Rate Limit Response"
     },
     {
@@ -434,10 +434,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -2272,
-        1456
+        -5472,
+        3712
       ],
-      "id": "f63fd9e3-d5d2-4a1d-af90-201b133fea03",
+      "id": "b27baeb4-45f0-423c-b1b7-80dc180570e7",
       "name": "Respond Rate Limited"
     },
     {
@@ -447,10 +447,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -3168,
-        1504
+        -6368,
+        3760
       ],
-      "id": "55442f03-7cb2-41b1-9083-7d0890d93d68",
+      "id": "43ab75e9-dc83-4e78-b650-f309e940e0d1",
       "name": "Respond Seller Ineligible"
     },
     {
@@ -481,10 +481,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1984,
-        1952
+        -5184,
+        4208
       ],
-      "id": "d9cebf47-cfec-4e44-9f46-6a0fa08a9448",
+      "id": "c1b4d8ec-c6bf-41ea-a7b0-adac21b750d8",
       "name": "Needs Fallback Check"
     },
     {
@@ -497,10 +497,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1776,
-        1872
+        -4976,
+        4128
       ],
-      "id": "1dd4cd7e-fa71-411b-bef2-72c24f94f90e",
+      "id": "5bfe0e0c-9a80-47b7-b50d-9116c5c07f5c",
       "name": "Get Seller Selling Partner ID (Fallback)",
       "alwaysOutputData": true,
       "credentials": {
@@ -548,10 +548,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1568,
-        1872
+        -4768,
+        4128
       ],
-      "id": "cdc352e0-721f-407c-93a9-b648b4d8333b",
+      "id": "896291cf-04d9-45c6-a25f-0f45c9867dec",
       "name": "Search Listings By ASIN",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -563,10 +563,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1360,
-        1872
+        -4560,
+        4128
       ],
-      "id": "101fe0e2-daff-4d88-9639-f3b10b6f6c35",
+      "id": "5292add7-5a2a-45f1-bb99-eec87d0560a7",
       "name": "Parse Fallback Check"
     },
     {
@@ -597,10 +597,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1152,
-        1872
+        -4352,
+        4128
       ],
-      "id": "8a3f02b1-2a3f-4f3a-b350-15378a599029",
+      "id": "6c52f232-476d-4251-bc7d-aaff03745257",
       "name": "Is Schema Lookup Needed"
     },
     {
@@ -620,10 +620,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -944,
-        1792
+        -4144,
+        4048
       ],
-      "id": "e9de1422-d460-45fb-8126-2f0c8aaccf0f",
+      "id": "58a883b7-bd75-4b0f-857e-ced1b7630b8e",
       "name": "Get Product Type Definition (Fallback)",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -636,10 +636,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -736,
-        1792
+        -3936,
+        4048
       ],
-      "id": "458b0874-93d2-468a-9148-49f6e0c34a39",
+      "id": "fa3c8bb1-44c8-40c4-901e-5768feebc581",
       "name": "Fetch Schema (Fallback)",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -651,10 +651,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -528,
-        1792
+        -3728,
+        4048
       ],
-      "id": "e35fa08e-a67f-4d8b-b66f-513d257b1367",
+      "id": "d0b48476-d598-4fc7-8e15-0c270e88d232",
       "name": "Determine Real Attribute Names"
     }
   ],
@@ -984,7 +984,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "6426fec2-904b-4c9d-ba21-49da93de67dc",
+  "versionId": "fb9efc36-2105-4227-968a-65d7946f21f1",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

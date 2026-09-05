@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -624,
-        96
+        -352,
+        208
       ],
-      "id": "6742785f-b872-423d-8b74-28c0100094c1",
+      "id": "49f0a4e6-2716-4501-b491-5fc74d025854",
       "name": "Webhook",
       "webhookId": "aadd3d6a-7cce-4a3f-93d5-9c41bfd796fa"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        96
+        -144,
+        208
       ],
-      "id": "1a7c0fa5-7ade-4615-b25f-c1330c03979c",
+      "id": "9561b8d4-a0fc-4136-b27c-5469e5a62ef4",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        96
+        64,
+        208
       ],
-      "id": "64df8bd5-47dc-4a7f-9886-ba69d83a35b4",
+      "id": "60346a14-9886-4c08-ad4c-e49312a40a60",
       "name": "Is Valid"
     },
     {
@@ -75,18 +75,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        272,
+        112
       ],
-      "id": "b92aa84b-af1c-4f87-87e6-3823843c43a8",
+      "id": "0f56f4ac-36ed-4d5e-9943-bd46029071cd",
       "name": "Fetch Merge Request",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -95,10 +95,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        0
+        480,
+        112
       ],
-      "id": "d0b1e8e7-0c0e-445a-837c-4a6209a16969",
+      "id": "78b97588-9dca-40f4-991f-7c4d851b00eb",
       "name": "Check Is Draft"
     },
     {
@@ -129,10 +129,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        416,
-        0
+        688,
+        112
       ],
-      "id": "94a6711e-d543-44ed-910d-0666ad21a7f5",
+      "id": "d1111949-9627-4bf7-a91d-fdfaaa711fb4",
       "name": "Is Draft"
     },
     {
@@ -145,18 +145,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
-        0
+        896,
+        112
       ],
-      "id": "03bf09d7-24d3-45aa-8cec-da7a5fe9eb44",
+      "id": "f1bee4c8-8ac6-4d92-ba36-9ed09e448cdf",
       "name": "Fetch Submission Log",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
       },
-      "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
@@ -166,10 +166,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        832,
-        0
+        1104,
+        112
       ],
-      "id": "c3cdea6e-48cf-46c0-8815-46ba17e56257",
+      "id": "aa7a231c-c004-4693-8241-f126a5e34b13",
       "name": "Check Safe To Delete"
     },
     {
@@ -200,10 +200,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1040,
-        0
+        1312,
+        112
       ],
-      "id": "d07db6b7-3b4b-4c07-8caf-0cce5e238c11",
+      "id": "afb6c0f6-aac9-4926-994d-a46e315af588",
       "name": "Is Safe"
     },
     {
@@ -230,18 +230,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1248,
-        0
+        1520,
+        112
       ],
-      "id": "9428c42d-4b88-4fa4-a312-670b40f499d8",
+      "id": "148696dd-5237-4d7b-9b6d-2a1cb5799ba1",
       "name": "Delete Variation Matrices",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
       },
-      "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
@@ -268,18 +268,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1456,
-        0
+        1728,
+        112
       ],
-      "id": "4f683c07-adf3-46fc-9e90-6bb9c6b7c51a",
+      "id": "4542b6d4-cdea-4eda-8cc2-c7862c41959e",
       "name": "Delete Approval Logs",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
       },
-      "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
@@ -306,18 +306,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1664,
-        0
+        1936,
+        112
       ],
-      "id": "e18617d8-4740-403c-8d6b-d1143f8ac5ea",
+      "id": "8de595e0-abd4-4835-9846-f6d4123f735d",
       "name": "Delete Merge Request Items",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
       },
-      "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
@@ -344,18 +344,18 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1872,
-        0
+        2144,
+        112
       ],
-      "id": "1e7ff105-7921-4267-805a-6a7ab5424414",
+      "id": "0151691e-58c7-403a-b35f-981b7df575b5",
       "name": "Delete Merge Request",
+      "alwaysOutputData": true,
       "credentials": {
         "httpCustomAuth": {
           "id": "9z3veFG8YzFzmpRa",
           "name": "Supabase Service Role"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -364,10 +364,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2080,
-        0
+        2352,
+        112
       ],
-      "id": "cf271b32-48cf-4359-b945-d9d1ecba0a6e",
+      "id": "1ef2cc66-c1f2-403c-9de2-711bfbbb4509",
       "name": "Finalize Response"
     },
     {
@@ -377,10 +377,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2288,
-        0
+        2560,
+        112
       ],
-      "id": "6f55428c-f548-4e7c-a4e7-0f7e36596a51",
+      "id": "79f51da7-e765-422a-b91f-393b815d070c",
       "name": "Respond With Confirmation"
     },
     {
@@ -390,10 +390,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        208,
-        224
+        480,
+        336
       ],
-      "id": "ef47f2e4-8926-429f-93a5-5431617ad0ca",
+      "id": "cae956fd-6e57-4356-bf14-565c6fd0e56a",
       "name": "Respond Rejected"
     }
   ],
@@ -581,11 +581,11 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f90ad8ab-b169-4b89-a392-6b6282418eaa",
+  "versionId": "e4db5daa-f58f-41a8-8d16-bb41f7f94316",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
   "nodeGroups": [],
-  "id": "76ca1febd92f4e",
+  "id": "VIlPZzzr5ZLyWnKR",
   "tags": []
 }

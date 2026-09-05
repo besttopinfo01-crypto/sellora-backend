@@ -1,0 +1,582 @@
+{
+  "name": "DIAGNOSTIC ONLY - schema inspection (delete after use)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "85f4a82a-e10a-4736-8ca8-9c5c486f0e7d",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -512,
+        320
+      ],
+      "id": "bb1d70ae-fa66-4e36-93af-39521192ca58",
+      "name": "Webhook",
+      "webhookId": "85f4a82a-e10a-4736-8ca8-9c5c486f0e7d"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/get_amazon_refresh_token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\" }",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        448
+      ],
+      "id": "7a4515a5-1699-4d86-aa36-493ebcbab65f",
+      "name": "Get Refresh Token",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.amazon.com/auth/o2/token",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            },
+            {
+              "name": "refresh_token",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        272,
+        912
+      ],
+      "id": "08c7722a-60fd-4e58-8d72-8a08e511442c",
+      "name": "Exchange for Access Token",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "GaNwuUXcMv16Z5kh",
+          "name": "Amazon LWA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://sellingpartnerapi-na.amazon.com/definitions/2020-09-01/productTypes/{{ $('Validate Input').first().json.product_type }}?marketplaceIds={{ $('Validate Input').first().json.marketplace_id }}&parentageLevel=CHILD",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-amz-access-token",
+              "value": "={{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        912
+      ],
+      "id": "0ee3095c-def5-44cc-aed3-ae90a7592d8f",
+      "name": "Get Product Type Definition"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.schema.link.resource }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        688,
+        912
+      ],
+      "id": "e1e89720-d757-47af-a715-b9deb7bb7ab7",
+      "name": "Fetch Schema"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const schema = $json;\nconst themeProperty = schema.properties.variation_theme.items.properties.name;\n\nconst validThemes = themeProperty.enum || [];\nconst deprecatedThemes = (themeProperty.$lifecycle && themeProperty.$lifecycle.enumDeprecated) || [];\n\nconst definition = $('Get Product Type Definition').item.json;\n\n// Checked before any schema parsing is attempted. Not a general\n// solution - a small, explicit set of answers actually confirmed\n// against real Amazon submissions today, keyed by product type.\n// Deliberately kept minimal by design decision, not by omission - the\n// general pipeline below (schema candidates + real listing data, done\n// downstream of this workflow) is meant to be the main mechanism, not\n// this list. Do not add entries here reactively just because a new\n// theme resolves ambiguously; that defeats the point of building the\n// general mechanism in the first place.\nconst KNOWN_VERIFIED_ATTRIBUTES = {\n  SHIRT: { COLOR: 'color' }\n};\n\nfunction findRealAttribute(dimensionName) {\n  const allOfEntries = Array.isArray(schema.allOf) ? schema.allOf : [];\n  const dimLower = dimensionName.toLowerCase();\n  const matchedEntries = [];\n  // Collects every plausible match across every matching block, rather\n  // than stopping at the first one found. A product type's schema can\n  // genuinely have more than one attribute that looks plausible for the\n  // same theme name - confirmed live on SHIRT/SIZE, which matches both\n  // shirt_size and special_size_type. Returning early on the first hit\n  // meant this heuristic could never even know a second candidate\n  // existed, let alone that it might be the correct one. Disambiguating\n  // between multiple candidates is a separate, later step using real\n  // listing data, not schema alone - this function's job is only to\n  // report everything schema-plausible, never to pick a winner itself.\n  const candidates = [];\n\n  for (const entry of allOfEntries) {\n    const ifBlock = entry.if;\n    const thenBlock = entry.then;\n    if (!ifBlock || !thenBlock) continue;\n\n    const ifStr = JSON.stringify(ifBlock).toLowerCase();\n    if (ifStr.indexOf(dimLower) === -1) continue;\n\n    const required = Array.isArray(thenBlock.required)\n      ? thenBlock.required\n      : (thenBlock.properties ? Object.keys(thenBlock.properties) : []);\n\n    matchedEntries.push({ if_snippet: JSON.stringify(ifBlock).slice(0, 300), required: required });\n\n    const plausible = required.find(function(name) {\n      return name.toLowerCase().indexOf(dimLower) !== -1;\n    });\n    if (plausible && candidates.indexOf(plausible) === -1) {\n      candidates.push(plausible);\n    }\n  }\n  return { attributes: candidates, matched_entries: matchedEntries };\n}\n\n// Resolved once per theme here, for every valid theme, rather than\n// separately later for whichever one gets picked - themes are few\n// enough per product type that this is cheap, and it means the\n// frontend never needs a second round trip once a theme is chosen.\n//\n// theme_attribute_map[theme] is now an array of arrays - one array of\n// candidate attribute names per dimension, not one name per dimension.\n// A single-candidate dimension is still an array (length 1), for a\n// consistent shape regardless of how many candidates were found or\n// which path (known-verified vs schema-parsed) produced them.\nconst themeAttributeMap = {};\nconst themeAttributeDebug = {};\nconst knownForThisProductType = KNOWN_VERIFIED_ATTRIBUTES[definition.productType] || {};\nfor (const theme of validThemes) {\n  const dims = theme.split('/');\n  const resolved = dims.map(function(d) {\n    if (knownForThisProductType[d]) {\n      return { attributes: [knownForThisProductType[d]], matched_entries: [{ source: 'known_verified', reason: 'confirmed against a real Amazon submission today, not schema-parsed' }] };\n    }\n    return findRealAttribute(d);\n  });\n  themeAttributeMap[theme] = resolved.map(function(r) { return r.attributes; });\n  themeAttributeDebug[theme] = resolved.map(function(r) { return r.matched_entries; });\n}\n\nconst inspectName = $('Validate Input').first().json.inspect_attribute;\nconst inspectedSchema = inspectName && schema.properties ? (schema.properties[inspectName] || null) : null;\n\nreturn {\n  json: {\n    product_type: definition.productType,\n    marketplace_id: definition.marketplaceIds[0],\n    valid_themes: validThemes,\n    deprecated_themes: deprecatedThemes,\n    theme_attribute_map: themeAttributeMap,\n    theme_attribute_debug: themeAttributeDebug,\n    product_type_version: definition.productTypeVersion.version,\n    schema_required: Array.isArray(schema.required) ? schema.required : [],\n    // Added for the structured-attribute design: the requested\n    // attribute's own schema definition, generically - whatever\n    // properties/required/enum it declares, not hardcoded to shirt_size\n    // specifically. null if inspect_attribute wasn't set, or if this\n    // product type's schema has no property by that name.\n    inspected_attribute: inspectName,\n    inspected_attribute_schema: inspectedSchema\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        912
+      ],
+      "id": "84c6ec96-e770-417f-ae2b-504bc9eebf8a",
+      "name": "Parse Variation Themes",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1552,
+        800
+      ],
+      "id": "ce6720ee-5cb8-4cbd-8446-7f53f98c1eb5",
+      "name": "Respond to Webhook (Miss)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawInput = $input.first().json;\nconst body = rawInput.body ? rawInput.body : rawInput;\n\nif (!body.seller_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_SELLER_ID', message: 'seller_id is required.' } }];\n}\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.seller_id)) {\n  return [{ json: { decision: 'REJECTED', reason: 'INVALID_SELLER_ID_FORMAT', message: 'seller_id must be a valid UUID.' } }];\n}\nif (!body.product_type || !body.marketplace_id) {\n  return [{ json: { decision: 'REJECTED', reason: 'MISSING_REQUIRED_FIELDS', message: 'product_type and marketplace_id are both required.' } }];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: body.seller_id,\n  product_type: body.product_type,\n  marketplace_id: body.marketplace_id,\n  // Optional. When set, the response also includes this attribute's own\n  // schema definition (properties/required/enum) - generic by design,\n  // not specific to shirt_size, so this same diagnostic can answer the\n  // same question for whatever structured attribute turns up next.\n  inspect_attribute: body.inspect_attribute || null\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        320
+      ],
+      "id": "a9e28241-e111-4dc9-bd0c-d1dd4288a475",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d6383c14-f538-4ca6-b340-0efd7de3c708",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -96,
+        320
+      ],
+      "id": "ab4c96b6-2c15-45a7-8ed1-b8c9ee68fd43",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        64,
+        512
+      ],
+      "id": "2b63dd3d-bf2f-472a-b23a-7c1308a7bd6f",
+      "name": "Respond Rejected"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $('Validate Input').first().json.seller_id }}&select=status,contact_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "654d09f3-9f91-4a7d-a342-4a7795788295",
+      "name": "Get Seller Status",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/rpc/check_and_increment_rate_limit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"p_seller_id\": \"{{ $('Validate Input').first().json.seller_id }}\", \"p_action_type\": \"pt_definitions_get\", \"p_max_per_window\": 2 }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        528,
+        480
+      ],
+      "id": "bee395c5-eea3-4192-8e9f-9735e5d77fc7",
+      "name": "Rate Limit Gate",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8df65f5d-e700-4557-94f7-38d0c6bdbad6",
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        480
+      ],
+      "id": "05093985-4b77-406b-8651-f93dc0e7704d",
+      "name": "Check Rate Limit"
+    },
+    {
+      "parameters": {
+        "jsCode": "const status = $input.first().json;\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'RATE_LIMITED',\n    current_count: status.current_count,\n    window_start: status.window_start,\n    message: 'This seller has made too many requests to this operation in the current window. Please retry shortly.'\n  }}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        656
+      ],
+      "id": "6ff520d6-0383-4c17-a90c-5a8a8e7b1ac6",
+      "name": "Format Rate Limit Response"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        704
+      ],
+      "id": "edb4529b-23c3-410e-85c6-e1079575c80e",
+      "name": "Respond Rate Limited"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\nconst ctx = $('Validate Input').first().json;\n\nif (!sellerRow) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_FOUND',\n    seller_id: ctx.seller_id,\n    message: 'No seller record exists for this seller_id.'\n  }}];\n}\n\nif (sellerRow.status !== 'active') {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_NOT_ACTIVE',\n    seller_id: ctx.seller_id,\n    seller_status: sellerRow.status,\n    message: 'This seller account is not active (status: ' + sellerRow.status + '). Access is not permitted.'\n  }}];\n}\n\nreturn [{ json: { decision: 'ELIGIBLE' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "bc2a8b8e-84e5-4e7a-966e-4ffda17cdd50",
+      "name": "Seller Gate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6b45b124-5b62-463a-bf67-3a3682714aa6",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "ELIGIBLE",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        496,
+        0
+      ],
+      "id": "109041af-a0a4-4ebd-9e84-348ca39d5313",
+      "name": "Is Eligible"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        800,
+        48
+      ],
+      "id": "d4ec1d54-d72f-45c1-8b15-4831c6bdd94e",
+      "name": "Respond Seller Ineligible"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Refresh Token": {
+      "main": [
+        [
+          {
+            "node": "Exchange for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Get Product Type Definition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Product Type Definition": {
+      "main": [
+        [
+          {
+            "node": "Fetch Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Schema": {
+      "main": [
+        [
+          {
+            "node": "Parse Variation Themes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Variation Themes": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (Miss)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Get Seller Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Rate Limit Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Rate Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Seller Status": {
+      "main": [
+        [
+          {
+            "node": "Seller Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Get Refresh Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Rate Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seller Gate": {
+      "main": [
+        [
+          {
+            "node": "Is Eligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Eligible": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Seller Ineligible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7d86fff4-4cea-41d0-ae58-3786b715f35a",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "u5U0AjxubVwXL9MV",
+  "tags": []
+}
