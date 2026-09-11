@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -912,
-        512
+        -1168,
+        1664
       ],
-      "id": "e64c2f9c-ab86-4248-8662-4521bb25892a",
+      "id": "3a4380dd-e0c7-44be-9f77-1c27916ff288",
       "name": "Webhook",
       "webhookId": "aa0212f6-d1b9-4f04-b80b-fc5ef527a3aa"
     },
@@ -24,10 +24,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -720,
-        368
+        -976,
+        1520
       ],
-      "id": "0c0fa24c-820d-4209-8c8a-51731f0701eb",
+      "id": "4fb2ee7e-4a7a-41f9-9bb7-b73da1750bd0",
       "name": "Extract Query Params"
     },
     {
@@ -57,10 +57,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -576,
-        496
+        -832,
+        1648
       ],
-      "id": "ca301d3a-7d0a-49c0-9bd7-b40bd32a713a",
+      "id": "96ffe496-5a00-431f-8978-be47422f0108",
       "name": "Has Required Params"
     },
     {
@@ -82,10 +82,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -368,
-        160
+        -624,
+        1312
       ],
-      "id": "50eba438-2e1b-42bb-89e7-a05a897a596b",
+      "id": "f7c47829-a540-44d3-8071-40d6b361a255",
       "name": "Fetch OAuth State",
       "alwaysOutputData": true,
       "credentials": {
@@ -98,15 +98,15 @@
     },
     {
       "parameters": {
-        "jsCode": "const params = $('Extract Query Params').first().json;\n\n// Fetch OAuth State's own output confirms this arrives as a bare row\n// object when a match is found, not the raw PostgREST array — so\n// Array.isArray() here was always false, silently treating every real,\n// unused, unexpired state as \"not found.\" Check items.length instead,\n// which correctly reflects zero vs. one item either way.\nconst items = $input.all();\nlet row = null;\nif (items.length > 0) {\n  const data = items[0].json;\n  row = Array.isArray(data) ? data[0] : data;\n}\n\nif (!row || !row.seller_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'UNKNOWN_STATE',\n    message: 'This authorization attempt was not recognized. Please start over from Connect Amazon Account.'\n  }}];\n}\nif (row.used_at) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'STATE_ALREADY_USED',\n    message: 'This authorization link has already been used. Please start over from Connect Amazon Account.'\n  }}];\n}\n// Basic staleness check here; Day 10 builds the full, user-facing\n// clean-restart handling for this specific case in more detail.\nconst ageMinutes = (Date.now() - new Date(row.created_at).getTime()) / 60000;\nif (ageMinutes > 10) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'STATE_EXPIRED',\n    message: 'This authorization attempt took too long and expired. Please start over from Connect Amazon Account.',\n    age_minutes: ageMinutes\n  }}];\n}\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: row.seller_id,\n  state: params.state,\n  selling_partner_id: params.selling_partner_id,\n  spapi_oauth_code: params.spapi_oauth_code\n}}];"
+        "jsCode": "const params = $('Extract Query Params').first().json;\n\n// Fetch OAuth State's own output confirms this arrives as a bare row\n// object when a match is found, not the raw PostgREST array — so\n// Array.isArray() here was always false, silently treating every real,\n// unused, unexpired state as \"not found.\" Check items.length instead,\n// which correctly reflects zero vs. one item either way.\nconst items = $input.all();\nlet row = null;\nif (items.length > 0) {\n  const data = items[0].json;\n  row = Array.isArray(data) ? data[0] : data;\n}\n\n// A row that exists but has a null seller_id is what wf09 stores for\n// a brand-new visitor with no seller_id yet (see wf09's own comment on\n// this) - that's a valid, expected shape now, not an error. Only a\n// genuinely missing row means the state itself was never issued.\nif (!row) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'UNKNOWN_STATE',\n    message: 'This authorization attempt was not recognized. Please start over from Connect Amazon Account.'\n  }}];\n}\nif (row.used_at) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'STATE_ALREADY_USED',\n    message: 'This authorization link has already been used. Please start over from Connect Amazon Account.'\n  }}];\n}\n// Basic staleness check here; Day 10 builds the full, user-facing\n// clean-restart handling for this specific case in more detail.\nconst ageMinutes = (Date.now() - new Date(row.created_at).getTime()) / 60000;\nif (ageMinutes > 10) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'STATE_EXPIRED',\n    message: 'This authorization attempt took too long and expired. Please start over from Connect Amazon Account.',\n    age_minutes: ageMinutes\n  }}];\n}\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: row.seller_id,\n  state: params.state,\n  selling_partner_id: params.selling_partner_id,\n  spapi_oauth_code: params.spapi_oauth_code\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -176,
-        160
+        -432,
+        1312
       ],
-      "id": "1b2cc424-b8d9-4be3-a858-f91cc5814073",
+      "id": "bcf5a1b2-609c-482c-9d65-2686b3921cf0",
       "name": "Validate State"
     },
     {
@@ -136,10 +136,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        0,
-        160
+        -256,
+        1312
       ],
-      "id": "e6c81145-98cf-4d94-ad57-4d3c26e2757a",
+      "id": "0e792f32-ab2c-43dc-a618-1ba386e2e41a",
       "name": "State Is Valid"
     },
     {
@@ -170,10 +170,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        256,
-        320
+        0,
+        1472
       ],
-      "id": "0d92b685-f47a-4f4a-b33f-1675c079c3d4",
+      "id": "1fe321c8-4918-4b51-a36b-29059e0f53c5",
       "name": "Mark State Used",
       "credentials": {
         "httpCustomAuth": {
@@ -185,30 +185,30 @@
     },
     {
       "parameters": {
-        "jsCode": "// Repackages what Validate State confirmed into the flat shape the\n// token-exchange chain below reads from. Named/dated from when the\n// exchange itself was still a next-session stub; it's since been wired\n// in directly below (spapi_oauth_code expires in 5 minutes, so it fires\n// immediately - nothing here queues or delays that).\nconst validated = $('Validate State').first().json;\nreturn [{ json: {\n  seller_id: validated.seller_id,\n  selling_partner_id: validated.selling_partner_id,\n  spapi_oauth_code: validated.spapi_oauth_code,\n  ready_for_token_exchange: true\n}}];"
+        "jsCode": "// Reads from whichever of the three seller-resolution branches just\n// ran (an existing seller passed straight through, a returning\n// seller recognized by selling_partner_id, or a brand-new seller\n// just created) rather than reaching back to one named node by\n// id - there are three possible predecessors now, not one.\nconst resolved = $input.first().json;\nreturn [{ json: {\n  seller_id: resolved.seller_id,\n  selling_partner_id: resolved.selling_partner_id,\n  spapi_oauth_code: resolved.spapi_oauth_code,\n  ready_for_token_exchange: true\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        432,
-        320
+        176,
+        1472
       ],
-      "id": "06140f82-4dc4-45c5-9cff-21eadd337964",
+      "id": "aa5727c1-fea5-4a19-b679-a0fc15378f2b",
       "name": "Prepare Handoff (Day 9)"
     },
     {
       "parameters": {
         "respondWith": "redirect",
-        "redirectURL": "https://catalove.ai/?connected=true",
+        "redirectURL": "={{ $json.redirect_url }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1152,
-        320
+        896,
+        1472
       ],
-      "id": "f7e4163c-682e-4848-9b7a-b953244791a7",
+      "id": "f4fb24bc-eb8f-4295-bf7f-7ba3dc0e58d8",
       "name": "Respond Success (placeholder)"
     },
     {
@@ -220,10 +220,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        0,
-        416
+        -256,
+        1568
       ],
-      "id": "a35a577b-2680-4890-b1f7-7f7f7fdcc56e",
+      "id": "4900c6ff-cae2-4b38-9959-3732def91c63",
       "name": "Respond Rejected"
     },
     {
@@ -233,10 +233,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -576,
-        704
+        -832,
+        1856
       ],
-      "id": "cb3c481f-ba92-4c9d-93bf-3bf98ed63db9",
+      "id": "68a996ac-4d87-48fc-810e-55f24823a60f",
       "name": "Respond Missing Params"
     },
     {
@@ -268,10 +268,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        592,
-        320
+        336,
+        1472
       ],
-      "id": "33e117f4-e3f7-48e4-b141-35977a90b635",
+      "id": "e8154de9-5c22-4221-aeb0-e83abc152abf",
       "name": "Exchange Code for Tokens",
       "credentials": {
         "httpBasicAuth": {
@@ -309,10 +309,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        768,
-        320
+        512,
+        1472
       ],
-      "id": "2d0f0654-5942-40bb-8479-dba59cb5d29e",
+      "id": "5d34e481-a90d-4f01-ad21-5cf8572fb45e",
       "name": "Store Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -323,15 +323,15 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst message = data.message || 'Something went wrong. Please start over from Connect Amazon Account.';\n\nconst html = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>Connection unsuccessful</title>\n<style>\nbody { font-family: -apple-system, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; color: #1a1a1a; text-align: center; }\nh1 { font-size: 20px; }\np { color: #555; line-height: 1.5; }\na.button { display: inline-block; margin-top: 24px; padding: 12px 24px; background: #232f3e; color: white; text-decoration: none; border-radius: 4px; }\n</style>\n</head>\n<body>\n<h1>We couldn't connect your Amazon account</h1>\n<p>${message}</p>\n<a class=\"button\" href=\"https://catalove.ai/?connected=false\">Try again</a>\n</body>\n</html>`;\n\nreturn [{ json: { html } }];"
+        "jsCode": "const data = $input.first().json;\nconst message = data.message || 'Something went wrong. Please start over from Connect Amazon Account.';\n\nconst html = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>Connection unsuccessful</title>\n<style>\nbody { font-family: -apple-system, sans-serif; max-width: 480px; margin: 80px auto; padding: 0 20px; color: #1a1a1a; text-align: center; }\nh1 { font-size: 20px; }\np { color: #555; line-height: 1.5; }\na.button { display: inline-block; margin-top: 24px; padding: 12px 24px; background: #232f3e; color: white; text-decoration: none; border-radius: 4px; }\n</style>\n</head>\n<body>\n<h1>We couldn't connect your Amazon account</h1>\n<p>${message}</p>\n<a class=\"button\" href=\"https://app.catalove.ai/?connected=false\">Try again</a>\n</body>\n</html>`;\n\nreturn [{ json: { html } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -192,
-        416
+        -448,
+        1568
       ],
-      "id": "79e38afd-8b77-42a7-8bfd-9c6874f95f4c",
+      "id": "df8ce02c-2846-46f1-8741-2c632760995e",
       "name": "Build Rejection Page"
     },
     {
@@ -357,10 +357,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        976,
-        320
+        720,
+        1472
       ],
-      "id": "1abf8c91-d4a1-4c83-b29c-f17ee0535a19",
+      "id": "9690a8a9-9e9a-4322-8b31-b27fc180bd6e",
       "name": "Store Selling Partner ID",
       "credentials": {
         "httpCustomAuth": {
@@ -369,6 +369,531 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const validated = $('Validate State').first().json;\n\nif (validated.seller_id) {\n  return [{ json: {\n    decision: 'HAS_SELLER_ID',\n    seller_id: validated.seller_id,\n    selling_partner_id: validated.selling_partner_id,\n    spapi_oauth_code: validated.spapi_oauth_code\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'NEEDS_IDENTITY_RESOLUTION',\n  selling_partner_id: validated.selling_partner_id,\n  spapi_oauth_code: validated.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        1472
+      ],
+      "id": "9f71ae09-5790-4e58-9e2d-c967dde10eb0",
+      "name": "Check Seller ID Presence"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "33ebd5a4-e569-4255-bed0-fef1073ae3e8",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "HAS_SELLER_ID",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        384,
+        1472
+      ],
+      "id": "b6b1a704-9494-4bb9-9e9b-6454995b08fb",
+      "name": "Has Seller ID?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: {\n  seller_id: d.seller_id,\n  selling_partner_id: d.selling_partner_id,\n  spapi_oauth_code: d.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        1360
+      ],
+      "id": "cbe23a26-8b13-4be2-8176-573956cebfeb",
+      "name": "Use Existing Seller"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/seller_amazon_identity?selling_partner_id=eq.{{ encodeURIComponent($json.selling_partner_id) }}&select=seller_id&order=captured_at.asc&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        576,
+        1584
+      ],
+      "id": "c5a88540-743b-4098-bedd-787d1645f775",
+      "name": "Check Existing Amazon Identity",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Same empty-array-vs-placeholder awareness as wf21's original fix:\n// alwaysOutputData can force a single {} through where PostgREST\n// would otherwise return zero rows, so an object with no keys is\n// treated the same as a genuinely empty array, not as a match.\nconst ctx = $('Check Seller ID Presence').first().json;\nconst items = $input.all();\nlet row = null;\nif (items.length > 0) {\n  const data = items[0].json;\n  if (Array.isArray(data)) {\n    row = data.length > 0 ? data[0] : null;\n  } else if (data && typeof data === 'object' && Object.keys(data).length > 0) {\n    row = data;\n  }\n}\n\nif (row && row.seller_id) {\n  return [{ json: {\n    decision: 'REUSE_EXISTING',\n    seller_id: row.seller_id,\n    selling_partner_id: ctx.selling_partner_id,\n    spapi_oauth_code: ctx.spapi_oauth_code\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'CREATE_NEW',\n  selling_partner_id: ctx.selling_partner_id,\n  spapi_oauth_code: ctx.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        1584
+      ],
+      "id": "0e173cd7-8835-43de-bd01-5cf0e3228ae6",
+      "name": "Resolve Existing Or New"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "26f444ef-3172-4c85-bd40-5d8a8ba5670a",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "REUSE_EXISTING",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        1584
+      ],
+      "id": "6cddad34-0180-46e3-bfd3-528745c51c82",
+      "name": "Identity Match Found?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: {\n  seller_id: d.seller_id,\n  selling_partner_id: d.selling_partner_id,\n  spapi_oauth_code: d.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        1472
+      ],
+      "id": "24bd3e77-0ed5-4ef0-9a81-afd53da92579",
+      "name": "Use Existing Seller (Matched)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Resolve Existing Or New').first().json;\n\n// Same throwaway-password pattern as the original signup flow (wf41)\n// - sent once to the admin create-user call below and never stored,\n// shown, or needed again.\nfunction randomPassword(len) {\n  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';\n  let out = '';\n  for (let i = 0; i < len; i++) {\n    out += chars[Math.floor(Math.random() * chars.length)];\n  }\n  return out;\n}\n\n// Placeholder, not a real inbox: this seller connected Amazon straight\n// from the landing-page button, without typing an email first.\n// auth.users still needs *some* unique email for the admin create-user\n// call, so this generates one that's obviously not real and easy to\n// find later (LIKE '%@connect.catalove.internal') - wf22's own\n// needs_email check looks for this exact domain. It's never shown to\n// the seller; the dashboard's \"add your email\" prompt (wired to the\n// repurposed wf41) is what turns this into a real, reachable address.\nfunction randomToken() {\n  return Math.random().toString(36).slice(2) + Date.now().toString(36);\n}\nconst placeholderEmail = 'pending-' + randomToken() + '@connect.catalove.internal';\n\nreturn [{ json: {\n  selling_partner_id: ctx.selling_partner_id,\n  spapi_oauth_code: ctx.spapi_oauth_code,\n  contact_email: placeholderEmail,\n  throwaway_password: randomPassword(24)\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        1696
+      ],
+      "id": "2cfa599e-ecbe-4294-9964-f1e9ce635199",
+      "name": "Build Placeholder Signup"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/auth/v1/admin/users",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"email\": {{ JSON.stringify($json.contact_email) }},\n  \"password\": {{ JSON.stringify($json.throwaway_password) }},\n  \"email_confirm\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1344,
+        1696
+      ],
+      "id": "b496e5b1-ef24-4117-9f4c-4536609b7297",
+      "name": "Create Auth User",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Build Placeholder Signup').first().json;\nconst res = $input.first().json;\n\n// Same shape-based success/failure detection as the original signup\n// flow: a created user always comes back with a real .id.\nconst newUserId = (res && res.id) ? res.id : ((res && res.user && res.user.id) ? res.user.id : null);\n\nif (!newUserId) {\n  // Reuses wf41's exact error-unwrapping logic - n8n wraps a failed\n  // HTTP call's real body the same way regardless of which admin\n  // endpoint produced it.\nfunction tryParseAt(str, startIdx) {\n  for (let end = str.length; end > startIdx; end--) {\n    try {\n      return JSON.parse(str.slice(startIdx, end));\n    } catch (e) {\n      // keep shrinking\n    }\n  }\n  return undefined;\n}\nfunction digDeep(str) {\n  if (typeof str !== 'string') return null;\n  let current = str;\n  for (let depth = 0; depth < 4; depth++) {\n    let bestStart = -1;\n    for (let i = 0; i < current.length; i++) {\n      if (current[i] === '{' || current[i] === '\"') { bestStart = i; break; }\n    }\n    if (bestStart === -1) return null;\n    const parsed = tryParseAt(current, bestStart);\n    if (parsed === undefined) return null;\n    if (parsed && typeof parsed === 'object') {\n      if (typeof parsed.msg === 'string') return parsed.msg;\n      if (typeof parsed.message === 'string') return parsed.message;\n      return null;\n    }\n    if (typeof parsed === 'string') {\n      current = parsed;\n      continue;\n    }\n    return null;\n  }\n  return null;\n}\nfunction extractMessage(r) {\n  if (!r) return null;\n  const flat = [r.msg, r.message, r.error_description, (typeof r.error === 'string' ? r.error : null)];\n  for (const c of flat) {\n    if (typeof c === 'string' && c) return digDeep(c) || c;\n  }\n  if (r.error && typeof r.error === 'object' && typeof r.error.message === 'string') {\n    return digDeep(r.error.message) || r.error.message;\n  }\n  return null;\n}\n  const message = extractMessage(res)\n    || 'We could not finish setting up your account. Please start over from Connect Amazon Account.';\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'AUTH_USER_CREATE_FAILED',\n    message: message\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'CREATED',\n  auth_user_id: newUserId,\n  contact_email: ctx.contact_email,\n  selling_partner_id: ctx.selling_partner_id,\n  spapi_oauth_code: ctx.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        1696
+      ],
+      "id": "8e4162e2-a564-4141-95a1-7c34744898ff",
+      "name": "Check Auth Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "72c38ee3-8826-442e-a787-917dfe8ab843",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "CREATED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1728,
+        1696
+      ],
+      "id": "5ec753d2-8325-4a84-84f7-69385ccca10f",
+      "name": "Auth User Created?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"id\": \"{{ $json.auth_user_id }}\",\n  \"contact_email\": {{ JSON.stringify($json.contact_email) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1920,
+        1616
+      ],
+      "id": "417ede32-ebcf-43de-b321-94671591d97f",
+      "name": "Insert Seller Row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const created = $('Check Auth Result').first().json;\nconst insertResult = $input.first().json;\nconst insertedRow = Array.isArray(insertResult) ? insertResult[0] : insertResult;\n\n// Prefer: return=representation, same reasoning as the original\n// signup flow: makes success and failure arrive as genuinely\n// different shapes instead of the empty-body placeholder ambiguity\n// wf21 needed fixing for.\nif (!insertedRow || insertedRow.id !== created.auth_user_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_ROW_INSERT_FAILED',\n    message: 'We could not finish setting up your account. Please start over from Connect Amazon Account.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'SELLER_ROW_CREATED',\n  seller_id: insertedRow.id,\n  selling_partner_id: created.selling_partner_id,\n  spapi_oauth_code: created.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        1616
+      ],
+      "id": "71874c70-4299-4b32-b824-180a40c6f06d",
+      "name": "Check Seller Insert"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "743a4e9e-da60-4761-bf59-df4d140dfea3",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "SELLER_ROW_CREATED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2304,
+        1616
+      ],
+      "id": "b9384e3f-67c8-4adf-912d-b2c015863c91",
+      "name": "Seller Row Created?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nreturn [{ json: {\n  seller_id: d.seller_id,\n  selling_partner_id: d.selling_partner_id,\n  spapi_oauth_code: d.spapi_oauth_code\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        1536
+      ],
+      "id": "d820816f-8958-4977-ba86-b8f5960f1663",
+      "name": "Use Newly Created Seller"
+    },
+    {
+      "parameters": {
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $('Prepare Handoff (Day 9)').first().json.seller_id }}&select=contact_email",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        928,
+        1472
+      ],
+      "id": "ca5d3080-2fdf-4e0e-82e0-c7faf51e06f1",
+      "name": "Fetch Seller Email",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.first().json;\nconst row = Array.isArray(rows) ? rows[0] : rows;\nconst sellerId = $('Prepare Handoff (Day 9)').first().json.seller_id;\n\nif (!row || !row.contact_email) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_EMAIL_LOOKUP_FAILED',\n    message: 'Connected, but something went wrong finishing sign-in. Please try again from Connect Amazon Account.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'EMAIL_FOUND',\n  seller_id: sellerId,\n  contact_email: row.contact_email\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        1472
+      ],
+      "id": "5f64f7e9-24aa-439e-ae27-54fdac96d09c",
+      "name": "Extract Seller Email"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ae923873-f084-4582-97e0-9c06ece55b5b",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "EMAIL_FOUND",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1312,
+        1472
+      ],
+      "id": "0502faa1-d061-4beb-a001-629850e7d31b",
+      "name": "Email Found?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://dbgzqwophuukxuwgvgsh.supabase.co/auth/v1/admin/generate_link",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"type\": \"magiclink\",\n  \"email\": {{ JSON.stringify($json.contact_email) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1504,
+        1472
+      ],
+      "id": "ccb82233-0c7f-4d66-9b91-5baad82d8e6f",
+      "name": "Generate Sign-In Token",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Extract Seller Email').first().json;\nconst res = $input.first().json;\n\n// The raw REST response for generate_link hasn't been confirmed\n// against this project's own Supabase instance yet - the JS SDK's\n// own wrapper nests this under .properties.hashed_token, but a raw\n// HTTP call (what this node makes) may return hashed_token at the\n// top level instead. Checked defensively both ways rather than\n// assumed, same as every other admin-API response in this workflow.\nconst hashedToken = (res && res.hashed_token)\n  ? res.hashed_token\n  : ((res && res.properties && res.properties.hashed_token) ? res.properties.hashed_token : null);\n\nif (!hashedToken) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'TOKEN_GENERATION_FAILED',\n    message: 'Connected, but something went wrong finishing sign-in. Please try again from Connect Amazon Account.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'TOKEN_READY',\n  seller_id: ctx.seller_id,\n  hashed_token: hashedToken\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        1472
+      ],
+      "id": "7950a5e5-a3b2-4ff9-92a8-23351305c3b5",
+      "name": "Check Token Generated"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f6b850e7-00c1-43f4-9957-3e55aec3101f",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "TOKEN_READY",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1888,
+        1472
+      ],
+      "id": "267fa60c-9894-48d2-a09c-178ee9ca7b45",
+      "name": "Token Generated?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Check Token Generated').first().json;\n\n// type=email (not magiclink) is deliberate - that's what generated\n// the token, but supabase-js's verifyOtp call on the other end\n// needs 'email' as the type for an email-based token_hash, confirmed\n// against Supabase's own documented examples of this exact\n// generate-then-verify pattern before relying on it.\nconst url = 'https://app.catalove.ai/auth/callback'\n  + '?token_hash=' + encodeURIComponent(ctx.hashed_token)\n  + '&type=email'\n  + '&connected=true'\n  + '&seller_id=' + encodeURIComponent(ctx.seller_id);\n\nreturn [{ json: { redirect_url: url } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        1472
+      ],
+      "id": "27589ea5-df78-48c6-bf82-6b1e8eaebb5f",
+      "name": "Build Final Redirect"
     }
   ],
   "pinData": {},
@@ -457,7 +982,7 @@
       "main": [
         [
           {
-            "node": "Prepare Handoff (Day 9)",
+            "node": "Check Seller ID Presence",
             "type": "main",
             "index": 0
           }
@@ -512,6 +1037,290 @@
       "main": [
         [
           {
+            "node": "Fetch Seller Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Seller ID Presence": {
+      "main": [
+        [
+          {
+            "node": "Has Seller ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Seller ID?": {
+      "main": [
+        [
+          {
+            "node": "Use Existing Seller",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Existing Amazon Identity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Existing Seller": {
+      "main": [
+        [
+          {
+            "node": "Prepare Handoff (Day 9)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Amazon Identity": {
+      "main": [
+        [
+          {
+            "node": "Resolve Existing Or New",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Existing Or New": {
+      "main": [
+        [
+          {
+            "node": "Identity Match Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identity Match Found?": {
+      "main": [
+        [
+          {
+            "node": "Use Existing Seller (Matched)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Placeholder Signup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Existing Seller (Matched)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Handoff (Day 9)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Placeholder Signup": {
+      "main": [
+        [
+          {
+            "node": "Create Auth User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Auth User": {
+      "main": [
+        [
+          {
+            "node": "Check Auth Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth Result": {
+      "main": [
+        [
+          {
+            "node": "Auth User Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth User Created?": {
+      "main": [
+        [
+          {
+            "node": "Insert Seller Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Rejection Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Seller Row": {
+      "main": [
+        [
+          {
+            "node": "Check Seller Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Seller Insert": {
+      "main": [
+        [
+          {
+            "node": "Seller Row Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seller Row Created?": {
+      "main": [
+        [
+          {
+            "node": "Use Newly Created Seller",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Rejection Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Use Newly Created Seller": {
+      "main": [
+        [
+          {
+            "node": "Prepare Handoff (Day 9)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Seller Email": {
+      "main": [
+        [
+          {
+            "node": "Extract Seller Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Seller Email": {
+      "main": [
+        [
+          {
+            "node": "Email Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Found?": {
+      "main": [
+        [
+          {
+            "node": "Generate Sign-In Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Rejection Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Sign-In Token": {
+      "main": [
+        [
+          {
+            "node": "Check Token Generated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Token Generated": {
+      "main": [
+        [
+          {
+            "node": "Token Generated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Generated?": {
+      "main": [
+        [
+          {
+            "node": "Build Final Redirect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Rejection Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Final Redirect": {
+      "main": [
+        [
+          {
             "node": "Respond Success (placeholder)",
             "type": "main",
             "index": 0
@@ -526,7 +1335,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "52eeae98-2834-4f4e-9541-4ba4b481fc57",
+  "versionId": "f5bb50e4-ae40-4a68-b54e-39233a62048d",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

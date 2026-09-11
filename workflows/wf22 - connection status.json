@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        0
+        64,
+        96
       ],
-      "id": "a61b7c33-8ad6-47fb-9e7e-cb33ea8151b3",
+      "id": "5a355cfb-dc4e-4185-93d1-a1ba539361c0",
       "name": "Webhook",
       "webhookId": "e7b2a9d4-3f61-4c85-9e07-1a6d8b3c5f92"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        0
+        272,
+        96
       ],
-      "id": "9f3b4380-0d4f-4674-bf2d-6b39a20b2220",
+      "id": "81eb9c73-a07e-48e6-86d5-fa903e5010a5",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        416,
-        0
+        480,
+        96
       ],
-      "id": "256b0dd3-e14e-4c91-8574-32e840784da8",
+      "id": "5bf5c9b7-47a8-4f55-822f-4219f84949bf",
       "name": "Is Valid"
     },
     {
@@ -75,10 +75,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
-        0
+        688,
+        96
       ],
-      "id": "db2432bd-f2dd-480c-ba83-20a64ffe5579",
+      "id": "42a9c8fa-2ad2-4e6d-af46-cce2b901ae8f",
       "name": "Fetch Seller",
       "alwaysOutputData": true,
       "credentials": {
@@ -91,15 +91,15 @@
     },
     {
       "parameters": {
-        "jsCode": "const sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\nconst ctx = $('Validate Input').first().json;\n\nif (!sellerRow) {\n  return [{ json: { decision: 'SELLER_NOT_FOUND', seller_id: ctx.seller_id, connected: false } }];\n}\nif (sellerRow.status !== 'active') {\n  return [{ json: { decision: 'SELLER_NOT_ACTIVE', seller_id: ctx.seller_id, seller_status: sellerRow.status, connected: false } }];\n}\n\nreturn [{ json: {\n  decision: 'STATUS_READY',\n  seller_id: ctx.seller_id,\n  connected: !!sellerRow.amazon_connected_at,\n  connected_at: sellerRow.amazon_connected_at || null,\n  marketplace_id: sellerRow.marketplace_id || null\n}}];"
+        "jsCode": "const sellerRows = $input.first().json;\nconst sellerRow = Array.isArray(sellerRows) ? sellerRows[0] : sellerRows;\nconst ctx = $('Validate Input').first().json;\n\nif (!sellerRow) {\n  return [{ json: { decision: 'SELLER_NOT_FOUND', seller_id: ctx.seller_id, connected: false } }];\n}\nif (sellerRow.status !== 'active') {\n  return [{ json: { decision: 'SELLER_NOT_ACTIVE', seller_id: ctx.seller_id, seller_status: sellerRow.status, connected: false } }];\n}\n\n// A seller created straight from the \"Connect Your Amazon Seller\n// Account\" landing button (wf10) starts with a system-generated\n// placeholder at this exact domain, not a real inbox - see wf10's\n// \"Build Placeholder Signup\" node. Anyone who signed up the older\n// way, or who has since added a real one via the dashboard's \"add\n// your email\" prompt, has a genuine address here instead.\nconst email = sellerRow.contact_email || '';\nconst needsEmail = email.endsWith('@connect.catalove.internal');\n\nreturn [{ json: {\n  decision: 'STATUS_READY',\n  seller_id: ctx.seller_id,\n  connected: !!sellerRow.amazon_connected_at,\n  connected_at: sellerRow.amazon_connected_at || null,\n  marketplace_id: sellerRow.marketplace_id || null,\n  needs_email: needsEmail\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        832,
-        0
+        896,
+        96
       ],
-      "id": "796e8216-4b78-456e-aa3e-f70b9f02a8ef",
+      "id": "a1e09d11-60bc-432b-b683-b3d62b27a5c2",
       "name": "Determine Connection Status"
     },
     {
@@ -109,10 +109,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1040,
-        0
+        1104,
+        96
       ],
-      "id": "3a8c4a4e-b4dc-4d9f-a901-6a2b4b7306e2",
+      "id": "d8b1950b-4dd9-4839-b8eb-554f38411d05",
       "name": "Respond With Status"
     },
     {
@@ -122,10 +122,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        416,
-        192
+        480,
+        288
       ],
-      "id": "33fb4fcc-4247-47a5-9079-162d6b140419",
+      "id": "16c935c1-2a04-45d5-a2ad-626198bed1c5",
       "name": "Respond Rejected"
     }
   ],
@@ -200,7 +200,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "03098200-b653-4f91-b9d7-8388ad8dfa2e",
+  "versionId": "860879c4-cc23-4ea7-b949-e007f4171221",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

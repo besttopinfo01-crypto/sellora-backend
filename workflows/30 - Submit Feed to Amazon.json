@@ -11,10 +11,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        176,
-        -192
+        976,
+        656
       ],
-      "id": "9f3c38fe-f1c7-4132-b8ea-120724c83923",
+      "id": "dee0db31-c2a9-4bf4-857a-c2644e4026a1",
       "name": "Webhook",
       "webhookId": "632f2406-e9f3-4a3a-ae7d-5f06b6cff074"
     },
@@ -25,10 +25,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        384,
-        -192
+        1184,
+        656
       ],
-      "id": "bac239b4-cfc3-420f-ac6c-9f7bf6439df4",
+      "id": "866fd97c-f97a-4880-bcfd-97084f64d6b9",
       "name": "Validate Input"
     },
     {
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        592,
-        -192
+        1392,
+        656
       ],
-      "id": "e78c2668-dec6-4e28-a129-e2c2866de61c",
+      "id": "a1f5042b-a4ab-4754-a473-20e4ec04cbab",
       "name": "Is Valid"
     },
     {
@@ -75,10 +75,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        800,
-        -192
+        1600,
+        656
       ],
-      "id": "21ad31b7-e447-467a-8deb-4ebea3ff0224",
+      "id": "23010fb2-6963-45e6-8b93-f2214bdd459d",
       "name": "Fetch Approval Log",
       "alwaysOutputData": true,
       "credentials": {
@@ -98,10 +98,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1008,
-        -192
+        1808,
+        656
       ],
-      "id": "49f37ddf-ab5a-4ebd-bc17-db4b9596459e",
+      "id": "a0ffabc9-245a-4c45-bbe6-2f909e1e2821",
       "name": "Fetch Merge Request",
       "alwaysOutputData": true,
       "credentials": {
@@ -118,10 +118,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1216,
-        -192
+        2016,
+        656
       ],
-      "id": "d5b909b9-5722-4f44-9b23-00b4cd7e342d",
+      "id": "99acdfdc-5f36-4041-89d2-629231f539c1",
       "name": "Check Ready To Submit"
     },
     {
@@ -152,10 +152,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1248,
-        -528
+        2048,
+        320
       ],
-      "id": "f002eade-63e2-41ac-bcf6-a1cb91cead0a",
+      "id": "fafa79d7-a8ce-477f-a8f6-c36a67fd3bf1",
       "name": "Is Ready"
     },
     {
@@ -168,10 +168,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1424,
-        -192
+        2224,
+        656
       ],
-      "id": "305c6407-3709-4a87-8cf2-7383f42bbcea",
+      "id": "c643f40e-8244-417e-ac6b-729a778e0dc5",
       "name": "Fetch Existing Submission",
       "alwaysOutputData": true,
       "credentials": {
@@ -188,10 +188,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1632,
-        -192
+        2432,
+        656
       ],
-      "id": "86b8c2a7-7731-4b91-8542-37672ab6d622",
+      "id": "7754c378-8b16-43af-8b2a-54e403996fb8",
       "name": "Confirm No Duplicate"
     },
     {
@@ -222,10 +222,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1840,
-        -192
+        2640,
+        656
       ],
-      "id": "2ac4f6cb-bb34-4710-b5d1-164f98a0f577",
+      "id": "e33aa372-4db8-43c1-ac97-cfc0c5606624",
       "name": "Is No Duplicate"
     },
     {
@@ -248,10 +248,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2672,
-        -192
+        3472,
+        656
       ],
-      "id": "0a3b106e-66b7-47dd-83e7-ecc466110214",
+      "id": "e422129a-93a7-47ab-8fa6-6e69f8c214f7",
       "name": "Get Refresh Token",
       "credentials": {
         "httpCustomAuth": {
@@ -285,10 +285,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2880,
-        -192
+        3680,
+        656
       ],
-      "id": "c875cc83-452b-4db1-9c26-e3436ee39bdf",
+      "id": "8e8f6c02-d32b-46ea-af82-0d6b55836026",
       "name": "Exchange for Access Token",
       "credentials": {
         "httpBasicAuth": {
@@ -322,10 +322,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3088,
-        -192
+        3888,
+        656
       ],
-      "id": "3d3c4448-35be-4c1b-86e0-fe819c0adeba",
+      "id": "7f799785-8aca-4807-af5d-79612dcbbed5",
       "name": "Create Feed Document",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -337,10 +337,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3296,
-        -192
+        4096,
+        656
       ],
-      "id": "aa4716dd-e911-4965-b5f8-96620a177f9f",
+      "id": "206a61af-0e1b-4f82-adf1-362022882f2c",
       "name": "Parse Feed Document"
     },
     {
@@ -371,10 +371,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        3504,
-        -192
+        4304,
+        656
       ],
-      "id": "b1b41692-95d8-44f9-bbf1-c2740022519a",
+      "id": "77742330-775f-4780-ac3c-7afb8086ddbf",
       "name": "Is Document Created"
     },
     {
@@ -405,10 +405,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        3712,
-        -192
+        4512,
+        656
       ],
-      "id": "284c2a09-9ec1-4fb6-94bb-8677ac7e6506",
+      "id": "ca25b3c4-6c01-4cd6-9f96-4af63b3ce678",
       "name": "Upload Feed Content",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -420,10 +420,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3920,
-        -192
+        4720,
+        656
       ],
-      "id": "dea558dd-edc8-483a-903a-b40bfd2d4c67",
+      "id": "321f7729-69a5-410c-9e2d-11366a8ffa1b",
       "name": "Check Upload Result"
     },
     {
@@ -454,10 +454,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        4128,
-        -192
+        4928,
+        656
       ],
-      "id": "40a03cc5-cf34-4c8d-8547-f8bec5720d8a",
+      "id": "3a850066-f7de-4b1e-a910-c595f7732ae3",
       "name": "Is Upload Successful"
     },
     {
@@ -485,10 +485,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        4336,
-        -192
+        5136,
+        656
       ],
-      "id": "37a660af-d8da-4d71-a957-b686425d96e5",
+      "id": "fd0f9182-88c5-40cc-bf30-b1b078b2223d",
       "name": "Submit Feed",
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -500,10 +500,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4544,
-        -192
+        5344,
+        656
       ],
-      "id": "0cc6e84b-8971-4c2c-9e08-c77c123ac9b1",
+      "id": "60b254c9-c6c2-42c3-855e-10536393a4b5",
       "name": "Parse Feed Result"
     },
     {
@@ -534,10 +534,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        4752,
-        -192
+        5552,
+        656
       ],
-      "id": "3d441e18-8ff0-477e-95d5-b750ee35dda7",
+      "id": "8f6cbe6d-1e5e-4326-a19d-1544f568f059",
       "name": "Is Feed Submitted"
     },
     {
@@ -567,10 +567,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        4960,
-        -192
+        5760,
+        656
       ],
-      "id": "ebc6c49b-0b97-48e9-ac5a-0eaefa331edd",
+      "id": "293fc6ab-5ced-450b-8490-936fcd2145e6",
       "name": "Log Submission",
       "credentials": {
         "httpCustomAuth": {
@@ -586,10 +586,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5168,
-        -192
+        5968,
+        656
       ],
-      "id": "d957888d-2d52-41a9-acce-baa48dd1d614",
+      "id": "e9b87940-07b2-417a-bd99-2c92a434f6a3",
       "name": "Finalize Response"
     },
     {
@@ -620,10 +620,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        5376,
-        -192
+        6176,
+        656
       ],
-      "id": "6aa06093-bc09-4f63-b6aa-40cc917c98b1",
+      "id": "766f2236-a7e9-4790-b1e5-d6a3aa58a21e",
       "name": "Is Logged"
     },
     {
@@ -653,10 +653,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        5584,
-        -192
+        6384,
+        656
       ],
-      "id": "068045c6-ce46-4254-9143-81d87d3d04fe",
+      "id": "665eeda6-1247-4a92-9bcc-d8849f21619f",
       "name": "Update Merge Request Status",
       "credentials": {
         "httpCustomAuth": {
@@ -673,10 +673,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5792,
-        -192
+        6592,
+        656
       ],
-      "id": "e0a18cc3-e047-4f0a-be73-2a18cbc40fa9",
+      "id": "73651a40-6215-4989-94cc-58951ad37c6e",
       "name": "Restore After Status Update"
     },
     {
@@ -686,10 +686,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        6000,
-        -192
+        6800,
+        656
       ],
-      "id": "587a6a26-e190-4121-8fe6-ffffe188520e",
+      "id": "4cca979e-b722-4798-935b-ea5f0b55d3cc",
       "name": "Respond With Confirmation"
     },
     {
@@ -699,10 +699,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1840,
-        64
+        2640,
+        912
       ],
-      "id": "d9a36efd-69c3-4aa6-9a27-71d2ab13c4f9",
+      "id": "22fa0007-2142-4f72-bb69-64f33016db24",
       "name": "Respond Rejected"
     },
     {
@@ -719,10 +719,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2048,
-        -192
+        2848,
+        656
       ],
-      "id": "831761cd-ede6-452b-b1fc-76d2f95b42df",
+      "id": "f3fa809c-1bee-4be8-bc9d-f7dc0f23fbb5",
       "name": "Reserve Submission Slot",
       "alwaysOutputData": true,
       "credentials": {
@@ -739,10 +739,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2256,
-        -192
+        3056,
+        656
       ],
-      "id": "f4a56a48-cee4-47d7-be33-05d6cafe5604",
+      "id": "b3107c81-8cd7-49b6-bc4e-2d6a644a0fb3",
       "name": "Parse Reservation Result"
     },
     {
@@ -773,10 +773,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2464,
-        -192
+        3264,
+        656
       ],
-      "id": "0702323c-fc33-448b-bb88-1f2b5bba592c",
+      "id": "1f64e4b0-e9ce-4b71-be41-51bd99c8a8d1",
       "name": "Is Slot Reserved"
     }
   ],
@@ -1164,7 +1164,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "b9e8d062-545b-4e65-a035-5576636a860f",
+  "versionId": "5d9f6931-c92e-4f7e-aa24-5c92b702186f",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },

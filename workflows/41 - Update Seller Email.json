@@ -1,0 +1,428 @@
+{
+  "name": "41 - Update Seller Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0baf0681-e443-446b-9d61-663f37770b02",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -6880,
+        752
+      ],
+      "id": "44427a81-2b69-47e1-b1fc-1012f8c6cb72",
+      "name": "Webhook",
+      "webhookId": "0baf0681-e443-446b-9d61-663f37770b02"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst body = raw.body ? raw.body : raw;\n\nconst sellerId = (body.seller_id || '').trim();\nconst email = (body.contact_email || '').trim();\nconst EMAIL_REGEX = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nconst UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\n// This workflow used to create brand-new accounts from just an email\n// (the original self-signup flow). It's since been repurposed: new\n// accounts are now created by wf10 at the moment Amazon connects, so\n// this workflow's only job now is attaching a real email to an\n// *already-existing* seller_id - hence validating both, not email alone.\nif (!UUID_REGEX.test(sellerId)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_SELLER_ID',\n    message: 'Could not identify your account. Please try signing in again.'\n  }}];\n}\nif (!email || !EMAIL_REGEX.test(email)) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'INVALID_EMAIL',\n    message: 'Please enter a valid email address.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: sellerId,\n  contact_email: email\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6672,
+        752
+      ],
+      "id": "7ec8c086-1e32-4d5b-968f-1e4a3a03ea45",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -6480,
+        752
+      ],
+      "id": "85fe86b0-ba12-4508-a554-4f23798402a7",
+      "name": "Is Valid"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/auth/v1/admin/users/{{ $json.seller_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"email\": {{ JSON.stringify($json.contact_email) }},\n  \"email_confirm\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -6272,
+        656
+      ],
+      "id": "7a58ccac-d06d-4178-9a3d-f2bf132eca9e",
+      "name": "Update Auth User Email",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Validate Input').first().json;\nconst res = $input.first().json;\n\n// Same shape-based success/failure detection as the original signup\n// flow: a successful update comes back with the user's own id.\nconst updatedId = (res && res.id) ? res.id : ((res && res.user && res.user.id) ? res.user.id : null);\n\nif (!updatedId) {\n  // Reuses the exact digDeep unwrapping the original signup flow\n  // needed - n8n wraps a failed HTTP call's real body the same way\n  // regardless of which admin endpoint produced it. Most likely\n  // failure here specifically: the email is already in use on a\n  // different account.\nfunction tryParseAt(str, startIdx) {\n  for (let end = str.length; end > startIdx; end--) {\n    try {\n      return JSON.parse(str.slice(startIdx, end));\n    } catch (e) {\n      // keep shrinking\n    }\n  }\n  return undefined;\n}\nfunction digDeep(str) {\n  if (typeof str !== 'string') return null;\n  let current = str;\n  for (let depth = 0; depth < 4; depth++) {\n    let bestStart = -1;\n    for (let i = 0; i < current.length; i++) {\n      if (current[i] === '{' || current[i] === '\"') { bestStart = i; break; }\n    }\n    if (bestStart === -1) return null;\n    const parsed = tryParseAt(current, bestStart);\n    if (parsed === undefined) return null;\n    if (parsed && typeof parsed === 'object') {\n      if (typeof parsed.msg === 'string') return parsed.msg;\n      if (typeof parsed.message === 'string') return parsed.message;\n      return null;\n    }\n    if (typeof parsed === 'string') {\n      current = parsed;\n      continue;\n    }\n    return null;\n  }\n  return null;\n}\nfunction extractMessage(r) {\n  if (!r) return null;\n  const flat = [r.msg, r.message, r.error_description, (typeof r.error === 'string' ? r.error : null)];\n  for (const c of flat) {\n    if (typeof c === 'string' && c) return digDeep(c) || c;\n  }\n  if (r.error && typeof r.error === 'object' && typeof r.error.message === 'string') {\n    return digDeep(r.error.message) || r.error.message;\n  }\n  return null;\n}\n  const message = extractMessage(res)\n    || 'Could not update your email - it may already be in use on another account.';\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'AUTH_UPDATE_FAILED',\n    message: message\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'UPDATED',\n  seller_id: ctx.seller_id,\n  contact_email: ctx.contact_email\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -6080,
+        656
+      ],
+      "id": "f5a0b0e8-ab7f-40da-b692-cf090f3fea6a",
+      "name": "Check Auth Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "UPDATED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5872,
+        656
+      ],
+      "id": "e2bbdf00-6189-4653-a450-4f5f929e2089",
+      "name": "Auth User Updated?"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://dbgzqwophuukxuwgvgsh.supabase.co/rest/v1/sellers?id=eq.{{ $json.seller_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"contact_email\": {{ JSON.stringify($json.contact_email) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -5680,
+        560
+      ],
+      "id": "57653def-2ffc-4687-b669-c1c3a7eceefc",
+      "name": "Update Seller Row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "9z3veFG8YzFzmpRa",
+          "name": "Supabase Service Role"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const created = $('Check Auth Result').first().json;\nconst updateResult = $input.first().json;\nconst updatedRow = Array.isArray(updateResult) ? updateResult[0] : updateResult;\n\n// Prefer: return=representation, same reasoning as the original\n// signup flow: success and failure arrive as genuinely different\n// shapes instead of an ambiguous empty body.\nif (!updatedRow || updatedRow.contact_email !== created.contact_email) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'SELLER_ROW_UPDATE_FAILED',\n    message: 'Your sign-in was updated but something went wrong saving your email. Please try again.'\n  }}];\n}\n\nreturn [{ json: {\n  decision: 'EMAIL_SAVED',\n  seller_id: created.seller_id\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5472,
+        560
+      ],
+      "id": "d75f51cd-7c7c-49c2-995c-12702450c65e",
+      "name": "Check Seller Update"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c3",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "EMAIL_SAVED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -5280,
+        560
+      ],
+      "id": "384d4b5f-2aba-4a59-9812-2b7f048553bd",
+      "name": "Seller Row Updated?"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -5072,
+        448
+      ],
+      "id": "c052f6dc-a175-4e6c-adc3-bb440819c652",
+      "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -6272,
+        960
+      ],
+      "id": "3ff3008a-7479-4c43-81e3-14e10b30c8a9",
+      "name": "Respond Invalid Input"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -5680,
+        800
+      ],
+      "id": "727e2929-e23a-4f30-ad2c-de756ec7512a",
+      "name": "Respond Update Failed"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -5072,
+        656
+      ],
+      "id": "954561e9-c27f-463c-9665-36267f2be64e",
+      "name": "Respond Setup Failed"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Is Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid": {
+      "main": [
+        [
+          {
+            "node": "Update Auth User Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Invalid Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Auth User Email": {
+      "main": [
+        [
+          {
+            "node": "Check Auth Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Auth Result": {
+      "main": [
+        [
+          {
+            "node": "Auth User Updated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auth User Updated?": {
+      "main": [
+        [
+          {
+            "node": "Update Seller Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Update Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Seller Row": {
+      "main": [
+        [
+          {
+            "node": "Check Seller Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Seller Update": {
+      "main": [
+        [
+          {
+            "node": "Seller Row Updated?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seller Row Updated?": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Setup Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "913fab93-9d7b-452c-85e3-bd58b1aa01e7",
+  "meta": {
+    "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
+  },
+  "nodeGroups": [],
+  "id": "xKDQ36q1Fqg14Jrd",
+  "tags": []
+}

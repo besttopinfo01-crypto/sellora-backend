@@ -10,24 +10,24 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -624,
-        80
+        -1056,
+        16
       ],
-      "id": "70d31ce5-49eb-4151-a6ad-2c23ec9c9f54",
+      "id": "4355b4cf-5a14-456f-9e2d-b9b5e62d1640",
       "name": "Webhook",
       "webhookId": "789f1fc1-7836-4212-82ba-42cfa4e34fe0"
     },
     {
       "parameters": {
-        "jsCode": "const rawInput = $input.first().json;\nconst q = rawInput.query ? rawInput.query : rawInput;\n\nif (!q.seller_id) {\n  return [{ json: {\n    decision: 'REJECTED',\n    reason: 'MISSING_SELLER_ID',\n    message: 'seller_id is required to start an Amazon authorization.'\n  }}];\n}\n\n// This IS the actual CSRF/replay defense, not a cosmetic identifier.\n// Two prior attempts using actual crypto both failed in this specific\n// n8n sandbox: require('crypto') is blocked, and the global `crypto`\n// object isn't exposed either. Rather than guess at sandbox internals\n// a third time, this uses only fundamental JavaScript with zero\n// external dependency - guaranteed available in any JS engine.\n// Adequate here specifically because this token is short-lived (10\n// minutes), single-use (checked against the database), and not the\n// only line of defense - it doesn't need to withstand sophisticated\n// cryptanalysis, just prevent casual CSRF/replay in its narrow window.\nfunction randomSegment() {\n  return Math.random().toString(36).slice(2) + Date.now().toString(36);\n}\nconst state = randomSegment() + '-' + randomSegment() + '-' + randomSegment();\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: q.seller_id,\n  state: state\n}}];"
+        "jsCode": "const rawInput = $input.first().json;\nconst q = rawInput.query ? rawInput.query : rawInput;\n\n// seller_id is now OPTIONAL. An existing, signed-in seller reconnecting\n// from /connect-amazon still passes their real seller_id (unchanged\n// behavior - Store OAuth State below writes it straight through). A\n// brand-new visitor clicking \"Connect Your Amazon Seller Account\" on the\n// anonymous landing page has no seller_id yet; wf10 resolves who they\n// are once Amazon's redirect hands back a selling_partner_id. A null\n// stored here is what wf10 reads to know which of those two cases it's\n// handling - see wf10's \"Check Seller ID Presence\" node.\nconst sellerId = (q.seller_id && String(q.seller_id).trim()) ? String(q.seller_id).trim() : null;\n\n// This IS the actual CSRF/replay defense, not a cosmetic identifier.\n// Two prior attempts using actual crypto both failed in this specific\n// n8n sandbox: require('crypto') is blocked, and the global `crypto`\n// object isn't exposed either. Rather than guess at sandbox internals\n// a third time, this uses only fundamental JavaScript with zero\n// external dependency - guaranteed available in any JS engine.\n// Adequate here specifically because this token is short-lived (10\n// minutes), single-use (checked against the database), and not the\n// only line of defense - it doesn't need to withstand sophisticated\n// cryptanalysis, just prevent casual CSRF/replay in its narrow window.\nfunction randomSegment() {\n  return Math.random().toString(36).slice(2) + Date.now().toString(36);\n}\nconst state = randomSegment() + '-' + randomSegment() + '-' + randomSegment();\n\nreturn [{ json: {\n  decision: 'VALID',\n  seller_id: sellerId,\n  state: state\n}}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -416,
-        80
+        -848,
+        16
       ],
-      "id": "537f2fe3-d7bd-45ea-afdd-c666d10204d6",
+      "id": "f2fd6dff-7563-4329-a705-eb066dfb7568",
       "name": "Validate Input & Generate State"
     },
     {
@@ -57,10 +57,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -208,
-        80
+        -640,
+        16
       ],
-      "id": "b3dc4e46-f4b9-4a88-aa91-a78193eb03cf",
+      "id": "3cdd8455-faf1-4020-bd47-b4c248568ef3",
       "name": "Is Valid"
     },
     {
@@ -91,10 +91,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        0,
-        0
+        -432,
+        -64
       ],
-      "id": "973545cb-f630-470b-bfb3-28c33e4b5c31",
+      "id": "23254195-8cc8-4d7b-87b9-f26368b4f1b2",
       "name": "Store OAuth State",
       "credentials": {
         "httpCustomAuth": {
@@ -111,10 +111,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        208,
-        0
+        -224,
+        -64
       ],
-      "id": "8b15013d-e076-490a-a24d-4c8d905c0c56",
+      "id": "77ee9e8f-ee9c-4d91-8680-3f71b14bba51",
       "name": "Build Amazon Consent URL"
     },
     {
@@ -126,10 +126,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        416,
-        0
+        -16,
+        -64
       ],
-      "id": "317e0bbb-caec-49d0-833b-0b312704e0b8",
+      "id": "685464fa-2603-453b-bb7a-ee1d1b2e8e19",
       "name": "Redirect to Amazon"
     },
     {
@@ -139,10 +139,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        0,
-        176
+        -432,
+        112
       ],
-      "id": "4e5f293e-9de2-4184-b52c-3aa96b3ec3c2",
+      "id": "ac4c2706-b7da-4a42-a830-2fb06e63d6f1",
       "name": "Respond With Rejection"
     }
   ],
@@ -217,7 +217,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "55155647-70e9-4d89-8311-252b7334234c",
+  "versionId": "4d834b2a-bd75-4898-a276-280a179737cf",
   "meta": {
     "instanceId": "8ddb069abc6a69e64b5fd9df1adc99df518ccdeb6c7cf555e36091a09f15036a"
   },
